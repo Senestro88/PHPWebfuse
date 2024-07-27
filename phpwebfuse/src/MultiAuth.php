@@ -15,6 +15,11 @@ class MultiAuth
     private $methods = null;
 
     /**
+     * @var \PHPWebfuse\Path The default PHPWebfuse path class
+     */
+    private $path = null;
+
+    /**
      * @var int The length of the code
      */
     private $passcodelength = 6;
@@ -56,13 +61,14 @@ class MultiAuth
     public function __construct(int $passcodelength = 6, int $keylength = 10, ?\DateTimeInterface $time = null, int $codeperiod = 30)
     {
         $this->methods = new \PHPWebfuse\Methods();
+        $this->path = new \PHPWebfuse\Path();
         $this->passcodelength = $passcodelength;
         $this->keylength = $keylength;
         $this->codeperiod = $codeperiod;
         $this->periodsize = $codeperiod < $this->periodsize ? $codeperiod : $this->periodsize;
         $this->pinmodulo = 10 ** $passcodelength;
         $this->time = $time ?? new \DateTimeImmutable();
-        $srcDirname = $this->methods->INSERT_DIR_SEPARATOR(PHPWebfuse['directories']['src']);
+        $srcDirname = $this->path->insert_dir_separator(PHPWebfuse['directories']['src']);
         $dirname = $srcDirname . "MultiAuth" . DIRECTORY_SEPARATOR;
         $scandir = $this->methods->scanDir($dirname);
         if ($this->methods->isNotEmptyArray($scandir)) {
