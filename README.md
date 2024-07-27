@@ -1,2 +1,2 @@
-# PHPWebFuse
-An almost complete PHP web fuse
+# PHPWebfuse
+An almost complete php web fuse
