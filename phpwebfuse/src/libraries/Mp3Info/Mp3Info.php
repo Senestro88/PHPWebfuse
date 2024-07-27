@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This class extracts information about an mpeg audio. (supported mpeg versions: MPEG-1, MPEG-2)
  * (supported mpeg audio layers: 1, 2, 3).
@@ -18,50 +19,47 @@
  * * {@link https://multimedia.cx/mp3extensions.txt Descripion of VBR header "Xing"}
  * * {@link http://gabriel.mp3-tech.org/mp3infotag.html Xing, Info and Lame tags specifications}
  */
-class Mp3Info {
-    const TAG1_SYNC = 'TAG';
-    const TAG2_SYNC = 'ID3';
-    const VBR_SYNC = 'Xing';
-    const CBR_SYNC = 'Info';
+class Mp3Info
+{
+    public const TAG1_SYNC = 'TAG';
+    public const TAG2_SYNC = 'ID3';
+    public const VBR_SYNC = 'Xing';
+    public const CBR_SYNC = 'Info';
 
     /**
      * Magic constants
      */
-    const FRAME_SYNC = 0xffe0;
-    const LAYER_1_FRAME_SIZE = 384;
-    const LAYERS_23_FRAME_SIZE = 1152;
-
-    const META = 1;
-    const TAGS = 2;
-
-    const MPEG_1 = 1;
-    const MPEG_2 = 2;
-    const MPEG_25 = 3;
-    const CODEC_UNDEFINED = 4;
-
-    const LAYER_1 = 1;
-    const LAYER_2 = 2;
-    const LAYER_3 = 3;
-
-    const STEREO = 'stereo';
-    const JOINT_STEREO = 'joint_stereo';
-    const DUAL_MONO = 'dual_mono';
-    const MONO = 'mono';
+    public const FRAME_SYNC = 0xffe0;
+    public const LAYER_1_FRAME_SIZE = 384;
+    public const LAYERS_23_FRAME_SIZE = 1152;
+    public const META = 1;
+    public const TAGS = 2;
+    public const MPEG_1 = 1;
+    public const MPEG_2 = 2;
+    public const MPEG_25 = 3;
+    public const CODEC_UNDEFINED = 4;
+    public const LAYER_1 = 1;
+    public const LAYER_2 = 2;
+    public const LAYER_3 = 3;
+    public const STEREO = 'stereo';
+    public const JOINT_STEREO = 'joint_stereo';
+    public const DUAL_MONO = 'dual_mono';
+    public const MONO = 'mono';
 
     /**
      * @var array
      */
-    static private $_bitRateTable;
+    private static $_bitRateTable;
 
     /**
      * @var array
      */
-    static private $_sampleRateTable;
+    private static $_sampleRateTable;
 
     /**
      * @var array
      */
-    static private $_vbrOffsets = [
+    private static $_vbrOffsets = [
         self::MPEG_1 => [21, 36],
         self::MPEG_2 => [13, 21],
         self::MPEG_25 => [13, 21],
@@ -83,6 +81,7 @@ class Mp3Info {
      * @var int
      */
     public $layerVersion;
+
     /**
      * Audio size in bytes. Note that this value is NOT equals file size.
      * @var int
@@ -170,6 +169,7 @@ class Mp3Info {
      * @var string
      */
     public $_fileName;
+
     /**
      * Contains file size
      * @var int
@@ -207,14 +207,18 @@ class Mp3Info {
      *
      * @throws \Exception
      */
-    public function __construct($filename, $parseTags = false) {
-        if (self::$_bitRateTable === null)
-            self::$_bitRateTable = require dirname(__FILE__).'/bitRateTable.php';
-        if (self::$_sampleRateTable === null)
-            self::$_sampleRateTable = require dirname(__FILE__).'/sampleRateTable.php';
+    public function __construct($filename, $parseTags = false)
+    {
+        if (self::$_bitRateTable === null) {
+            self::$_bitRateTable = require dirname(__FILE__) . '/bitRateTable.php';
+        }
+        if (self::$_sampleRateTable === null) {
+            self::$_sampleRateTable = require dirname(__FILE__) . '/sampleRateTable.php';
+        }
 
-        if (!file_exists($filename))
-            throw new \Exception('File '.$filename.' is not present!');
+        if (!file_exists($filename)) {
+            throw new \Exception('File ' . $filename . ' is not present!');
+        }
 
         $mode = $parseTags ? self::META | self::TAGS : self::META;
         $this->audioSize = $this->parseAudio($this->_fileName = $filename, $this->_fileSize = filesize($filename), $mode);
@@ -232,7 +236,8 @@ class Mp3Info {
      * @return float|int
      * @throws \Exception
      */
-    private function parseAudio($filename, $fileSize, $mode) {
+    private function parseAudio($filename, $fileSize, $mode)
+    {
         $time = microtime(true);
         $fp = fopen($filename, 'rb');
 
@@ -241,8 +246,9 @@ class Mp3Info {
 
         // parse tags
         if (fread($fp, 3) == self::TAG2_SYNC) {
-            if ($mode & self::TAGS) $audioSize -= ($this->_id3Size = $this->readId3v2Body($fp));
-            else {
+            if ($mode & self::TAGS) {
+                $audioSize -= ($this->_id3Size = $this->readId3v2Body($fp));
+            } else {
                 fseek($fp, 2, SEEK_CUR); // 2 bytes of tag version
                 fseek($fp, 1, SEEK_CUR); // 1 byte of tag flags
                 $sizeBytes = $this->readBytes($fp, 4);
@@ -257,8 +263,11 @@ class Mp3Info {
 
         fseek($fp, $fileSize - 128);
         if (fread($fp, 3) == self::TAG1_SYNC) {
-            if ($mode & self::TAGS) $audioSize -= $this->readId3v1Body($fp);
-            else $audioSize -= 128;
+            if ($mode & self::TAGS) {
+                $audioSize -= $this->readId3v1Body($fp);
+            } else {
+                $audioSize -= 128;
+            }
         }
 
         if ($mode & self::TAGS) {
@@ -268,16 +277,16 @@ class Mp3Info {
         fseek($fp, 0);
         // audio meta
         if ($mode & self::META) {
-            if ($this->_id3Size !== null) fseek($fp, $this->_id3Size);
+            if ($this->_id3Size !== null) {
+                fseek($fp, $this->_id3Size);
+            }
             /**
              * First frame can lie. Need to fix in future.
              * @link https://github.com/wapmorgan/Mp3Info/issues/13#issuecomment-447470813
              */
             $framesCount = $this->readMpegFrame($fp);
 
-            $this->_framesCount = $framesCount !== null
-                ? $framesCount
-                : ceil($audioSize / $this->_cbrFrameSize);
+            $this->_framesCount = $framesCount !== null ? $framesCount : ceil($audioSize / $this->_cbrFrameSize);
 
             // recalculate average bit rate in vbr case
             if ($this->isVbr && $framesCount !== null) {
@@ -306,7 +315,8 @@ class Mp3Info {
      * @return int Number of frames (if present if first frame of VBR-file)
      * @throws \Exception
      */
-    private function readMpegFrame($fp) {
+    private function readMpegFrame($fp)
+    {
         $header_seek_pos = ftell($fp) + self::$headerSeekLimit;
         do {
             $pos = ftell($fp);
@@ -323,31 +333,42 @@ class Mp3Info {
         } while (ftell($fp) <= $header_seek_pos);
 
         if (!isset($header_bytes) || $header_bytes[0] !== 0xFF || (($header_bytes[1] >> 5) & 0b111) != 0b111) {
-            throw new \Exception('At '.$pos
-                .'(0x'.dechex($pos).') should be a frame header!');
+            throw new \Exception('At ' . $pos
+                            . '(0x' . dechex($pos) . ') should be a frame header!');
         }
 
         switch ($header_bytes[1] >> 3 & 0b11) {
-            case 0b00: $this->codecVersion = self::MPEG_25; break;
-            case 0b01: $this->codecVersion = self::CODEC_UNDEFINED; break;
-            case 0b10: $this->codecVersion = self::MPEG_2; break;
-            case 0b11: $this->codecVersion = self::MPEG_1; break;
+            case 0b00: $this->codecVersion = self::MPEG_25;
+                break;
+            case 0b01: $this->codecVersion = self::CODEC_UNDEFINED;
+                break;
+            case 0b10: $this->codecVersion = self::MPEG_2;
+                break;
+            case 0b11: $this->codecVersion = self::MPEG_1;
+                break;
         }
 
         switch ($header_bytes[1] >> 1 & 0b11) {
-            case 0b01: $this->layerVersion = self::LAYER_3; break;
-            case 0b10: $this->layerVersion = self::LAYER_2; break;
-            case 0b11: $this->layerVersion = self::LAYER_1; break;
+            case 0b01: $this->layerVersion = self::LAYER_3;
+                break;
+            case 0b10: $this->layerVersion = self::LAYER_2;
+                break;
+            case 0b11: $this->layerVersion = self::LAYER_1;
+                break;
         }
 
         $this->bitRate = self::$_bitRateTable[$this->codecVersion][$this->layerVersion][$header_bytes[2] >> 4];
         $this->sampleRate = self::$_sampleRateTable[$this->codecVersion][($header_bytes[2] >> 2) & 0b11];
 
         switch ($header_bytes[3] >> 6) {
-            case 0b00: $this->channel = self::STEREO; break;
-            case 0b01: $this->channel = self::JOINT_STEREO; break;
-            case 0b10: $this->channel = self::DUAL_MONO; break;
-            case 0b11: $this->channel = self::MONO; break;
+            case 0b00: $this->channel = self::STEREO;
+                break;
+            case 0b01: $this->channel = self::JOINT_STEREO;
+                break;
+            case 0b10: $this->channel = self::DUAL_MONO;
+                break;
+            case 0b11: $this->channel = self::MONO;
+                break;
         }
 
         $vbr_offset = self::$_vbrOffsets[$this->codecVersion][$this->channel == self::MONO ? 0 : 1];
@@ -395,11 +416,16 @@ class Mp3Info {
      * @return array
      * @throws \Exception
      */
-    private function readBytes($fp, $n) {
+    private function readBytes($fp, $n)
+    {
         $raw = fread($fp, $n);
-        if (strlen($raw) !== $n) throw new \Exception('Unexpected end of file!');
+        if (strlen($raw) !== $n) {
+            throw new \Exception('Unexpected end of file!');
+        }
         $bytes = array();
-        for($i = 0; $i < $n; $i++) $bytes[$i] = ord($raw[$i]);
+        for ($i = 0; $i < $n; $i++) {
+            $bytes[$i] = ord($raw[$i]);
+        }
         return $bytes;
     }
 
@@ -407,7 +433,8 @@ class Mp3Info {
      * Reads id3v1 tag.
      * @return int Returns length of id3v1 tag.
      */
-    private function readId3v1Body($fp) {
+    private function readId3v1Body($fp)
+    {
         $this->tags1['song'] = trim(fread($fp, 30));
         $this->tags1['artist'] = trim(fread($fp, 30));
         $this->tags1['album'] = trim(fread($fp, 30));
@@ -479,28 +506,31 @@ class Mp3Info {
         $flags = substr($data, 0, 8);
         if ($this->id3v2MajorVersion == 2) { // parse id3v2.2.0 header flags
             $this->id3v2Flags = array(
-                'unsynchronisation' => (bool)substr($flags, 0, 1),
-                'compression' => (bool)substr($flags, 1, 1),
+                'unsynchronisation' => (bool) substr($flags, 0, 1),
+                'compression' => (bool) substr($flags, 1, 1),
             );
-        } else if ($this->id3v2MajorVersion == 3) { // parse id3v2.3.0 header flags
+        } elseif ($this->id3v2MajorVersion == 3) { // parse id3v2.3.0 header flags
             $this->id3v2Flags = array(
-                'unsynchronisation' => (bool)substr($flags, 0, 1),
-                'extended_header' => (bool)substr($flags, 1, 1),
-                'experimental_indicator' => (bool)substr($flags, 2, 1),
+                'unsynchronisation' => (bool) substr($flags, 0, 1),
+                'extended_header' => (bool) substr($flags, 1, 1),
+                'experimental_indicator' => (bool) substr($flags, 2, 1),
             );
-            if ($this->id3v2Flags['extended_header'])
+            if ($this->id3v2Flags['extended_header']) {
                 throw new \Exception('NEED TO PARSE EXTENDED HEADER!');
-        } else if ($this->id3v2MajorVersion == 4) { // parse id3v2.4.0 header flags
+            }
+        } elseif ($this->id3v2MajorVersion == 4) { // parse id3v2.4.0 header flags
             $this->id3v2Flags = array(
-                'unsynchronisation' => (bool)substr($flags, 0, 1),
-                'extended_header' => (bool)substr($flags, 1, 1),
-                'experimental_indicator' => (bool)substr($flags, 2, 1),
-                'footer_present' => (bool)substr($flags, 3, 1),
+                'unsynchronisation' => (bool) substr($flags, 0, 1),
+                'extended_header' => (bool) substr($flags, 1, 1),
+                'experimental_indicator' => (bool) substr($flags, 2, 1),
+                'footer_present' => (bool) substr($flags, 3, 1),
             );
-            if ($this->id3v2Flags['extended_header'])
+            if ($this->id3v2Flags['extended_header']) {
                 throw new \Exception('NEED TO PARSE EXTENDED HEADER!');
-            if ($this->id3v2Flags['footer_present'])
+            }
+            if ($this->id3v2Flags['footer_present']) {
                 throw new \Exception('NEED TO PARSE id3v2.4 FOOTER!');
+            }
         }
         $size = substr($data, 8, 32);
 
@@ -515,11 +545,11 @@ class Mp3Info {
 
         if ($this->id3v2MajorVersion == 2) {
             // parse id3v2.2.0 body
-            /*throw new \Exception('NEED TO PARSE id3v2.2.0 flags!');*/
-        } else if ($this->id3v2MajorVersion == 3) {
+            /* throw new \Exception('NEED TO PARSE id3v2.2.0 flags!'); */
+        } elseif ($this->id3v2MajorVersion == 3) {
             // parse id3v2.3.0 body
             $this->parseId3v23Body($fp, 10 + $size);
-        } else if ($this->id3v2MajorVersion == 4)  {
+        } elseif ($this->id3v2MajorVersion == 4) {
             // parse id3v2.4.0 body
             $this->parseId3v24Body($fp, 10 + $size);
         }
@@ -531,7 +561,8 @@ class Mp3Info {
      * Parses id3v2.3.0 tag body.
      * @todo Complete.
      */
-    private function parseId3v23Body($fp, $lastByte) {
+    private function parseId3v23Body($fp, $lastByte)
+    {
         while (ftell($fp) < $lastByte) {
             $raw = fread($fp, 10);
             $frame_id = substr($raw, 0, 4);
@@ -546,19 +577,18 @@ class Mp3Info {
             $flags = base_convert($data['flags'], 16, 2);
             $this->id3v2TagsFlags[$frame_id] = array(
                 'flags' => array(
-                    'tag_alter_preservation' => (bool)substr($flags, 0, 1),
-                    'file_alter_preservation' => (bool)substr($flags, 1, 1),
-                    'read_only' => (bool)substr($flags, 2, 1),
-                    'compression' => (bool)substr($flags, 8, 1),
-                    'encryption' => (bool)substr($flags, 9, 1),
-                    'grouping_identity' => (bool)substr($flags, 10, 1),
+                    'tag_alter_preservation' => (bool) substr($flags, 0, 1),
+                    'file_alter_preservation' => (bool) substr($flags, 1, 1),
+                    'read_only' => (bool) substr($flags, 2, 1),
+                    'compression' => (bool) substr($flags, 8, 1),
+                    'encryption' => (bool) substr($flags, 9, 1),
+                    'grouping_identity' => (bool) substr($flags, 10, 1),
                 ),
             );
 
             switch ($frame_id) {
                 // case 'UFID':    # Unique file identifier
                 //     break;
-
                 ################# Text information frames
                 case 'TALB':    # Album/Movie/Show title
                 case 'TCON':    # Content type
@@ -569,76 +599,73 @@ class Mp3Info {
                 case 'TPE1':    # Lead performer(s)/Soloist(s)
                     $this->tags2[$frame_id] = $this->handleTextFrame($frame_size, fread($fp, $frame_size));
                     break;
-                // case 'TBPM':    # BPM (beats per minute)
-                // case 'TCOM':    # Composer
-                // case 'TCOP':    # Copyright message
-                // case 'TDAT':    # Date
-                // case 'TDLY':    # Playlist delay
-                // case 'TENC':    # Encoded by
-                // case 'TEXT':    # Lyricist/Text writer
-                // case 'TFLT':    # File type
-                // case 'TIME':    # Time
-                // case 'TIT1':    # Content group description
-                // case 'TIT3':    # Subtitle/Description refinement
-                // case 'TKEY':    # Initial key
-                // case 'TLAN':    # Language(s)
-                // case 'TLEN':    # Length
-                // case 'TMED':    # Media type
-                // case 'TOAL':    # Original album/movie/show title
-                // case 'TOFN':    # Original filename
-                // case 'TOLY':    # Original lyricist(s)/text writer(s)
-                // case 'TOPE':    # Original artist(s)/performer(s)
-                // case 'TORY':    # Original release year
-                // case 'TOWN':    # File owner/licensee
-                // case 'TPE2':    # Band/orchestra/accompaniment
-                // case 'TPE3':    # Conductor/performer refinement
-                // case 'TPE4':    # Interpreted, remixed, or otherwise modified by
-                // case 'TPOS':    # Part of a set
-                // case 'TPUB':    # Publisher
-                // case 'TRDA':    # Recording dates
-                // case 'TRSN':    # Internet radio station name
-                // case 'TRSO':    # Internet radio station owner
-                // case 'TSIZ':    # Size
-                // case 'TSRC':    # ISRC (international standard recording code)
-                // case 'TSSE':    # Software/Hardware and settings used for encoding
-
-                ################# Text information frames
-
-                ################# URL link frames
-                // case 'WCOM':    # Commercial information
-                //     break;
-                // case 'WCOP':    # Copyright/Legal information
-                //     break;
-                // case 'WOAF':    # Official audio file webpage
-                //     break;
-                // case 'WOAR':    # Official artist/performer webpage
-                //     break;
-                // case 'WOAS':    # Official audio source webpage
-                //     break;
-                // case 'WORS':    # Official internet radio station homepage
-                //     break;
-                // case 'WPAY':    # Payment
-                //     break;
-                // case 'WPUB':    # Publishers official webpage
-                //     break;
-                // case 'WXXX':    # User defined URL link frame
-                //     break;
-                ################# URL link frames
-
-                // case 'IPLS':    # Involved people list
-                //     break;
-                // case 'MCDI':    # Music CD identifier
-                //     break;
-                // case 'ETCO':    # Event timing codes
-                //     break;
-                // case 'MLLT':    # MPEG location lookup table
-                //     break;
-                // case 'SYTC':    # Synchronized tempo codes
-                //     break;
-                // case 'USLT':    # Unsychronized lyric/text transcription
-                //     break;
-                // case 'SYLT':    # Synchronized lyric/text
-                //     break;
+                    // case 'TBPM':    # BPM (beats per minute)
+                    // case 'TCOM':    # Composer
+                    // case 'TCOP':    # Copyright message
+                    // case 'TDAT':    # Date
+                    // case 'TDLY':    # Playlist delay
+                    // case 'TENC':    # Encoded by
+                    // case 'TEXT':    # Lyricist/Text writer
+                    // case 'TFLT':    # File type
+                    // case 'TIME':    # Time
+                    // case 'TIT1':    # Content group description
+                    // case 'TIT3':    # Subtitle/Description refinement
+                    // case 'TKEY':    # Initial key
+                    // case 'TLAN':    # Language(s)
+                    // case 'TLEN':    # Length
+                    // case 'TMED':    # Media type
+                    // case 'TOAL':    # Original album/movie/show title
+                    // case 'TOFN':    # Original filename
+                    // case 'TOLY':    # Original lyricist(s)/text writer(s)
+                    // case 'TOPE':    # Original artist(s)/performer(s)
+                    // case 'TORY':    # Original release year
+                    // case 'TOWN':    # File owner/licensee
+                    // case 'TPE2':    # Band/orchestra/accompaniment
+                    // case 'TPE3':    # Conductor/performer refinement
+                    // case 'TPE4':    # Interpreted, remixed, or otherwise modified by
+                    // case 'TPOS':    # Part of a set
+                    // case 'TPUB':    # Publisher
+                    // case 'TRDA':    # Recording dates
+                    // case 'TRSN':    # Internet radio station name
+                    // case 'TRSO':    # Internet radio station owner
+                    // case 'TSIZ':    # Size
+                    // case 'TSRC':    # ISRC (international standard recording code)
+                    // case 'TSSE':    # Software/Hardware and settings used for encoding
+                    ################# Text information frames
+                    ################# URL link frames
+                    // case 'WCOM':    # Commercial information
+                    //     break;
+                    // case 'WCOP':    # Copyright/Legal information
+                    //     break;
+                    // case 'WOAF':    # Official audio file webpage
+                    //     break;
+                    // case 'WOAR':    # Official artist/performer webpage
+                    //     break;
+                    // case 'WOAS':    # Official audio source webpage
+                    //     break;
+                    // case 'WORS':    # Official internet radio station homepage
+                    //     break;
+                    // case 'WPAY':    # Payment
+                    //     break;
+                    // case 'WPUB':    # Publishers official webpage
+                    //     break;
+                    // case 'WXXX':    # User defined URL link frame
+                    //     break;
+                    ################# URL link frames
+                    // case 'IPLS':    # Involved people list
+                    //     break;
+                    // case 'MCDI':    # Music CD identifier
+                    //     break;
+                    // case 'ETCO':    # Event timing codes
+                    //     break;
+                    // case 'MLLT':    # MPEG location lookup table
+                    //     break;
+                    // case 'SYTC':    # Synchronized tempo codes
+                    //     break;
+                    // case 'USLT':    # Unsychronized lyric/text transcription
+                    //     break;
+                    // case 'SYLT':    # Synchronized lyric/text
+                    //     break;
                 case 'COMM':    # Comments
                     $dataEnd = ftell($fp) + $frame_size;
                     $raw = fread($fp, 4);
@@ -651,61 +678,66 @@ class Mp3Info {
                         $char = fgetc($fp);
                         if ($char == "\00" && $actual_text === false) {
                             if ($data['encoding'] == 0x1) { # two null-bytes for utf-16
-                                if ($last_null)
+                                if ($last_null) {
                                     $actual_text = null;
-                                else
+                                } else {
                                     $last_null = true;
-                            } else # no condition for iso-8859-1
+                                }
+                            } else { # no condition for iso-8859-1
                                 $actual_text = null;
-
+                            }
+                        } elseif ($actual_text !== false) {
+                            $actual_text .= $char;
+                        } else {
+                            $short_description .= $char;
                         }
-                        else if ($actual_text !== false) $actual_text .= $char;
-                        else $short_description .= $char;
                     }
-                    if ($actual_text === false) $actual_text = $short_description;
+                    if ($actual_text === false) {
+                        $actual_text = $short_description;
+                    }
                     // list($short_description, $actual_text) = sscanf("s".chr(0)."s", $data['texts']);
                     // list($short_description, $actual_text) = explode(chr(0), $data['texts']);
                     $this->tags2[$frame_id][$data['language']] = array(
-                        'short' => (bool)($data['encoding'] == 0x00) ? mb_convert_encoding($short_description, 'utf-8', 'iso-8859-1') : mb_convert_encoding($short_description, 'utf-8', 'utf-16'),
-                        'actual' => (bool)($data['encoding'] == 0x00) ? mb_convert_encoding($actual_text, 'utf-8', 'iso-8859-1') : mb_convert_encoding($actual_text, 'utf-8', 'utf-16'),
+                        'short' => (bool) ($data['encoding'] == 0x00) ? mb_convert_encoding($short_description, 'utf-8', 'iso-8859-1') : mb_convert_encoding($short_description, 'utf-8', 'utf-16'),
+                        'actual' => (bool) ($data['encoding'] == 0x00) ? mb_convert_encoding($actual_text, 'utf-8', 'iso-8859-1') : mb_convert_encoding($actual_text, 'utf-8', 'utf-16'),
                     );
                     break;
-                // case 'RVAD':    # Relative volume adjustment
-                //     break;
-                // case 'EQUA':    # Equalization
-                //     break;
-                // case 'RVRB':    # Reverb
-                //     break;
-                // case 'APIC':    # Attached picture
-                //     break;
-                // case 'GEOB':    # General encapsulated object
-                //     break;
+                    // case 'RVAD':    # Relative volume adjustment
+                    //     break;
+                    // case 'EQUA':    # Equalization
+                    //     break;
+                    // case 'RVRB':    # Reverb
+                    //     break;
+                    // case 'APIC':    # Attached picture
+                    //     break;
+                    // case 'GEOB':    # General encapsulated object
+                    //     break;
                 case 'PCNT':    # Play counter
                     $data = unpack('L', fread($fp, $frame_size));
                     $this->tags2[$frame_id] = $data[1];
                     break;
-                // case 'POPM':    # Popularimeter
-                //     break;
-                // case 'RBUF':    # Recommended buffer size
-                //     break;
-                // case 'AENC':    # Audio encryption
-                //     break;
-                // case 'LINK':    # Linked information
-                //     break;
-                // case 'POSS':    # Position synchronisation frame
-                //     break;
-                // case 'USER':    # Terms of use
-                //     break;
-                // case 'OWNE':    # Ownership frame
-                //     break;
-                // case 'COMR':    # Commercial frame
-                //     break;
-                // case 'ENCR':    # Encryption method registration
-                //     break;
-                // case 'GRID':    # Group identification registration
-                //     break;
-                // case 'PRIV':    # Private frame
-                //     break;
+                    // case 'POPM':    # Popularimeter
+                    //     break;
+                    // case 'RBUF':    # Recommended buffer size
+                    //     break;
+                    // case 'AENC':    # Audio encryption
+                    //     break;
+                    // case 'LINK':    # Linked information
+                    //     break;
+                    // case 'POSS':    # Position synchronisation frame
+                    //     break;
+                    // case 'USER':    # Terms of use
+                    //     break;
+                    // case 'OWNE':    # Ownership frame
+                    //     break;
+                    // case 'COMR':    # Commercial frame
+                    //     break;
+                    // case 'ENCR':    # Encryption method registration
+                    //     break;
+                    // case 'GRID':    # Group identification registration
+                    //     break;
+                    // case 'PRIV':    # Private frame
+                    //     break;
                 default:
                     fseek($fp, $frame_size, SEEK_CUR);
                     break;
@@ -734,21 +766,20 @@ class Mp3Info {
             $flags = base_convert($data['flags'], 16, 2);
             $this->id3v2TagsFlags[$frame_id] = array(
                 'flags' => array(
-                    'tag_alter_preservation' => (bool)substr($flags, 1, 1),
-                    'file_alter_preservation' => (bool)substr($flags, 2, 1),
-                    'read_only' => (bool)substr($flags, 3, 1),
-                    'grouping_identity' => (bool)substr($flags, 9, 1),
-                    'compression' => (bool)substr($flags, 12, 1),
-                    'encryption' => (bool)substr($flags, 13, 1),
-                    'unsynchronisation' => (bool)substr($flags, 14, 1),
-                    'data_length_indicator' => (bool)substr($flags, 15, 1),
+                    'tag_alter_preservation' => (bool) substr($flags, 1, 1),
+                    'file_alter_preservation' => (bool) substr($flags, 2, 1),
+                    'read_only' => (bool) substr($flags, 3, 1),
+                    'grouping_identity' => (bool) substr($flags, 9, 1),
+                    'compression' => (bool) substr($flags, 12, 1),
+                    'encryption' => (bool) substr($flags, 13, 1),
+                    'unsynchronisation' => (bool) substr($flags, 14, 1),
+                    'data_length_indicator' => (bool) substr($flags, 15, 1),
                 ),
             );
 
             switch ($frame_id) {
                 // case 'UFID':    # Unique file identifier
                 //     break;
-
                 ################# Text information frames
                 case 'TALB':    # Album/Movie/Show title
                 case 'TCON':    # Content type
@@ -759,76 +790,73 @@ class Mp3Info {
                 case 'TPE1':    # Lead performer(s)/Soloist(s)
                     $this->tags2[$frame_id] = $this->handleTextFrame($frame_size, fread($fp, $frame_size));
                     break;
-                // case 'TBPM':    # BPM (beats per minute)
-                // case 'TCOM':    # Composer
-                // case 'TCOP':    # Copyright message
-                // case 'TDAT':    # Date
-                // case 'TDLY':    # Playlist delay
-                // case 'TENC':    # Encoded by
-                // case 'TEXT':    # Lyricist/Text writer
-                // case 'TFLT':    # File type
-                // case 'TIME':    # Time
-                // case 'TIT1':    # Content group description
-                // case 'TIT3':    # Subtitle/Description refinement
-                // case 'TKEY':    # Initial key
-                // case 'TLAN':    # Language(s)
-                // case 'TLEN':    # Length
-                // case 'TMED':    # Media type
-                // case 'TOAL':    # Original album/movie/show title
-                // case 'TOFN':    # Original filename
-                // case 'TOLY':    # Original lyricist(s)/text writer(s)
-                // case 'TOPE':    # Original artist(s)/performer(s)
-                // case 'TORY':    # Original release year
-                // case 'TOWN':    # File owner/licensee
-                // case 'TPE2':    # Band/orchestra/accompaniment
-                // case 'TPE3':    # Conductor/performer refinement
-                // case 'TPE4':    # Interpreted, remixed, or otherwise modified by
-                // case 'TPOS':    # Part of a set
-                // case 'TPUB':    # Publisher
-                // case 'TRDA':    # Recording dates
-                // case 'TRSN':    # Internet radio station name
-                // case 'TRSO':    # Internet radio station owner
-                // case 'TSIZ':    # Size
-                // case 'TSRC':    # ISRC (international standard recording code)
-                // case 'TSSE':    # Software/Hardware and settings used for encoding
-
-                ################# Text information frames
-
-                ################# URL link frames
-                // case 'WCOM':    # Commercial information
-                //     break;
-                // case 'WCOP':    # Copyright/Legal information
-                //     break;
-                // case 'WOAF':    # Official audio file webpage
-                //     break;
-                // case 'WOAR':    # Official artist/performer webpage
-                //     break;
-                // case 'WOAS':    # Official audio source webpage
-                //     break;
-                // case 'WORS':    # Official internet radio station homepage
-                //     break;
-                // case 'WPAY':    # Payment
-                //     break;
-                // case 'WPUB':    # Publishers official webpage
-                //     break;
-                // case 'WXXX':    # User defined URL link frame
-                //     break;
-                ################# URL link frames
-
-                // case 'IPLS':    # Involved people list
-                //     break;
-                // case 'MCDI':    # Music CD identifier
-                //     break;
-                // case 'ETCO':    # Event timing codes
-                //     break;
-                // case 'MLLT':    # MPEG location lookup table
-                //     break;
-                // case 'SYTC':    # Synchronized tempo codes
-                //     break;
-                // case 'USLT':    # Unsychronized lyric/text transcription
-                //     break;
-                // case 'SYLT':    # Synchronized lyric/text
-                //     break;
+                    // case 'TBPM':    # BPM (beats per minute)
+                    // case 'TCOM':    # Composer
+                    // case 'TCOP':    # Copyright message
+                    // case 'TDAT':    # Date
+                    // case 'TDLY':    # Playlist delay
+                    // case 'TENC':    # Encoded by
+                    // case 'TEXT':    # Lyricist/Text writer
+                    // case 'TFLT':    # File type
+                    // case 'TIME':    # Time
+                    // case 'TIT1':    # Content group description
+                    // case 'TIT3':    # Subtitle/Description refinement
+                    // case 'TKEY':    # Initial key
+                    // case 'TLAN':    # Language(s)
+                    // case 'TLEN':    # Length
+                    // case 'TMED':    # Media type
+                    // case 'TOAL':    # Original album/movie/show title
+                    // case 'TOFN':    # Original filename
+                    // case 'TOLY':    # Original lyricist(s)/text writer(s)
+                    // case 'TOPE':    # Original artist(s)/performer(s)
+                    // case 'TORY':    # Original release year
+                    // case 'TOWN':    # File owner/licensee
+                    // case 'TPE2':    # Band/orchestra/accompaniment
+                    // case 'TPE3':    # Conductor/performer refinement
+                    // case 'TPE4':    # Interpreted, remixed, or otherwise modified by
+                    // case 'TPOS':    # Part of a set
+                    // case 'TPUB':    # Publisher
+                    // case 'TRDA':    # Recording dates
+                    // case 'TRSN':    # Internet radio station name
+                    // case 'TRSO':    # Internet radio station owner
+                    // case 'TSIZ':    # Size
+                    // case 'TSRC':    # ISRC (international standard recording code)
+                    // case 'TSSE':    # Software/Hardware and settings used for encoding
+                    ################# Text information frames
+                    ################# URL link frames
+                    // case 'WCOM':    # Commercial information
+                    //     break;
+                    // case 'WCOP':    # Copyright/Legal information
+                    //     break;
+                    // case 'WOAF':    # Official audio file webpage
+                    //     break;
+                    // case 'WOAR':    # Official artist/performer webpage
+                    //     break;
+                    // case 'WOAS':    # Official audio source webpage
+                    //     break;
+                    // case 'WORS':    # Official internet radio station homepage
+                    //     break;
+                    // case 'WPAY':    # Payment
+                    //     break;
+                    // case 'WPUB':    # Publishers official webpage
+                    //     break;
+                    // case 'WXXX':    # User defined URL link frame
+                    //     break;
+                    ################# URL link frames
+                    // case 'IPLS':    # Involved people list
+                    //     break;
+                    // case 'MCDI':    # Music CD identifier
+                    //     break;
+                    // case 'ETCO':    # Event timing codes
+                    //     break;
+                    // case 'MLLT':    # MPEG location lookup table
+                    //     break;
+                    // case 'SYTC':    # Synchronized tempo codes
+                    //     break;
+                    // case 'USLT':    # Unsychronized lyric/text transcription
+                    //     break;
+                    // case 'SYLT':    # Synchronized lyric/text
+                    //     break;
                 case 'COMM':    # Comments
                     $dataEnd = ftell($fp) + $frame_size;
                     $raw = fread($fp, 4);
@@ -841,61 +869,66 @@ class Mp3Info {
                         $char = fgetc($fp);
                         if ($char == "\00" && $actual_text === false) {
                             if ($data['encoding'] == 0x1) { # two null-bytes for utf-16
-                                if ($last_null)
+                                if ($last_null) {
                                     $actual_text = null;
-                                else
+                                } else {
                                     $last_null = true;
-                            } else # no condition for iso-8859-1
+                                }
+                            } else { # no condition for iso-8859-1
                                 $actual_text = null;
-
+                            }
+                        } elseif ($actual_text !== false) {
+                            $actual_text .= $char;
+                        } else {
+                            $short_description .= $char;
                         }
-                        else if ($actual_text !== false) $actual_text .= $char;
-                        else $short_description .= $char;
                     }
-                    if ($actual_text === false) $actual_text = $short_description;
+                    if ($actual_text === false) {
+                        $actual_text = $short_description;
+                    }
                     // list($short_description, $actual_text) = sscanf("s".chr(0)."s", $data['texts']);
                     // list($short_description, $actual_text) = explode(chr(0), $data['texts']);
                     $this->tags2[$frame_id][$data['language']] = array(
-                        'short' => (bool)($data['encoding'] == 0x00) ? mb_convert_encoding($short_description, 'utf-8', 'iso-8859-1') : mb_convert_encoding($short_description, 'utf-8', 'utf-16'),
-                        'actual' => (bool)($data['encoding'] == 0x00) ? mb_convert_encoding($actual_text, 'utf-8', 'iso-8859-1') : mb_convert_encoding($actual_text, 'utf-8', 'utf-16'),
+                        'short' => (bool) ($data['encoding'] == 0x00) ? mb_convert_encoding($short_description, 'utf-8', 'iso-8859-1') : mb_convert_encoding($short_description, 'utf-8', 'utf-16'),
+                        'actual' => (bool) ($data['encoding'] == 0x00) ? mb_convert_encoding($actual_text, 'utf-8', 'iso-8859-1') : mb_convert_encoding($actual_text, 'utf-8', 'utf-16'),
                     );
                     break;
-                // case 'RVAD':    # Relative volume adjustment
-                //     break;
-                // case 'EQUA':    # Equalization
-                //     break;
-                // case 'RVRB':    # Reverb
-                //     break;
-                // case 'APIC':    # Attached picture
-                //     break;
-                // case 'GEOB':    # General encapsulated object
-                //     break;
+                    // case 'RVAD':    # Relative volume adjustment
+                    //     break;
+                    // case 'EQUA':    # Equalization
+                    //     break;
+                    // case 'RVRB':    # Reverb
+                    //     break;
+                    // case 'APIC':    # Attached picture
+                    //     break;
+                    // case 'GEOB':    # General encapsulated object
+                    //     break;
                 case 'PCNT':    # Play counter
                     $data = unpack('L', fread($fp, $frame_size));
                     $this->tags2[$frame_id] = $data[1];
                     break;
-                // case 'POPM':    # Popularimeter
-                //     break;
-                // case 'RBUF':    # Recommended buffer size
-                //     break;
-                // case 'AENC':    # Audio encryption
-                //     break;
-                // case 'LINK':    # Linked information
-                //     break;
-                // case 'POSS':    # Position synchronisation frame
-                //     break;
-                // case 'USER':    # Terms of use
-                //     break;
-                // case 'OWNE':    # Ownership frame
-                //     break;
-                // case 'COMR':    # Commercial frame
-                //     break;
-                // case 'ENCR':    # Encryption method registration
-                //     break;
-                // case 'GRID':    # Group identification registration
-                //     break;
-                // case 'PRIV':    # Private frame
-                //     break;
+                    // case 'POPM':    # Popularimeter
+                    //     break;
+                    // case 'RBUF':    # Recommended buffer size
+                    //     break;
+                    // case 'AENC':    # Audio encryption
+                    //     break;
+                    // case 'LINK':    # Linked information
+                    //     break;
+                    // case 'POSS':    # Position synchronisation frame
+                    //     break;
+                    // case 'USER':    # Terms of use
+                    //     break;
+                    // case 'OWNE':    # Ownership frame
+                    //     break;
+                    // case 'COMR':    # Commercial frame
+                    //     break;
+                    // case 'ENCR':    # Encryption method registration
+                    //     break;
+                    // case 'GRID':    # Group identification registration
+                    //     break;
+                    // case 'PRIV':    # Private frame
+                    //     break;
                 default:
                     fseek($fp, $frame_size, SEEK_CUR);
                     break;
@@ -913,16 +946,17 @@ class Mp3Info {
      * @return boolean True if file looks that correct mpeg audio, False otherwise.
      * @throws \Exception
      */
-    public static function isValidAudio($filename) {
-        if (!file_exists($filename))
-            throw new Exception('File '.$filename.' is not present!');
+    public static function isValidAudio($filename)
+    {
+        if (!file_exists($filename)) {
+            throw new Exception('File ' . $filename . ' is not present!');
+        }
 
         $raw = file_get_contents($filename, false, null, 0, 3);
         return $raw == self::TAG2_SYNC // id3v2 tag
-            || (self::FRAME_SYNC == (unpack('n*', $raw)[1] & self::FRAME_SYNC)) // mpeg header tag
-            || (
-                filesize($filename) > 128
-                && file_get_contents($filename, false, null, -128, 3) === self::TAG1_SYNC
+                || (self::FRAME_SYNC == (unpack('n*', $raw)[1] & self::FRAME_SYNC)) // mpeg header tag
+                || (
+                    filesize($filename) > 128 && file_get_contents($filename, false, null, -128, 3) === self::TAG1_SYNC
                 )  // id3v1 tag
         ;
     }
@@ -937,20 +971,20 @@ class Mp3Info {
     {
         $data = unpack('C1encoding/A' . ($frameSize - 1) . 'information', $raw);
 
-        switch($data['encoding']) {
+        switch ($data['encoding']) {
             case 0x00: # ISO-8859-1
                 return mb_convert_encoding($data['information'], 'utf-8', 'iso-8859-1');
             case 0x01: # utf-16 with BOM
                 return mb_convert_encoding($data['information'] . "\00", 'utf-8', 'utf-16');
 
-            # Following is for id3v2.4.x only
+                # Following is for id3v2.4.x only
             case 0x02: # utf-16 without BOM
                 return mb_convert_encoding($data['information'] . "\00", 'utf-8', 'utf-16');
             case 0x03: # utf-8
                 return $data['information'];
 
             default:
-                throw new RuntimeException('Unknown text encoding type: '.$data['encoding']);
+                throw new RuntimeException('Unknown text encoding type: ' . $data['encoding']);
         }
     }
 
@@ -960,20 +994,19 @@ class Mp3Info {
     protected function fillTags()
     {
         foreach ([
-            'song' => 'TIT2',
-            'artist' => 'TPE1',
-            'album' => 'TALB',
-            'year' => 'TYER',
-            'comment' => 'COMM',
-            'track' => 'TRCK',
-            'genre' => 'TCON',
+    'song' => 'TIT2',
+    'artist' => 'TPE1',
+    'album' => 'TALB',
+    'year' => 'TYER',
+    'comment' => 'COMM',
+    'track' => 'TRCK',
+    'genre' => 'TCON',
         ] as $tag => $id3v2_tag) {
-            if (!isset($this->tags2[$id3v2_tag]) && (!isset($this->tags1[$tag]) || empty($this->tags1[$tag])))
+            if (!isset($this->tags2[$id3v2_tag]) && (!isset($this->tags1[$tag]) || empty($this->tags1[$tag]))) {
                 continue;
+            }
 
-            $this->tags[$tag] = isset($this->tags2[$id3v2_tag])
-                ? ($id3v2_tag === 'COMM' ? current($this->tags2[$id3v2_tag])['actual'] : $this->tags2[$id3v2_tag])
-                : $this->tags1[$tag];
+            $this->tags[$tag] = isset($this->tags2[$id3v2_tag]) ? ($id3v2_tag === 'COMM' ? current($this->tags2[$id3v2_tag])['actual'] : $this->tags2[$id3v2_tag]) : $this->tags1[$tag];
         }
     }
 }

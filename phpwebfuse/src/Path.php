@@ -1,61 +1,75 @@
 <?php
-namespace PHPWebFuse;
+
+namespace PHPWebfuse;
+
 /**
- *
+ * The PHPWebfuse 'Path' class
  */
-class Path {
-	// PUBLIC METHODS
-	
-	public function __construct() {}
+class Path
+{
+    // PUBLIC METHODS
 
-	/**
-	 * Convert a directory separator to the PHP OS Directory separator
-	 * 
-	 * @param string $pathname
-	 * @return string
-	 * */
-	public function CONVERT_DIR_SEPARATOR(string $pathname): string {return str_ireplace(array("\\", "//"), DIRECTORY_SEPARATOR, $pathname);}
+    /**
+     * Construct new Path instance
+     */
+    public function __construct()
+    {
 
-	/**
-	 * Delete directory separator from the right after converting
-	 * 
-	 * @param string $pathname
-	 * @return string
-	 * */
-	public function RIGHT_DEL_DIR_SEPARATOR(string $pathname): string {return rtrim(self::CONVERT_DIR_SEPARATOR($pathname), DIRECTORY_SEPARATOR);}
+    }
 
-	/**
-	 * Delete directory separator from the left after converting
-	 * 
-	 * @param string $pathname
-	 * @return string
-	 * */
-	public function LEFT_DEL_DIR_SEPARATOR(string $pathname): string {return ltrim(self::CONVERT_DIR_SEPARATOR($pathname), DIRECTORY_SEPARATOR);}
+    /**
+     * Convert a directory separator to the PHP OS Directory separator
+     * @param string $pathname
+     * @return string
+     * */
+    public function convert_dir_separators(string $pathname): string
+    {
+        return str_ireplace(array("\\", "//"), DIRECTORY_SEPARATOR, $pathname);
+    }
 
-	/**
-	 * Arrange directory separator from multiple separators like "//" or "\\"
-	 * 
-	 * @param string $pathname
-	 * @param bool $closeEdges - Defaults to false
-	 * @return string
-	 * */
-	public function ARRANGE_DIR_SEPARATOR(string $pathname, bool $closeEdges = false): string {
-		$pathname = self::CONVERT_DIR_SEPARATOR($pathname);
-		$separator = DIRECTORY_SEPARATOR;
-		$explodedPath = array_filter(explode($separator, $pathname));
-		return ($closeEdges ? $separator : "") . implode($separator, $explodedPath) . ($closeEdges ? $separator : "");
-	}
-	
-	/**
-	 * Insert directory separator to the begining or end
-	 * 
-	 * @param string $pathname
-	 * @param bool $toEnd - Defaults to true
-	 * @return string
-	 * */
-	public function INSERT_DIR_SEPARATOR(string $pathname, bool $toEnd = true): string {
-		$pathname = self::CONVERT_DIR_SEPARATOR($pathname);
-		$separator = DIRECTORY_SEPARATOR;
-		return ($toEnd === false ? $separator : "") . $pathname . ($toEnd === true ? $separator : "");
-	}
+    /**
+     * Delete directory separator from the right after converting
+     * @param string $pathname
+     * @return string
+     * */
+    public function right_delete_dir_separator(string $pathname): string
+    {
+        return rtrim($this->convert_dir_separators($pathname), DIRECTORY_SEPARATOR);
+    }
+
+    /**
+     * Delete directory separator from the left after converting
+     * @param string $pathname
+     * @return string
+     * */
+    public function left_delete_dir_separator(string $pathname): string
+    {
+        return ltrim($this->convert_dir_separators($pathname), DIRECTORY_SEPARATOR);
+    }
+
+    /**
+     * Arrange directory separator from multiple separators like "//" or "\\"
+     * @param string $pathname
+     * @param bool $closeEdges - Defaults to false
+     * @return string
+     * */
+    public function arrange_dir_separators(string $pathname, bool $closeEdges = false): string
+    {
+        $separator = DIRECTORY_SEPARATOR;
+        $explodedPath = array_filter(explode($separator, $this->convert_dir_separators($pathname)));
+        return ($closeEdges ? $separator : "") . implode($separator, $explodedPath) . ($closeEdges ? $separator : "");
+    }
+
+    /**
+     * Insert directory separator to the beginning or end
+     *
+     * @param string $pathname
+     * @param bool $toEnd - Defaults to true
+     * @return string
+     * */
+    public function insert_dir_separator(string $pathname, bool $toEnd = true): string
+    {
+        $separator = DIRECTORY_SEPARATOR;
+        return ($toEnd === false ? $separator : "") . $this->convert_dir_separators($pathname) . ($toEnd === true ? $separator : "");
+    }
 }
