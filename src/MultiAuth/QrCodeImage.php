@@ -4,10 +4,24 @@ namespace PHPWebfuse\MultiAuth;
 
 class QrCodeImage extends \PHPWebfuse\Methods
 {
+    // PRIVATE VARIABLES
+
+    /**
+     * @var \PHPWebfuse\Path The default PHPWebfuse path class
+     */
+    private $path = null;
+
+    /**
+     * @var \PHPWebfuse\Methods The default PHPWebfuse methods class
+     */
+    private $methods = null;
+    
     // PUBLIC METHODS
 
     public function __construct()
     {
+        $this->methods = new \PHPWebfuse\Methods();
+        $this->path = new \PHPWebfuse\Path();
     }
 
     /**
@@ -37,18 +51,18 @@ class QrCodeImage extends \PHPWebfuse\Methods
         }
         $content = htmlspecialchars_decode(sprintf($content, $label, $secret, $issuer));
         if (!defined('QR_MODE_NUL')) {
-            parent::loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
+            $this->method->loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
         }
-        $tempPathname = parent::INSERT_DIR_SEPARATOR(parent::ARRANGE_DIR_SEPARATOR(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
-        if (self::makeDir($tempPathname) && class_exists('\QRcode')) {
-            $absolutePath = $tempPathname . '' . parent::randUnique("key") . '.png';
+        $tempPathname = $this->path->insert_dir_separator($this->path->arrange_dir_separators(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
+        if ($this->method->makeDir($tempPathname) && class_exists('\QRcode')) {
+            $absolutePath = $tempPathname . '' . $this->method->randUnique("key") . '.png';
             \QRcode::png($content, $absolutePath, QR_ECLEVEL_Q, 20, 2);
-            if (parent::isFile($absolutePath)) {
+            if ($this->method->isFile($absolutePath)) {
                 clearstatcache(false, $absolutePath);
                 $mime = mime_content_type($absolutePath);
-                $baseEncode = base64_encode((string) parent::getFileContent($absolutePath));
+                $baseEncode = base64_encode((string) $this->method->getFileContent($absolutePath));
                 $data = 'data:' . $mime . ';base64,' . $baseEncode;
-                parent::deleteFile($absolutePath);
+                $this->method->deleteFile($absolutePath);
                 return $data;
             }
         }
@@ -82,15 +96,15 @@ class QrCodeImage extends \PHPWebfuse\Methods
         }
         $content = htmlspecialchars_decode(sprintf($content, $label, $secret, $issuer));
         if (!defined('QR_MODE_NUL')) {
-            parent::loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
+            $this->method->loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
         }
-        $tempPathname = parent::INSERT_DIR_SEPARATOR(parent::ARRANGE_DIR_SEPARATOR(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
-        if (self::makeDir($tempPathname) && class_exists('\QRcode')) {
-            $absolutePath = $tempPathname . '' . parent::randUnique("key") . '.png';
+        $tempPathname = $this->path->insert_dir_separator($this->path->arrange_dir_separators(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
+        if ($this->method->makeDir($tempPathname) && class_exists('\QRcode')) {
+            $absolutePath = $tempPathname . '' . $this->method->randUnique("key") . '.png';
             \QRcode::png($content, $absolutePath, QR_ECLEVEL_Q, 4, 2);
-            if (parent::isFile($absolutePath)) {
+            if ($this->method->isFile($absolutePath)) {
                 $image = imagecreatefrompng($absolutePath);
-                if (parent::isNotFalse($image) && !headers_sent()) {
+                if ($this->method->isNotFalse($image) && !headers_sent()) {
                     $contentType = mime_content_type($absolutePath);
                     header("Expires: Mon, 7 Apr 1997 01:00:00 GMT");
                     header("Last-Modified: " . gmdate("D, d M Y H:i:s") . "GMT");
