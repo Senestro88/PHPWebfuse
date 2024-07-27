@@ -1,0 +1,34 @@
+{
+    "name": "senestro/phpwebfuse",
+    "description": "An almost complete php web fuse",
+    "type": "library",
+    "license": "MIT",
+    "minimum-stability": "beta",
+    "version": "3.1.0",
+    "authors": [
+        {
+            "name": "John Habila",
+            "email": "Senestro88@gmail.com"
+        }
+    ],
+    "support": {
+        "email": "Senestro88@gmail.com"
+    },
+    "include-path": ["src/"],
+    "autoload": {
+        "files": [
+            "autoload.php"
+        ]
+    },
+    "require": {
+        "php": ">=8.0",
+        "james-heinrich/getid3": "^2.0@beta",
+        "rakibtg/sleekdb": "^2.15",
+        "symfony/process": "^7.1",
+        "phpmailer/phpmailer": "^6.9",
+        "pear/archive_tar": "^1.5",
+        "giggsey/libphonenumber-for-php": "^8.13",
+        "mobiledetect/mobiledetectlib": "^4.8",
+        "nelexa/zip": "^4.0"
+    }
+}
