@@ -17,7 +17,7 @@
     "include-path": ["src/"],
     "autoload": {
         "files": [
-            "webautoload.php"
+            "autoload.php"
         ]
     },
     "require": {
