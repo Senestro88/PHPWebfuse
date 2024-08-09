@@ -7,9 +7,9 @@ if (!class_exists("\MobileDetect")) {
 
     class MobileDetect
     {
-        private $detection = null;
-        private $IPAddress = "";
-        private $IPUrl = "";
+        private \Detection\MobileDetect $detection;
+        private string $IPAddress = "";
+        private string $IPUrl = "";
 
         /**
          * @param \Detection\MobileDetect $detection

@@ -3,16 +3,20 @@
 namespace PHPWebfuse;
 
 /**
- * The PHPWebfuse 'Captcha' class
  */
 class Captcha
 {
     // PRIVATE VARIABLES
 
     /**
-     * @var \PHPWebfuse\Methods The default PHPWebfuse methods class
+     * @var \PHPWebfuse\Methods
      */
-    private $methods = null;
+    private \PHPWebfuse\Methods $methods;
+
+    /**
+     * @var \PHPWebfuse\Path
+     */
+    private \PHPWebfuse\Path $path;
 
     // PRIVATE CONSTANTS
 
@@ -53,18 +57,19 @@ class Captcha
     // PUBLIC METHODS
 
     /**
-     * Construct a new Captcha class
+     * Construct a new Captcha instance
      */
     public function __construct()
     {
         $this->methods = new \PHPWebfuse\Methods();
+        $this->path = new \PHPWebfuse\Path();
     }
 
     /**
      * Create a base64 image
-     * @param araay $options
-     * @param string $namespace
-     * @param string $format Defaults to png
+     * @param araay $options The captcha options
+     * @param string $namespace The captcha namespace
+     * @param string $format The the image format, default to png
      * @return string
      */
     public function createBase64Image(array $options = array(), string $namespace = "default", string $format = "png"): string
@@ -75,9 +80,9 @@ class Captcha
 
     /**
      * Output image to browser
-     * @param araay $options
-     * @param string $namespace
-     * @param string $format Defaults to png
+     * @param araay $options The captcha options
+     * @param string $namespace The captcha namespace
+     * @param string $format The the image format, default to png
      * @return void
      */
     public function createOuputImage(array $options = array(), string $namespace = "default", string $format = "png"): void
@@ -90,9 +95,9 @@ class Captcha
 
     /**
      * Validate the captcha code
-     * @param string $value
-     * @param string $namespace
-     * @param bool $caseInsensitive Defaults to true
+     * @param string $value The captcha code value
+     * @param string $namespace The captcha namespace
+     * @param bool $caseInsensitive Wether to validate in a case insensitive manner, default to true
      * @return bool
      */
     public function validate(string $value, string $namespace = "default", bool $caseInsensitive = true): bool
@@ -104,9 +109,9 @@ class Captcha
 
     /**
      * Create image data
-     * @param array $options
-     * @param string $namespace
-     * @param string $format
+     * @param array $options The captcha options
+     * @param string $namespace The captcha namespace
+     * @param string $format The the image format, default to png
      * @return array
      */
     private function createImageData(array $options = array(), string $namespace = "default", string $format = "png"): array
@@ -150,7 +155,7 @@ class Captcha
      */
     private function getDirectories(): array
     {
-        $captchaDirname = $this->methods->INSERT_DIR_SEPARATOR($this->methods->ARRANGE_DIR_SEPARATOR(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . "captcha"));
+        $captchaDirname = $this->path->insert_dir_separator($this->path->arrange_dir_separators(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . "captcha"));
         $this->methods->makeDir($captchaDirname);
         $directories = array("backgrounds" => $captchaDirname . "backgrounds" . DIRECTORY_SEPARATOR, "fonts" => $captchaDirname . "fonts" . DIRECTORY_SEPARATOR, "namespaces" => $captchaDirname . "namespaces" . DIRECTORY_SEPARATOR, "temp" => $captchaDirname . "temp" . DIRECTORY_SEPARATOR);
         foreach ($directories as $dirname) {
@@ -161,7 +166,7 @@ class Captcha
 
     /**
      * Filter option
-     * @param array $options
+     * @param array $options The captcha options
      * @return array
      */
     private function filterOptions(array $options = array()): array
@@ -185,7 +190,7 @@ class Captcha
 
     /**
      * Create the image
-     * @param array $options
+     * @param array $options The captcha options
      * @return \GdImage
      */
     private function createImage(array $options = array()): \GdImage
@@ -200,7 +205,7 @@ class Captcha
     /**
      * Allocate color array for the image
      * @param \GdImage $image
-     * @param array $options
+     * @param array $options The captcha options
      * @return array
      */
     private function allocateImageColors(\GdImage $image, array $options = array()): array
@@ -225,9 +230,9 @@ class Captcha
     /**
      * Set the image background
      * @param \GdImage $image
-     * @param array $options
-     * @param array $colors
-     * @param array $directories
+     * @param array $options The captcha options
+     * @param array $colors The captcha colors for creating the captcha
+     * @param array $directories The private directories
      * @return void
      */
     private function setBackground(\GdImage $image, array $options = array(), array $colors = array(), array $directories = array()): void
@@ -263,7 +268,7 @@ class Captcha
 
     /**
      * Get which image to use in setting the image background
-     * @param string $dirname
+     * @param string $dirname The directory to search for image to serve as background
      * @return string|null
      */
     private function getBackground(string $dirname): ?string
@@ -289,9 +294,9 @@ class Captcha
 
     /**
      * Create the captcha text data file and return the generate code
-     * @param array $options
-     * @param array $directories
-     * @param string $namespace
+     * @param array $options The captcha options
+     * @param array $directories The private directories
+     * @param string $namespace The captcha namespace
      * @return string
      */
     private function createNameSpaceFileAndReturnCaptchaText(array $options = array(), array $directories = array(), string $namespace = "default"): string
@@ -311,8 +316,8 @@ class Captcha
     /**
      * Draw the noise on the image
      * @param \GdImage $image
-     * @param array $options
-     * @param array $colors
+     * @param array $options The captcha options
+     * @param array $colors The captcha colors for creating the captcha
      * @return void
      */
     private function drawNoise(\GdImage $image, array $options = array(), array $colors = array()): void
@@ -349,8 +354,8 @@ class Captcha
     /**
      * Draw the lines on the image
      * @param \GdImage $image
-     * @param array $options
-     * @param array $colors
+     * @param array $options The captcha options
+     * @param array $colors The captcha colors for creating the captcha
      * @return void
      */
     private function drawLines(\GdImage $image, array $options = array(), array $colors = array()): void
@@ -408,9 +413,9 @@ class Captcha
     /**
      * Draw the signature on the image
      * @param \GdImage $image
-     * @param array $options
-     * @param array $colors
-     * @param array $directories
+     * @param array $options The captcha options
+     * @param array $colors The captcha colors for creating the captcha
+     * @param array $directories The private directories
      * @return void
      */
     private function drawSignature(\GdImage $image, array $options = array(), array $colors = array(), array $directories = array()): void
@@ -438,10 +443,10 @@ class Captcha
     /**
      * Draw the captcha text on the image
      * @param \GdImage $image
-     * @param array $options
-     * @param array $colors
-     * @param array $directories
-     * @param string $generatedText
+     * @param array $options The captcha options
+     * @param array $colors The captcha colors for creating the captcha
+     * @param array $directories The private directories
+     * @param string $generatedText The generated text to draw on the captcha image
      * @return void
      */
     private function drawCaptchaText(\GdImage $image, array $options = array(), array $colors = array(), array $directories = array(), string $generatedText = ""): void
@@ -570,8 +575,8 @@ class Captcha
     /**
      * Create a base64 version of the captcha image
      * @param \GdImage $image
-     * @param array $directories
-     * @param string $format
+     * @param array $directories The private directories
+     * @param string $format The the image format, default to png
      * @return string
      */
     private function createBase64FromImage(\GdImage $image, array $directories = array(), string $format = "png"): string
@@ -599,7 +604,7 @@ class Captcha
     /**
      * Send the image to browser for viewing
      * @param \GdImage $image
-     * @param string $format
+     * @param string $format The the image format, default to png
      * @return void
      */
     private function sendToBrowserFromImage(\GdImage $image, string $format = "png"): void
@@ -626,7 +631,7 @@ class Captcha
 
     /**
      * Get the captcha data from name space filename
-     * @param string $namespaceFilename
+     * @param string $namespaceFilename The captcha namespace filename
      * @return array
      */
     private function getNamespaceFileData(string $namespaceFilename): array
@@ -644,10 +649,10 @@ class Captcha
     }
 
     /**
-     * Validate the captcha text value
-     * @param string $value
-     * @param string $namespace
-     * @param bool $caseInsensitive
+     * Validate the captcha code value
+     * @param string $value The captcha code value to validate
+     * @param string $namespace The captcha namespace
+     * @param bool $caseInsensitive Wether to validate in a case insensitive manner, default to true
      * @return bool
      */
     private function validateValue(string $value, string $namespace = "default", bool $caseInsensitive = true): bool

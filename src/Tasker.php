@@ -3,16 +3,15 @@
 namespace PHPWebfuse;
 
 /**
- * The PHPWebfuse 'Tasker' class
  */
 class Tasker
 {
     // PRIVATE VARIABLES
 
     /**
-     * @var \PHPWebfuse\Methods The default PHPWebfuse methods class
+     * @var \PHPWebfuse\Methods
      */
-    private $methods = null;
+    private \PHPWebfuse\Methods $methods;
 
     /**
      * @var array The tasks is an array containing arrays of background tasks to create
@@ -25,17 +24,17 @@ class Tasker
      *      3: On Linux/Unix, each array must contain:
      *          "unixTime" - 0 0,12 * * * ((0:00) and noon (12:00) every day)
      */
-    private $tasks = array();
+    private array $tasks = array();
 
     /**
      * @var array The created tasks are stored here
      */
-    private $createdTasks = array();
+    private array $createdTasks = array();
 
     /**
      * @var string The php executable absolute path
      */
-    private $php = "";
+    private string $php = "";
 
     // PUBLIC METHODS
 

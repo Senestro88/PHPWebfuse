@@ -3,7 +3,6 @@
 namespace PHPWebfuse;
 
 /**
- * The PHPWebfuse 'Time' class
  */
 class Time
 {

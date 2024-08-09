@@ -3,38 +3,37 @@
 namespace PHPWebfuse;
 
 /**
- * The PHPWebfuse 'FileInfo' class
  */
 class FileInfo
 {
     // PRIVATE VARIABLES
 
     /**
-     * @var \PHPWebfuse\Methods The default PHPWebfuse methods class
+     * @var \PHPWebfuse\Methods
      */
-    private $methods = null;
+    private \PHPWebfuse\Methods $methods;
 
     // PUBLIC VARIABLES
 
     /**
      * @var string The file absolute path
      */
-    public $absolutePath;
+    public string $absolutePath = "";
 
     /**
      * @var string The file basename
      */
-    public $basename;
+    public string $basename = "";
 
     /**
      * @var string The file directory name
      */
-    public $dirname;
+    public string $dirname = "";
 
     /**
      * @var array An array of the file size
      */
-    public $sizes;
+    public array $sizes = array();
 
     // PUBLIC METHODS
 

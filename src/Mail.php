@@ -3,46 +3,45 @@
 namespace PHPWebfuse;
 
 /**
- * The PHPWebfuse 'Mail' class
  */
 class Mail
 {
     // PRIVATE VARIABLES
 
     /**
-     * @var \PHPWebfuse\Methods The default PHPWebfuse methods class
+     * @var \PHPWebfuse\Methods
      */
-    private $methods = null;
+    private \PHPWebfuse\Methods $methods;
 
     /**
      * @var string The default mail host
      */
-    private $host = "localhost";
+    private string $host = "localhost";
 
     /**
      * @var string The default mail username
      */
-    private $username = "";
+    private string $username = "";
 
     /**
      * @var string The default mail password
      */
-    private $password = "";
+    private string $password = "";
 
     /**
      * @var string The default mail mode, value can be `ssl` or `tls`
      */
-    private $mode = "tls";
+    private string $mode = "tls";
 
     /**
      * @var int The default mail port, value can be TLS Port => 587, SSL Port => 465
      */
-    private $port = 587;
+    private int $port = 587;
 
     /**
      * @var int The default amount of characters to word wrap when sending mail
      */
-    private $wordwrap = 100;
+    private int $wordwrap = 100;
 
     // PUBLIC METHODS
 
@@ -63,7 +62,7 @@ class Mail
      * @param string $title
      * @param string $messgae
      * @param array $attachments
-     * @param array $config
+     * @param array $config Set to override the configuration passed to the constructor
      * @return bool|string
      *
      * Return true on success, otherwise false or string representing error message

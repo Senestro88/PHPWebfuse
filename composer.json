@@ -4,7 +4,7 @@
     "type": "library",
     "license": "MIT",
     "minimum-stability": "beta",
-    "version": "3.2.0",
+    "version": "3.2.5",
     "authors": [
         {
             "name": "John Habila",
@@ -29,6 +29,7 @@
         "pear/archive_tar": "^1.5",
         "giggsey/libphonenumber-for-php": "^8.13",
         "mobiledetect/mobiledetectlib": "^4.8",
-        "nelexa/zip": "^4.0"
+        "nelexa/zip": "^4.0",
+        "phpseclib/phpseclib": "^3.0"
     }
 }

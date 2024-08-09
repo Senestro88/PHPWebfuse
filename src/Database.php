@@ -3,43 +3,47 @@
 namespace PHPWebfuse;
 
 /**
- * The PHPWebfuse 'Database' class
  */
 class Database
 {
     // PRIVATE VARIABLES
 
     /**
-     * @var \PHPWebfuse\Methods The default PHPWebfuse methods class
+     * @var \PHPWebfuse\Methods
      */
-    private $methods = null;
+    private \PHPWebfuse\Methods $methods;
+
+    /**
+     * @var \PHPWebfuse\Path
+     */
+    private \PHPWebfuse\Path $path;
 
     /**
      * @var \mysqli The database connection instance
      */
-    private $connection = null;
+    private ?\mysqli $connection = null;
 
     /**
      * @var string The database connection host
      */
-    private $host = null;
+    private ?string $host = null;
 
     /**
      * @var string The database connection username
      */
-    private $user = null;
+    private ?string $user = null;
 
     /**
      * @var string The database connection password
      */
-    private $password = null;
+    private ?string $password = null;
 
     // PUBLIC VARIABLES
 
     /**
      * @var string Messages are stored here
      */
-    public $message = "";
+    public string $message = "";
 
     // PUBLIC METHODS
 
@@ -48,11 +52,12 @@ class Database
      * @param string|null $host
      * @param string|null $user
      * @param string|null $password
-     * @param bool $reset Force reset the connection
+     * @param bool $reset Wether to force reset the connection
      */
     public function __construct(?string $host = null, ?string $user = null, ?string $password = null, bool $reset = false)
     {
         $this->methods = new \PHPWebfuse\Methods();
+        $this->path = new \PHPWebfuse\Path();
         if (!in_array('mysqli', get_declared_classes())) {
             $this->message = "The mysqli class doesn't exist or wasn't found.";
         } elseif ($this->methods->isNotEmptyString($host) && $this->methods->isNotEmptyString($user) && $this->methods->isNotEmptyString($password)) {
@@ -193,9 +198,9 @@ class Database
 
     /**
      * Create database
-     * @param string $name
-     * @param string $character Defaults to 'latin1'
-     * @param string $collate Defaults to 'latin1_general_ci'
+     * @param string $name The database name
+     * @param string $character Default to 'latin1'
+     * @param string $collate Default to 'latin1_general_ci'
      * @return bool
      */
     public function createDatabase(string $name, string $character = "latin1", string $collate = " latin1_general_ci"): bool
@@ -208,7 +213,7 @@ class Database
 
     /**
      * Delete database
-     * @param string $name
+     * @param string $name The database name
      * @return bool
      */
     public function deleteDatabase(string $name): bool
@@ -220,8 +225,8 @@ class Database
     }
 
     /**
-     * Optimize database
-     * @param array $databases
+     * Optimize database's
+     * @param array $databases The database's
      * @return array
      */
     public function optimiseDatabases(array $databases): array
@@ -254,8 +259,8 @@ class Database
 
     /**
      * Delete a database table
-     * @param string $database
-     * @param string $table
+     * @param string $database The database name
+     * @param string $table The database table name
      * @return bool
      */
     public function deleteDatabaseTable(string $database, string $table): bool
@@ -270,9 +275,8 @@ class Database
 
     /**
      * Check if a database table exist
-     *
-     * @param string $databases
-     * @param string $table
+     * @param string $database The database name
+     * @param string $table The database table name
      * @return bool
      */
     public function doesDatabaseTableExist(string $database, string $table): bool
@@ -294,9 +298,8 @@ class Database
 
     /**
      * Truncate or empty a database table
-     *
-     * @param string $databases
-     * @param string $table
+     * @param string $database The database name
+     * @param string $table The database table name
      * @return bool
      */
     public function truncateDatabaseTable(string $database, string $table): bool
@@ -311,11 +314,13 @@ class Database
 
     /**
      * Insert into database table
-     * @param string $database
-     * @param string $table
-     * @param array $data
+     * @param string $database The database name
+     * @param string $table The database table name
+     * @param array $data The database table array data
      * @param bool $preprare Wether to prepare or directly execute the query
      * @return bool
+     *
+     * Example: insertToDatabaseTable("main_db", "users_table", array('id'=>1, 'timestamp'=>123456789));
      */
     public function insertToDatabaseTable(string $database, string $table, array $data = array(), bool $preprare = true): bool
     {
@@ -353,17 +358,19 @@ class Database
 
     /**
      * Create a database table
-     * @param string $database
-     * @param string $table
+     * @param string $database The database name
+     * @param string $table The database table name
      * @param array $columns Defaults to 'array()'
      * @param string $comment Defaults to ''
      * @param string $engine Defaults to 'MyISAM'
      * @param string $character Defaults to 'latin1'
      * @param string $collate Defaults to 'latin1_general_ci'
-     * @param bool $autoincrement Default to 'true'. Wether to set it as auto increment
+     * @param bool $autoincrement Wether to set it as auto increment, default to 'true'.
+     *
+     * Example: createDatabaseTable("main_db", "users_table", array("id" => "bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT ''", "timestamp" => "bigint(10) UNSIGNED NOT NULL DEFAULT '0' COMMENT ''", "PRIMARY KEY" => "(id)"), "users_table_comment");
      * @return bool
      */
-    public function createDatabaseTable(string $database, string $table, array $columns = array(), string $comment = '', string $engine = "MyISAM", string $character = "latin1", string $collate = " atin1_general_ci", bool $autoincrement = true): bool
+    public function createDatabaseTable(string $database, string $table, array $columns = array(), string $comment = '', string $engine = "MyISAM", string $character = "latin1", string $collate = "latin1_general_ci", bool $autoincrement = true): bool
     {
         if ($this->methods->isNonNull($this->connection) && $this->methods->isFalse($this->doesDatabaseTableExist($database, $table))) {
             $database = $this->sanitizeIdentifier($database);
@@ -388,8 +395,8 @@ class Database
     }
 
     /**
-     * Arrange database table
-     * @param array $databases
+     * Arrange database's tables
+     * @param array $databases The database's
      * @return array
      */
     public function arrangeDatabaseTables(array $databases): array
@@ -453,8 +460,8 @@ class Database
 
     /**
      * Get all table columns
-     * @param string $database
-     * @param string $table
+     * @param string $database The database name
+     * @param string $table The database table name
      * @return array
      */
     public function getTableColumns(string $database, string $table): array
@@ -479,21 +486,23 @@ class Database
 
     /**
      * Get all table rows from a 'where' statement
-     * @param string $database
-     * @param string $table
-     * @param string $column
-     * @param mixed $columnvalue
-     * @param string $order
+     * @param string $database The database name
+     * @param string $table The database table name
+     * @param string $column The database table column name
+     * @param mixed $columnvalue The database column value name
+     * @param string $orderBy The order by
      * @return array
+     *
+     * Example: getTableRowsWhereClause("main_db", "users_table", "country" "Nigeria", "state");
      */
-    public function getTableRowsWhereClause(string $database, string $table, string $column, mixed $columnvalue, string $order = "id"): array
+    public function getTableRowsWhereClause(string $database, string $table, string $column, mixed $columnvalue, string $orderBy = "id"): array
     {
         $result = array();
         if ($this->methods->isNonNull($this->connection)) {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
             $columnvalue = $this->escape($columnvalue);
-            $statement = "SELECT * FROM " . $database . "." . $table . " WHERE `" . $column . "`='" . $this->escape($columnvalue) . "' ORDER BY " . $order . ";";
+            $statement = "SELECT * FROM " . $database . "." . $table . " WHERE `" . $column . "`='" . $this->escape($columnvalue) . "' ORDER BY " . $orderBy . ";";
             $result = $this->executeAndFetchAssociationFromSelectStatement($statement);
         }
         return $result;
@@ -501,18 +510,18 @@ class Database
 
     /**
      * Get all table rows
-     * @param string $database
-     * @param string $table
-     * @param string $order
+     * @param string $database The database name
+     * @param string $table The database table name
+     * @param string $orderBy The order by
      * @return array
      */
-    public function getTableRows(string $database, string $table, string $order = "id"): array
+    public function getTableRows(string $database, string $table, string $orderBy = "id"): array
     {
         $result = array();
         if ($this->methods->isNonNull($this->connection)) {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
-            $statement = "SELECT * FROM " . $database . "." . $table . " ORDER BY " . $order . ";";
+            $statement = "SELECT * FROM " . $database . "." . $table . " ORDER BY " . $orderBy . ";";
             $result = $this->executeAndFetchAssociationFromSelectStatement($statement);
         }
         return $result;
@@ -520,12 +529,14 @@ class Database
 
     /**
      * Execute a database where 'where' statement (where id=1) and return a single index value if found
-     * @param string $database
-     * @param string $table
-     * @param string $column
-     * @param mixed $columnvalue
-     * @param mixed $index
+     * @param string $database The database name
+     * @param string $table The database table name
+     * @param string $column The database table column name
+     * @param mixed $columnvalue The database column value name
+     * @param mixed $index The index to match from rows
      * @return string
+     *
+     * Example: getTableRowsIndexValue("main_db", "users_table", "country", "Nigeria", "id");
      */
     public function getTableRowsIndexValue(string $database, string $table, string $column, mixed $columnvalue, mixed $index): string
     {
@@ -554,7 +565,7 @@ class Database
     {
         $result = array();
         if ($this->methods->isNonNull($this->connection)) {
-            if ($this->methods->startsWith("SELECT", $statement)) {
+            if ($this->methods->startsWith("SELECT", strtoupper($statement))) {
                 $select = $this->connection->query($statement);
                 if ($select && $select->num_rows > 0) {
                     while ($row = $select->fetch_assoc()) {
@@ -572,7 +583,7 @@ class Database
 
     /**
      * Get all database tables
-     * @param string $database
+     * @param string $database The database name
      * @return array
      */
     public function getDatabaseTables(string $database): array
@@ -592,8 +603,8 @@ class Database
 
     /**
      * Get table export structure data
-     * @param string $database
-     * @param string $table
+     * @param string $database The database name
+     * @param string $table The database table name
      * @return string
      */
     public function getTableExportStructureData(string $database, string $table): string
@@ -616,8 +627,8 @@ class Database
 
     /**
      * Get table export insert data
-     * @param string $database
-     * @param string $table
+     * @param string $database The database name
+     * @param string $table The database table name
      * @return string
      */
     public function getTableExportInsertData(string $database, string $table): string
@@ -651,8 +662,8 @@ class Database
 
     /**
      * Export database's
-     * @param array $databases
-     * @param string|null $savePathname
+     * @param array $databases The database's name
+     * @param string|null $savePathname Where to save the exported database's
      * @return array
      */
     public function exportDatabases(array $databases, ?string $savePathname = null): array
@@ -663,7 +674,7 @@ class Database
             $this->methods->makeDir($savePathname);
         }
         $savePathname = $this->methods->resolvePath($savePathname);
-        $savePathname = $this->methods->INSERT_DIR_SEPARATOR($savePathname);
+        $savePathname = $this->path->insert_dir_separator($savePathname);
         // Iterate through each database and back it up
         foreach ($databases as $database) {
             $database = $this->sanitizeIdentifier($database);
@@ -671,7 +682,7 @@ class Database
             // If backup content is generated, save it to file
             if ($this->methods->isString($backupContent)) {
                 $this->methods->makeDir($savePathname);
-                $absolutePath = $this->methods->CONVERT_DIR_SEPARATOR($savePathname) . "database-backup-[" . $database . "].sql";
+                $absolutePath = $this->path->convert_dir_separators($savePathname) . "database-backup-[" . $database . "].sql";
                 // Save the backup content to a file
                 if ($this->methods->saveContentToFile($absolutePath, $backupContent)) {
                     $messages[$database] = $absolutePath;
@@ -692,7 +703,7 @@ class Database
      * @param string $host
      * @param string $user
      * @param string $password
-     * @param bool $reset Force reset the connection
+     * @param bool $reset Wether to force reset the connection
      * @return bool
      */
     private function init(string $host, string $user, string $password, bool $reset = false): bool
@@ -712,7 +723,7 @@ class Database
                     return true;
                 }
             } catch (\Throwbale $e) {
-                $this->message = "Database connection was not established. " . $e->getMessage();
+                $this->message = "Database connection was not established. " . $e->getErrorMessage();
             }
         }
         $this->connection = null;
@@ -746,7 +757,7 @@ class Database
 
     /**
      * Create a database export file content
-     * @param string $database
+     * @param string $database The database name
      * @return string|null
      */
     private function createDatabaseExportContent(string $database): ?string

@@ -3,31 +3,30 @@
 namespace PHPWebfuse;
 
 /**
- * The PHPWebfuse 'MultiAuth' class
  */
 class MultiAuth
 {
     // PRIVATE VARIABLES
 
     /**
-     * @var \PHPWebfuse\Methods The default PHPWebfuse methods class
+     * @var \PHPWebfuse\Methods
      */
-    private $methods = null;
+    private \PHPWebfuse\Methods $methods;
 
     /**
-     * @var \PHPWebfuse\Path The default PHPWebfuse path class
+     * @var \PHPWebfuse\Path
      */
-    private $path = null;
+    private \PHPWebfuse\Path $path;
 
     /**
      * @var int The length of the code
      */
-    private $passcodelength = 6;
+    private int $passcodelength = 6;
 
     /**
      * @var int The length of the key when generating new key
      */
-    private $keylength = 10;
+    private int $keylength = 10;
 
     /**
      * @var int
@@ -37,17 +36,17 @@ class MultiAuth
     /**
      * @var \DateTimeInterface
      */
-    private $time = null;
+    private ?\DateTimeInterface $time = null;
 
     /**
      * @var int The duration in seconds that the code is valid.
      */
-    private $codeperiod = 30;
+    private int $codeperiod = 30;
 
     /**
      * @var int The length of a period to calculate periods since Unix epoch and cannot be larger than the $codeperiod
      */
-    private $periodsize = 30;
+    private int $periodsize = 30;
 
     // PUBLIC METHODS
 
@@ -169,9 +168,9 @@ class MultiAuth
      * @param int $discrepancy
      * @return bool
      *
-     * Discrepancy is the factor of periodSize ($discrepancy * $periodSize) allowed on either side of the
-     * given codePeriod. For example, if a code with codePeriod = 60 is generated at 10:00:00, a discrepancy
-     * of 1 will allow a periodSize of 30 seconds on either side of the codePeriod resulting in a valid code
+     * Discrepancy is the factor of periodsize ($discrepancy * periodsize) allowed on either side of the
+     * given codeperiod. For example, if a code with codeperiod = 60 is generated at 10:00:00, a discrepancy
+     * of 1 will allow a periodsize of 30 seconds on either side of the codeperiod resulting in a valid code
      * from 09:59:30 to 10:00:29.
      * The result of each comparison is stored as a timestamp here instead of using a guard clause
      * (https://refactoring.com/catalog/replaceNestedConditionalWithGuardClauses.html). This is to implement

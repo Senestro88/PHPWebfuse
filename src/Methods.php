@@ -3,21 +3,20 @@
 namespace PHPWebfuse;
 
 /**
- * The PHPWebfuse 'Methods' class
  */
 class Methods
 {
     // PRIVATE VARIABLES
 
     /**
-     * @var \PHPWebfuse\Path The default PHPWebfuse path class
+     * @var \PHPWebfuse\Path
      */
-    private $path = null;
+    private \PHPWebfuse\Path $path;
 
     /**
      * @var \DateTime Date time
      */
-    private $datetime = null;
+    private \DateTime $datetime;
 
     // PRIVATE CONSTANTS
 
@@ -133,17 +132,17 @@ class Methods
 
     /**
      * Create a file
-     * @param string $pathname
+     * @param string $path
      * @return bool
      */
-    public function createFile(string $pathname): bool
+    public function createFile(string $path): bool
     {
-        $created = $this->isFile($pathname);
+        $created = $this->isFile($path);
         if ($this->isFalse($created)) {
-            $handle = @fopen($pathname, "w");
+            $handle = @fopen($path, "w");
             if ($this->isResource($handle)) {
                 fclose($handle);
-                $this->setPermissions($pathname);
+                $this->setPermissions($path);
                 $created = true;
             }
         }
@@ -479,23 +478,23 @@ class Methods
     /**
      * Get directory name of a file or directory
      *
-     * @param string $pathname
+     * @param string $path
      * @return string
      */
-    public function getDirname(string $pathname): string
+    public function getDirname(string $path): string
     {
-        return isset(pathinfo($pathname)['dirname']) ? pathinfo($pathname)['dirname'] : $pathname;
+        return isset(pathinfo($path)['dirname']) ? pathinfo($path)['dirname'] : $path;
     }
 
     /**
      * Get file or directory extension
      *
-     * @param string $pathname
+     * @param string $path
      * @return string
      */
-    public function getExtension(string $pathname): string
+    public function getExtension(string $path): string
     {
-        return isset(pathinfo($pathname)['extension']) ? pathinfo($pathname)['extension'] : "";
+        return isset(pathinfo($path)['extension']) ? pathinfo($path)['extension'] : "";
     }
 
     /**
@@ -608,28 +607,28 @@ class Methods
 
     /**
      * Remove extension from a path name
-     * @param string $pathname
+     * @param string $path
      * @return string
      */
-    public function removeExtension(string $pathname): string
+    public function removeExtension(string $path): string
     {
-        $extension = $this->getExtension($pathname);
+        $extension = $this->getExtension($path);
         if ($this->isNotEmptyString($extension)) {
-            return substr($pathname, 0, -(strlen($extension) + 1));
+            return substr($path, 0, -(strlen($extension) + 1));
         }
-        return $pathname;
+        return $path;
     }
 
     /**
      * Gets the size of a directory
-     * @param string $pathname
+     * @param string $path
      * @param bool $recursive
      * @return int
      */
-    public function getDirSize(string $pathname, bool $recursive = true): int
+    public function getDirSize(string $path, bool $recursive = true): int
     {
         $size = 0;
-        $files = $this->isTrue($recursive) ? $this->scanDirRecursively($pathname) : $this->scanDir($pathname);
+        $files = $this->isTrue($recursive) ? $this->scanDirRecursively($path) : $this->scanDir($path);
         foreach ($files as $index => $value) {
             if ($this->isFile($value) && $this->isReadable($value)) {
                 $size += $this->getFIlesizeInBytes($value);
@@ -642,58 +641,98 @@ class Methods
     }
 
     /**
+     * Matches the given filename
+     * @param string $filename
+     * @param string $pattern
+     * @return bool
+     */
+    public function matchFilename(string $filename, string $pattern): bool
+    {
+        $inverted = false;
+        if ($pattern[0] == '!') {
+            $pattern = substr($pattern, 1);
+            $inverted = true;
+        }
+        return fnmatch($pattern, $filename) == ($inverted ? false : true);
+    }
+
+    /**
      * Open a directory recursively and list out the files
-     * @param string $pathname
+     * @param string $path
      * @return array
      */
-    public function scanDirRecursively(string $pathname): array
+    public function scanDirRecursively(string $path): array
     {
-        if ($this->isDir($pathname) && $this->isReadable($pathname)) {
-            $i = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($pathname, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
-            $array = array();
-            foreach ($i as $list) {
-                $array[] = $this->resolvePath($list->getRealPath());
+        $lists = array();
+        if ($this->isNotEmptyString($path) && $this->isDir($path) && $this->isReadable($path)) {
+            $path = $this->resolvePath($path);
+            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::UNIX_PATHS | \FilesystemIterator::CURRENT_AS_FILEINFO), \RecursiveIteratorIterator::CHILD_FIRST);
+            foreach ($iterator as $list) {
+                $lists[] = $this->resolvePath($list->getRealPath());
             }
             $i = null;
             unset($i);
-            return $array;
         }
-        return array();
+        return $lists;
     }
 
     /**
      * Scan a directory and return files list
-     * @param string $pathname
+     * @param string $path
      * @return array
      */
-    public function scanDir(string $pathname): array
+    public function scanDir(string $path): array
     {
-        if ($this->isDir($pathname) && $this->isReadable($pathname)) {
-            $scandir = @scandir($pathname);
-            if ($this->isArray($scandir)) {
-                $array = array();
-                foreach ($scandir as $name) {
-                    if ($this->isTrue($this->isNotInArray($name, array(".", "..")))) {
-                        $array[] = $this->path->insert_dir_separator($this->path->arrange_dir_separators($pathname)) . '' . $name;
-                    }
+        $lists = array();
+        if ($this->isDir($path) && $this->isReadable($path)) {
+            $path = $this->resolvePath($path);
+            $iterator = new \IteratorIterator(new \DirectoryIterator($path));
+            foreach ($iterator as $list) {
+                if(!$list->isDot()) {
+                    $lists[] = $this->resolvePath($list->getRealPath());
                 }
-                unset($scandir);
-                return $array;
+            }
+
+        }
+        return $lists;
+    }
+
+    public function scanDirForPattern(string $path, string $pattern = "", bool $recursive = false): array
+    {
+        $lists = array();
+        if ($this->isNotEmptyString($path) && $this->isDir($path) && $this->isReadable($path)) {
+            $path = $this->resolvePath($path);
+            $iterator = $recursive ? new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::UNIX_PATHS | \FilesystemIterator::CURRENT_AS_SELF) : new \DirectoryIterator($path);
+            if(!$this->isEmptyString($pattern)) {
+                $CallbackFilterIterator = $recursive ? "\RecursiveCallbackFilterIterator" : "\CallbackFilterIterator";
+                $iterator = new $CallbackFilterIterator($iterator, function ($current) use ($pattern) {
+                    // TRUE to accept the current item to the iterator, FALSE otherwise
+                    if ($current->isDir() && !$current->isDot()) {
+                        return true;
+                    } else {
+                        return $this->matchFilename($current->getRealPath(), $pattern);
+                    }
+                });
+            }
+            $iterator = $recursive ? new \RecursiveIteratorIterator($iterator) : new \IteratorIterator($iterator);
+            foreach ($iterator as $key => $list) {
+                $lists[] = $this->resolvePath($list->getRealPath());
             }
         }
-        return array();
+
+        return $lists;
     }
 
     /**
      * Gets the information of file in a directory
-     * @param string $pathname
+     * @param string $path
      * @param bool $recursive
      * @return array
      */
-    public function getDirFilesInfo(string $pathname, bool $recursive = true): array
+    public function getDirFilesInfo(string $path, bool $recursive = true): array
     {
         $array = array();
-        $files = $this->isTrue($recursive) ? $this->scanDirRecursively($pathname) : $this->scanDir($pathname);
+        $files = $this->isTrue($recursive) ? $this->scanDirRecursively($path) : $this->scanDir($path);
         foreach ($files as $index => $file) {
             if ($this->isFile($file)) {
                 $array[] = $this->getFileInfo($file);
@@ -708,17 +747,17 @@ class Methods
 
     /**
      * Search a directory
-     * @param string $pathname
+     * @param string $path
      * @param array $matches
      * @param bool $asExtensions If true, it assume $matches are extensions to match against else match filenames containing the matches
      * @param bool $recursive
      * @return array
      */
-    public function searchDir(string $pathname, array $matches = array(), bool $asExtensions = false, bool $recursive = true): array
+    public function searchDir(string $path, array $matches = array(), bool $asExtensions = false, bool $recursive = true): array
     {
         $results = array();
         // Get files list, either recursively or non-recursively
-        $files = $recursive ? $this->scanDirRecursively($pathname) : $this->scanDir($pathname);
+        $files = $recursive ? $this->scanDirRecursively($path) : $this->scanDir($path);
         // Iterate through each file in the directory
         foreach ($files as $file) {
             $info = $this->getFileInfo($file);
@@ -743,33 +782,33 @@ class Methods
 
     /**
      * Convert a path name extension to either lowercase or uppercase
-     * @param string $pathname
+     * @param string $path
      * @param bool $toLowercase
      * @return string
      */
-    public function convertExtension(string $pathname, bool $toLowercase = true): string
+    public function convertExtension(string $path, bool $toLowercase = true): string
     {
-        $extension = $this->getExtension($pathname);
+        $extension = $this->getExtension($path);
         if ($this->isNotEmptyString($extension)) {
-            return $this->removeExtension($pathname) . "." . ($toLowercase ? strtolower($extension) : strtoupper($extension));
+            return $this->removeExtension($path) . "." . ($toLowercase ? strtolower($extension) : strtoupper($extension));
         }
-        return $pathname;
+        return $path;
     }
 
     /**
      * Delete a file based on extensions
-     * @param string $pathname
+     * @param string $path
      * @param array $extensions
      * @param bool $recursive: Default to 'true'
      * @return void
      */
-    public function deleteFilesBasedOnExtension(string $pathname, array $extensions = array(), bool $recursive = true): void
+    public function deleteFilesBasedOnExtension(string $path, array $extensions = array(), bool $recursive = true): void
     {
-        if ($this->isDir($pathname) && $this->isReadable($pathname)) {
-            $pathname = $this->path->insert_dir_separator($this->resolvePath($pathname));
+        if ($this->isDir($path) && $this->isReadable($path)) {
+            $path = $this->path->insert_dir_separator($this->resolvePath($path));
             foreach ($extensions as $extension) {
                 if ($this->isTrue($recursive)) {
-                    $i = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($pathname, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
+                    $i = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
                     foreach ($i as $list) {
                         $list = $this->resolvePath($list->getRealPath());
                         $info = $this->getFileInfo($list);
@@ -779,7 +818,7 @@ class Methods
                         }
                     }
                 } else {
-                    $glob = glob($pathname . '*.' . $extension);
+                    $glob = glob($path . '*.' . $extension);
                     if ($this->isNotFalse($glob) && $this->isArray($glob)) {
                         foreach ($glob as $list) {
                             $this->deleteFile($list);
@@ -1146,18 +1185,18 @@ class Methods
 
     /**
      * Set file or directory permission
-     * @param string $pathname
+     * @param string $path
      * @param bool $recursive
      * @return bool
      */
-    public function setPermissions(string $pathname, bool $recursive = false): bool
+    public function setPermissions(string $path, bool $recursive = false): bool
     {
-        if ($this->isFile($pathname)) {
-            $pathname = $this->resolvePath($pathname);
-            return @chmod($pathname, self::FILE_PERMISSION);
-        } elseif ($this->isDir($pathname)) {
+        if ($this->isFile($path)) {
+            $path = $this->resolvePath($path);
+            return @chmod($path, self::FILE_PERMISSION);
+        } elseif ($this->isDir($path)) {
             if ($this->isTrue($recursive)) {
-                $i = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($pathname, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
+                $i = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
                 foreach ($i as $list) {
                     $list = $this->resolvePath($list->getRealPath());
                     if ($this->isFile($list)) {
@@ -1167,25 +1206,25 @@ class Methods
                     }
                 }
             }
-            return @chmod($pathname, self::DIRECTORY_PERMISSION);
+            return @chmod($path, self::DIRECTORY_PERMISSION);
         }
         return false;
     }
 
     /**
      * Make a directory. This function will return true if the directory already exist
-     * @param string $pathname
+     * @param string $path
      * @return bool
      */
-    public function makeDir(string $pathname): bool
+    public function makeDir(string $path): bool
     {
-        if ($this->isDir($pathname)) {
-            $this->setPermissions($pathname);
+        if ($this->isDir($path)) {
+            $this->setPermissions($path);
             return true;
         } else {
             try {
-                if ($this->isTrue(@mkdir($pathname, self::DIRECTORY_PERMISSION, true))) {
-                    $this->setPermissions($pathname);
+                if ($this->isTrue(@mkdir($path, self::DIRECTORY_PERMISSION, true))) {
+                    $this->setPermissions($path);
                     return true;
                 }
             } catch (\Throwable $e) {
@@ -1210,39 +1249,39 @@ class Methods
 
     /**
      * Delete a directory
-     * @param string $pathname
+     * @param string $path
      * @return bool
      */
-    public function deleteDir(string $pathname): bool
+    public function deleteDir(string $path): bool
     {
-        return $this->emptyDirectory($pathname, true);
+        return $this->emptyDirectory($path, true);
     }
 
     /**
      * Delete a file or directory
-     * @param string $pathname
+     * @param string $path
      * @return bool
      */
-    public function delete(string $pathname): bool
+    public function delete(string $path): bool
     {
-        if ($this->isFile($pathname)) {
-            return $this->deleteFile($pathname);
-        } elseif ($this->isDir($pathname)) {
-            return $this->deleteDir($pathname);
+        if ($this->isFile($path)) {
+            return $this->deleteFile($path);
+        } elseif ($this->isDir($path)) {
+            return $this->deleteDir($path);
         }
         return false;
     }
 
     /**
      * Empty a directory
-     * @param string $pathname
+     * @param string $path
      * @param bool $delete Wether to delete the directory is self after deleting the directory contents
      * @return bool
      */
-    public function emptyDirectory(string $pathname, bool $delete = false): bool
+    public function emptyDirectory(string $path, bool $delete = false): bool
     {
-        if ($this->isDir($pathname)) {
-            $i = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($pathname, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
+        if ($this->isDir($path)) {
+            $i = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
             foreach ($i as $list) {
                 $list = $this->resolvePath($list->getRealPath());
                 if ($this->isFile($list)) {
@@ -1252,7 +1291,7 @@ class Methods
                 }
             }
             if ($this->isTrue($delete)) {
-                return @rmdir($pathname);
+                return @rmdir($path);
             }
             return true;
         }
@@ -2395,7 +2434,7 @@ class Methods
      * @param string $string
      * @return string|array|null
      */
-    public function onlyDigits(string $string): string | array | null
+    public function onlyDigits(string $string): string|array|null
     {
         return $this->isString($string) ? @preg_replace('/[^0-9]/', '', $string) : null;
     }
@@ -2405,7 +2444,7 @@ class Methods
      * @param string $string
      * @return string|array|null
      */
-    public function onlyString(string $string): string | array | null
+    public function onlyString(string $string): string|array|null
     {
         return $this->isString($string) ? @preg_replace('/[0-9]/', '', $string) : null;
     }
@@ -2626,7 +2665,6 @@ class Methods
         return $output;
     }
 
-
     /**
      * Get the current directory
      * @return string
@@ -2712,13 +2750,15 @@ class Methods
     public function registerErrorHandler(): void
     {
         @set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline) {
+            // This error code is not included in error_reporting, so let it fall through to the standard PHP error handler
             if (!(error_reporting() & $errno)) {
                 return false;
-            } // This error code is not included in error_reporting, so let it fall through to the standard PHP error handler
-            $errstr = htmlspecialchars($errstr);
-            $errorFilename = $this->path->insert_dir_separator(PHPWebfuse['directories']['root']) . "\$error-messages.log";
-            $this->saveContentToFile($errorFilename, strip_tags($errno . " ::Filename >> " . $errfile . " ::Line >> " . $errline . " ::Message >> " . $errstr . " ::Date >> " . date("F jS, Y", time()) . " @ " . date("h:i A", time())), true, true);
-            echo "<div style='" . self::ERRORS_CSS['error'] . "'>" . $errno . " :: " . ($this->isTrue($this->isLocalhost()) ? "<b>Filename >></b> " . $errfile . " <b>Line >></b> " . $errline . " <b>Message >></b> " : "") . "" . $errstr . "</div>";
+            } else {
+                $errstr = htmlspecialchars($errstr);
+                $errorFilename = $this->path->insert_dir_separator(PHPWebfuse['directories']['root']) . "\$error-messages.log";
+                $this->saveContentToFile($errorFilename, strip_tags($errno . " ::Filename >> " . $errfile . " ::Line >> " . $errline . " ::Message >> " . $errstr . " ::Date >> " . date("F jS, Y", time()) . " @ " . date("h:i A", time())), true, true);
+                echo "<div style='" . self::ERRORS_CSS['error'] . "'>" . $errno . " :: " . ($this->isTrue($this->isLocalhost()) ? "<b>Filename >></b> " . $errfile . " <b>Line >></b> " . $errline . " <b>Message >></b> " : "") . "" . $errstr . "</div>";
+            }
         });
     }
 
@@ -3000,15 +3040,15 @@ class Methods
     /**
      * Initialize new \SleekDB\Store
      * @param string $database
-     * @param string $pathname
+     * @param string $path
      * @param array $options
      * @return \SleekDB\Store|bool
      */
-    public function sleekDatabase(string $database, string $pathname, array $options = array()): \SleekDB\Store |bool
+    public function sleekDatabase(string $database, string $path, array $options = array()): \SleekDB\Store|bool
     {
-        if ($this->isNotEmptyString($database) && $this->makeDir($pathname) && class_exists("\SleekDB\Store")) {
+        if ($this->isNotEmptyString($database) && $this->makeDir($path) && class_exists("\SleekDB\Store")) {
             $options = $this->isEmptyArray($options) ? array('auto_cache' => false, 'timeout' => false, 'primary_key' => 'id', 'folder_permissions' => 0777) : $options;
-            return new \SleekDB\Store($database, $this->resolvePath($pathname), $options);
+            return new \SleekDB\Store($database, $this->resolvePath($path), $options);
         }
         return false;
     }
@@ -3124,10 +3164,10 @@ class Methods
      */
     public function cleanPHPWebfuseTempDirs(): void
     {
-        $pathnames = $this->searchDir(PHPWebfuse['directories']['root'], array("temp"));
-        foreach ($pathnames as $index => $pathname) {
-            if ($this->isDir($pathname)) {
-                $this->emptyDirectory($pathname);
+        $paths = $this->searchDir(PHPWebfuse['directories']['root'], array("temp"));
+        foreach ($paths as $index => $path) {
+            if ($this->isDir($path)) {
+                $this->emptyDirectory($path);
             }
         }
     }
@@ -3235,13 +3275,13 @@ class Methods
 
     /**
      * Resolve a path using realpath()
-     * @param string $pathname
+     * @param string $path
      * @return string
      */
-    public function resolvePath(string $pathname): string
+    public function resolvePath(string $path): string
     {
-        $absolutePath = realpath($pathname);
-        return $this->isBool($absolutePath) ? $pathname : $absolutePath;
+        $absolutePath = realpath($path);
+        return $this->isBool($absolutePath) ? $path : $absolutePath;
     }
 
     /**

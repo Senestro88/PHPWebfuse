@@ -3,23 +3,22 @@
 namespace PHPWebfuse;
 
 /**
- * The PHPWebfuse 'Session' class
  */
 class Session
 {
     // PRIVATE VARIABLES
 
     /**
-     * @var \PHPWebfuse\Methods The default PHPWebfuse methods class
+     * @var \PHPWebfuse\Methods
      */
-    private $methods = null;
+    private \PHPWebfuse\Methods $methods;
 
     // PUBLIC VARIABLES
 
     /**
      * @var int The maximum days for the session to expire and reset
      */
-    public $maxdays = 7;
+    public int $maxdays = 7;
 
     // PUBLIC METHODS
 

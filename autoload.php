@@ -14,11 +14,11 @@ if (substr($os, 0, 3) === "win") {
     $os = "Unknown";
 }
 
-// THE 'SRC' AND 'VENDOR' DIRECTORY
+// THE 'SRC' DIRECTORY
 $srcDir = $rootDir . 'src' . DIRECTORY_SEPARATOR;
 
 // THE MAIN CONSTANT
-if(!defined("PHPWebfuse")) {
+if (!defined("PHPWebfuse")) {
     define('PHPWebfuse', array(
         "os" => $os,
         "directories" => array(
@@ -32,14 +32,20 @@ if(!defined("PHPWebfuse")) {
     ));
 }
 
+// LOAD THE COMPOSER IF THE DIRECTORY IS FOUND
+$vendorDir = $rootDir . 'vendor' . DIRECTORY_SEPARATOR;
+if (is_dir($vendorDir) && is_readable($vendorDir)) {
+    require_once $vendorDir . 'autoload.php';
+}
+
 // THE AUTOLOADER CALLBACK
-if(!function_exists("PHPWebfuseAutoloader")) {
+if (!function_exists("PHPWebfuseAutoloader")) {
     function PHPWebfuseAutoloader(string $classname)
     {
         $srcDir = PHPWebfuse['directories']['src'];
         $os = strtolower(PHPWebfuse['os']);
         if (is_int(strpos($classname, "PHPWebfuse", 0)) && !class_exists($classname)) {
-            $classname = str_replace(array("\\", DIRECTORY_SEPARATOR), "", substr($classname, strlen("PHPWebfuse")));
+            $classname = implode(DIRECTORY_SEPARATOR, array_filter(explode(DIRECTORY_SEPARATOR, str_replace("PHPWebfuse", "", $classname))));
             $absolutePath = $srcDir . $classname . ".php";
             if (($os == "unix" or $os == "linux") or $os == "unknown") {
                 $exploded = array_filter(explode(DIRECTORY_SEPARATOR, $absolutePath));
@@ -57,5 +63,5 @@ if(!function_exists("PHPWebfuseAutoloader")) {
 }
 // UNREGISTER THE AUTOLOADER IF REGISTERED
 spl_autoload_unregister("PHPWebfuseAutoloader");
-// REGISTER THE AUTOLOADER
+// REGISTER THE AUTOLOADER IF NOT REGISTERED
 spl_autoload_register("PHPWebfuseAutoloader", true, true);

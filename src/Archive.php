@@ -3,25 +3,30 @@
 namespace PHPWebfuse;
 
 /**
- * The PHPWebfuse 'Archive' Class
  */
 class Archive
 {
     // PRIVATE VARIABLES
 
     /**
-     * @var \PHPWebfuse\Methods The default PHPWebfuse methods class
+     * @var \PHPWebfuse\Methods
      */
-    private $methods = null;
+    private \PHPWebfuse\Methods $methods;
+
+    /**
+     * @var \PHPWebfuse\Path
+     */
+    private \PHPWebfuse\Path $path;
 
     // PUBLIC METHODS
 
     /**
-     * Construct new Archive class
+     * Construct new Archive instance
      */
     public function __construct()
     {
         $this->methods = new \PHPWebfuse\Methods();
+        $this->path = new \PHPWebfuse\Path();
     }
 
     /**
@@ -48,7 +53,7 @@ class Archive
                 // Arrange dirname
                 $dirname = $this->arrangePath($dirname);
                 // The archive absolute path
-                $archivename = $dirname . '' . $name;
+                $archivename = $dirname . DIRECTORY_SEPARATOR . $name;
                 // Delete file if exist
                 if ($this->methods->isFile($archivename)) {
                     $this->methods->deleteFile($archivename);
@@ -105,12 +110,12 @@ class Archive
     }
 
     /**
-     * Create a .zip archive
+     * Create a .zip archive from the standard ZipArchive
      * @param string $name The name of the archive. It generate a random name when it's an empty string provided
      * @param array $items The items can be a combination of files and directories
      * @param string $dirname The directory to save the archive
-     * @param ?string $password The archive password
-     * @param ?string $comment The  archive comment
+     * @param ?string $password The archive password, default to null
+     * @param ?string $comment The  archive comment, default to null
      * @return \PHPWebfuse\FileInfo | string Return string on failure which contains error message else \PHPWebfuse\FileInfo
      */
     public function createZip(string $name, array $items, string $dirname, ?string $password = null, ?string $comment = null): \PHPWebfuse\FileInfo|string
@@ -128,7 +133,7 @@ class Archive
                 // Arrange dirname
                 $dirname = $this->arrangePath($dirname);
                 // The archive absolute path
-                $archivename = $dirname . '' . $name;
+                $archivename = $dirname . DIRECTORY_SEPARATOR . $name;
                 // Delete file if exist
                 if ($this->methods->isFile($archivename)) {
                     $this->methods->deleteFile($archivename);
@@ -163,7 +168,7 @@ class Archive
                             // Recursively iterate the directory item
                             $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($item, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
                             foreach ($iterator as $list) {
-                                // Arrange iterated list pathname
+                                // Arrange iterated list path
                                 $listPath = $this->arrangePath($list->getPathname());
                                 // Set entry for each iterated list
                                 $entry = $this->normalizePath(str_replace($item, basename($item) . DIRECTORY_SEPARATOR, $listPath));
@@ -223,33 +228,28 @@ class Archive
             $name = $this->methods->randUnique('key');
         }
         $ext = $this->methods->getExtension($name);
-        $name = $this->isNotEmptyString($ext) ? (strtolower($ext) == $extension ? $name : $name . '.' . $extension) : $name . '.' . $extension;
+        $name = $this->methods->isNotEmptyString($ext) ? (strtolower($ext) == $extension ? $name : $name . '.' . $extension) : $name . '.' . $extension;
         return str_replace(array('\\', '/', ':', '*', '?', '<', '>', '|'), '_', $name);
     }
 
     /**
-     * Arrange pathname
-     * @param string $pathname
+     * Arrange path
+     * @param string $path
      * @return string
      */
-    private function arrangePath(string $pathname): string
+    private function arrangePath(string $path): string
     {
-        $resolved = $this->methods->resolvePath($pathname);
-        if ($this->methods->isString($resolved)) {
-            $arranged = $this->methods->ARRANGE_DIR_SEPARATOR($resolved);
-            return $this->methods->isDir($resolved) ? $this->methods->INSERT_DIR_SEPARATOR($arranged) : $arranged;
-        }
-        return $pathname;
+        return $this->path->arrange_dir_separators($path);
     }
 
     /**
-     * Normalize pathname
-     * @param string $pathname
+     * Normalize path
+     * @param string $path
      * @return string
      */
-    private function normalizePath(string $pathname): string
+    private function normalizePath(string $path): string
     {
-        return str_replace(DIRECTORY_SEPARATOR, "/", $pathname);
+        return $this->path->convert_dir_separators($path);
     }
 
     /**
@@ -276,7 +276,7 @@ class Archive
                 // Arrange dirname
                 $dirname = $this->arrangePath($dirname);
                 // The archive absolute path
-                $archivename = $dirname . '' . $name;
+                $archivename = $dirname . DIRECTORY_SEPARATOR . $name;
                 // Delete file if exist
                 if ($this->methods->isFile($archivename)) {
                     $this->methods->deleteFile($archivename);

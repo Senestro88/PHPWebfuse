@@ -3,16 +3,15 @@
 namespace PHPWebfuse;
 
 /**
- * The PHPWebfuse 'Http' class
  */
 class Http
 {
     // PRIVATE VARIABLES
 
     /**
-     * @var \PHPWebfuse\Methods The default PHPWebfuse methods class
+     * @var \PHPWebfuse\Methods
      */
-    private $methods = null;
+    private \PHPWebfuse\Methods $methods;
 
     // PRIVATE CONSTANTS
 
@@ -26,7 +25,7 @@ class Http
     /**
      * @var string Any request last error are stored here
      */
-    public $message = "";
+    public string $message = "";
 
     // PUBLIC METHODS
 

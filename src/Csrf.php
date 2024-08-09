@@ -3,28 +3,27 @@
 namespace PHPWebfuse;
 
 /**
- * The PHPWebfuse 'Csrf' class
  */
 class Csrf
 {
     // PRIVATE VARIABLES
 
     /**
-     * @var \PHPWebfuse\Methods The default PHPWebfuse methods class
+     * @var \PHPWebfuse\Methods
      */
-    private $methods = null;
+    private \PHPWebfuse\Methods $methods;
 
     /**
-     * @var \PHPWebfuse\Aes The default PHPWebfuse Aes class
+     * @var \PHPWebfuse\Aes
      */
-    private $aes = null;
+    private \PHPWebfuse\Aes $aesInstance;
 
     // PUBLIC VARIABLES
 
     /**
      * @var string The default Cross Site Request Forgery key but can be changed
      */
-    public $crsfKey = "1291707447071921";
+    public string $crsfKey = "1291707447071921";
 
     // PUBLIC METHODS
 
@@ -35,7 +34,7 @@ class Csrf
     public function __construct(?string $csrfKey = null)
     {
         $this->methods = new \PHPWebfuse\Methods();
-        $this->aes = new \PHPWebfuse\Aes();
+        $this->aesInstance = new \PHPWebfuse\Aes();
         if ($this->methods->isString($csrfKey) && $this->methods->isNotEmptyString($csrfKey)) {
             $this->crsfKey = $csrfKey;
         }
@@ -55,18 +54,18 @@ class Csrf
 
     /**
      * Generate the cross site request forgery token passing the expiration minutes
-     * @param int $minutes
+     * @param int $minutes Default to 10 (10 Minutes)
      * @return string
      */
     public function generateToken(int $minutes = 10): string
     {
-        if ($this->methods->isNonNull($this->aes) && $this->methods->isNotEmptyString($this->crsfKey)) {
+        if ($this->methods->isNonNull($this->aesInstance) && $this->methods->isNotEmptyString($this->crsfKey)) {
             try {
                 $hex = $this->newHex();
                 $salt = hash_hmac('sha256', $hex, $this->crsfKey);
                 $expires = $this->setFutureMinutes($minutes);
                 $json = $this->methods->arrayToJson(array("data" => $hex, "salt" => $salt, "expires" => $expires));
-                $enc = $this->aes->encData($json, $this->crsfKey);
+                $enc = $this->aesInstance->encData($json, $this->crsfKey);
                 return $enc ? $enc : '';
             } catch (\Throwable $e) {
 
@@ -82,16 +81,16 @@ class Csrf
      */
     public function validateToken(string $generatedToken): bool
     {
-        if ($this->methods->isNonNull($this->aes) && $this->methods->isNotEmptyString($generatedToken) && $this->methods->isNotEmptyString($this->crsfKey)) {
+        if ($this->methods->isNonNull($this->aesInstance) && $this->methods->isNotEmptyString($generatedToken) && $this->methods->isNotEmptyString($this->crsfKey)) {
             try {
-                $dec = $this->aes->decData($generatedToken, $this->crsfKey);
+                $dec = $this->aesInstance->decData($generatedToken, $this->crsfKey);
                 if ($dec) {
                     $array = $this->methods->jsonToArray($dec);
                     $data = $array['data'] ?? '';
                     $salt = $array['salt'] ?? '';
                     $expires = (int) ($array['expires'] ?? 0);
                     if (hash_equals($salt, hash_hmac('sha256', $data, $this->crsfKey))) {
-                        return $this->isMinuteInFuture($expires);
+                        return $this->isMinutesInFuture($expires);
                     }
                 }
             } catch (\Throwable $e) {
@@ -122,7 +121,7 @@ class Csrf
     }
 
     /**
-     * Set the future time
+     * Set the future time minutes
      * @param int $minutes
      * @return void
      */
@@ -132,11 +131,11 @@ class Csrf
     }
 
     /**
-     * Is the time from the future
+     * Is the time minutes from the future
      * @param int $minutes
      * @return bool
      */
-    private function isMinuteInFuture(int $minutes): bool
+    private function isMinutesInFuture(int $minutes): bool
     {
         return $minutes > $this->getMinutesFromTime();
     }

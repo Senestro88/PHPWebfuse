@@ -7,15 +7,15 @@ class QrCodeImage extends \PHPWebfuse\Methods
     // PRIVATE VARIABLES
 
     /**
-     * @var \PHPWebfuse\Path The default PHPWebfuse path class
+     * @var \PHPWebfuse\Methods
      */
-    private $path = null;
+    private \PHPWebfuse\Methods $methods;
 
     /**
-     * @var \PHPWebfuse\Methods The default PHPWebfuse methods class
+     * @var \PHPWebfuse\Path
      */
-    private $methods = null;
-    
+    private \PHPWebfuse\Path $path;
+
     // PUBLIC METHODS
 
     public function __construct()
