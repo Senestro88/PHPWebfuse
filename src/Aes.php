@@ -14,29 +14,29 @@ class Aes
     private \PHPWebfuse\Methods $methods;
 
     /**
-     * @var string The default cipher method for encryption and decryption
+     * @var string The default cipher method for encrypting and decrypting data
      */
     private string $cipherMethod = "aes-128-cbc";
 
     // PUBLIC METHODS
 
     /**
-     * Construct new Advance encryption standard instance
+     * Construct a new instance of the Aes Class
      * @param ?string $cipherMethod The cipher method. Use this to override the default cipher method, the default is null
      */
-    public function __construct(?string $cipherMethod = null)
+    public function __construct(string $cipherMethod = "aes-128-cbc")
     {
         $this->methods = new \PHPWebfuse\Methods();
-        if ($this->methods->isString($cipherMethod) && $this->methods->isNotEmptyString($cipherMethod) && in_array($cipherMethod, openssl_get_cipher_methods(), true)) {
+        if ($this->methods->isNotEmptyString($cipherMethod) && in_array($cipherMethod, openssl_get_cipher_methods(), true)) {
             $this->cipherMethod = $cipherMethod;
         }
     }
 
     /**
-     * Encrypt data to hex string or base64 encoded string
+     * Encrypt data to into a hex string or base64 encoded string
      * @param string $data The content to encrypt
      * @param string $key The encryption key
-     * @param bool $toHex Wether to return as hex string or base64 encoded string
+     * @param bool $toHex True means to return the encrypted data as a hex string or base64 encoded string
      * @return bool|string Returns a hex string or base64 encoded string on success, otherwise returns false
      */
     public function encData(string $data, string $key, bool $toHex = true): bool|string
@@ -66,7 +66,7 @@ class Aes
      * Decrypt the encrypted hex string or base64 encoded string to original data
      * @param string $data The encrypted content to decrypt
      * @param string $key The decryption key
-     * @param bool $fromHex Wether the $data is a hex string or base64 encoded string
+     * @param bool $fromHex True means the $data is a hex string, else a base64 encoded string
      * @return bool|string Returns the original data from an encrypted hex string or base64 encoded string, otherwise returns false
      */
     public function decData(string $data, string $key, bool $fromHex = true): bool|string

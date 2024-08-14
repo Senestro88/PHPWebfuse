@@ -210,7 +210,7 @@ class PharBuilder
     /**
      * Compiles all files into a single PHAR file.
      * @param string $output The full name of the file to create
-     * @param bool $compress Wether to GZ compress the Phar files
+     * @param bool $compress If to GZ compress the Phar files
      * @return \PHPWebfuse\FileInfo | false
      * @throws \Exception if no interface is defined
      */

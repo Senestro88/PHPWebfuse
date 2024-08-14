@@ -115,7 +115,6 @@ class PharExtractor
         return $this->methods->endsWith(".phar", strtolower($filename));
     }
 
-
     /**
      * Decompress the Phar
      * @param \Phar $phar

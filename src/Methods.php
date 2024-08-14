@@ -3,13 +3,14 @@
 namespace PHPWebfuse;
 
 /**
+ * The PHPWebfuse 'Methods' class
  */
 class Methods
 {
     // PRIVATE VARIABLES
 
     /**
-     * @var \PHPWebfuse\Path
+     * @var \PHPWebfuse\Path The default PHPWebfuse path class
      */
     private \PHPWebfuse\Path $path;
 
@@ -2750,15 +2751,13 @@ class Methods
     public function registerErrorHandler(): void
     {
         @set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline) {
-            // This error code is not included in error_reporting, so let it fall through to the standard PHP error handler
             if (!(error_reporting() & $errno)) {
                 return false;
-            } else {
-                $errstr = htmlspecialchars($errstr);
-                $errorFilename = $this->path->insert_dir_separator(PHPWebfuse['directories']['root']) . "\$error-messages.log";
-                $this->saveContentToFile($errorFilename, strip_tags($errno . " ::Filename >> " . $errfile . " ::Line >> " . $errline . " ::Message >> " . $errstr . " ::Date >> " . date("F jS, Y", time()) . " @ " . date("h:i A", time())), true, true);
-                echo "<div style='" . self::ERRORS_CSS['error'] . "'>" . $errno . " :: " . ($this->isTrue($this->isLocalhost()) ? "<b>Filename >></b> " . $errfile . " <b>Line >></b> " . $errline . " <b>Message >></b> " : "") . "" . $errstr . "</div>";
-            }
+            } // This error code is not included in error_reporting, so let it fall through to the standard PHP error handler
+            $errstr = htmlspecialchars($errstr);
+            $errorFilename = $this->path->insert_dir_separator(PHPWebfuse['directories']['root']) . "\$error-messages.log";
+            $this->saveContentToFile($errorFilename, strip_tags($errno . " ::Filename >> " . $errfile . " ::Line >> " . $errline . " ::Message >> " . $errstr . " ::Date >> " . date("F jS, Y", time()) . " @ " . date("h:i A", time())), true, true);
+            echo "<div style='" . self::ERRORS_CSS['error'] . "'>" . $errno . " :: " . ($this->isTrue($this->isLocalhost()) ? "<b>Filename >></b> " . $errfile . " <b>Line >></b> " . $errline . " <b>Message >></b> " : "") . "" . $errstr . "</div>";
         });
     }
 
@@ -3709,6 +3708,17 @@ class Methods
     public function getHttpXForwardedHostClientIpClient(): string
     {
         return @getenv('HTTP_X_FORWARDED_HOST_CLIENT_IP_CLIENT');
+    }
+    
+    /**
+     * Loads environment variables from .env to getenv(), $_ENV and $_SERVER automatically.
+     * @param string $inPath The directory to load the .env file from
+     * @param bool $overwrite Wether to overwrite existing .env variables
+     * @return void
+     */
+    public function loadEnvVars(string $inPath, bool $overwrite = true): void {
+        $dotenv = $overwrite ? \Dotenv\Dotenv::createMutable($inPath) : \Dotenv\Dotenv::createImmutable($inPath);
+        $dotenv->safeLoad();
     }
 
     // PRIVATE METHOD

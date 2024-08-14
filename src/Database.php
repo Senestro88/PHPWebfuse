@@ -52,7 +52,7 @@ class Database
      * @param string|null $host
      * @param string|null $user
      * @param string|null $password
-     * @param bool $reset Wether to force reset the connection
+     * @param bool $reset True to force reset the connection
      */
     public function __construct(?string $host = null, ?string $user = null, ?string $password = null, bool $reset = false)
     {
@@ -97,7 +97,6 @@ class Database
     {
         return $this->connection;
     }
-
 
     public function lastInsertID(): int|string
     {
@@ -317,7 +316,7 @@ class Database
      * @param string $database The database name
      * @param string $table The database table name
      * @param array $data The database table array data
-     * @param bool $preprare Wether to prepare or directly execute the query
+     * @param bool $preprare If to prepare or directly execute the query
      * @return bool
      *
      * Example: insertToDatabaseTable("main_db", "users_table", array('id'=>1, 'timestamp'=>123456789));
@@ -365,7 +364,7 @@ class Database
      * @param string $engine Defaults to 'MyISAM'
      * @param string $character Defaults to 'latin1'
      * @param string $collate Defaults to 'latin1_general_ci'
-     * @param bool $autoincrement Wether to set it as auto increment, default to 'true'.
+     * @param bool $autoincrement If to set it as auto increment, default to 'true'.
      *
      * Example: createDatabaseTable("main_db", "users_table", array("id" => "bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT ''", "timestamp" => "bigint(10) UNSIGNED NOT NULL DEFAULT '0' COMMENT ''", "PRIMARY KEY" => "(id)"), "users_table_comment");
      * @return bool
@@ -703,7 +702,7 @@ class Database
      * @param string $host
      * @param string $user
      * @param string $password
-     * @param bool $reset Wether to force reset the connection
+     * @param bool $reset If to force reset the connection
      * @return bool
      */
     private function init(string $host, string $user, string $password, bool $reset = false): bool

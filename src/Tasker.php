@@ -34,7 +34,7 @@ class Tasker
     /**
      * @var string The php executable absolute path
      */
-    private string $php = "";
+    private string $phpExecutable = "";
 
     // PUBLIC METHODS
 
@@ -46,7 +46,7 @@ class Tasker
     {
         $this->methods = new \PHPWebfuse\Methods();
         $this->tasks = $tasks;
-        $this->setExecutable();
+        $this->setPhpExecutable();
     }
 
     /**
@@ -57,8 +57,8 @@ class Tasker
     public function createTasks(array $tasks = array()): array
     {
         $this->tasks = $tasks;
-        $this->setExecutable();
-        if ($this->methods->isNotEmptyString($this->php)) {
+        $this->setPhpExecutable();
+        if ($this->methods->isNotEmptyString($this->phpExecutable)) {
             $commands = $this->formatTasksCommands();
             foreach ($commands as $path => $command) {
                 $this->createdTasks[$path] = $this->methods->executeCommandUsingPopen($command);
@@ -73,7 +73,7 @@ class Tasker
      * Get the php executable
      * @return string
      */
-    private function getExecutable(): string
+    private function getPhpExecutable(): string
     {
         $executable = "";
         if (class_exists("\Symfony\Component\Process\PhpExecutableFinder")) {
@@ -90,11 +90,11 @@ class Tasker
      * Set the php executable
      * @return void
      */
-    private function setExecutable(): void
+    private function setPhpExecutable(): void
     {
-        $executable = $this->getExecutable();
+        $executable = $this->getPhpExecutable();
         if ($this->methods->isString($executable) && $this->methods->isNotEmptyString($executable)) {
-            $this->php = $executable;
+            $this->phpExecutable = $executable;
         }
     }
 
@@ -132,7 +132,7 @@ class Tasker
     {
         $os = strtolower($this->methods->getOS());
         $commands = array();
-        if ($this->methods->isNotEmptyString($this->php) && function_exists("exec")) {
+        if ($this->methods->isNotEmptyString($this->phpExecutable) && function_exists("exec")) {
             $crons = $this->formatTasks();
             foreach ($crons as $index => $data) {
                 $path = $data['path'];
@@ -144,7 +144,7 @@ class Tasker
                     $resultcode = 0;
                     @exec("schtasks /query /tn " . $taskName . "", $result, $resultcode);
                     if (isset($result) && empty($result)) {
-                        $commands[$path] = "schtasks /create /tn " . $taskName . " /tr \"" . $this->php . " " . $path . "\" /sc " . $schedule . " /st " . $time . "";
+                        $commands[$path] = "schtasks /create /tn " . $taskName . " /tr \"" . $this->phpExecutable . " " . $path . "\" /sc " . $schedule . " /st " . $time . "";
                     }
                 } else {
                     $result = array();
@@ -152,9 +152,9 @@ class Tasker
                     @exec('crontab -l', $result, $resultcode);
                     if (isset($result) && empty($result)) {
                         $result = array_flip($result);
-                        if (!isset($result[$time . " " . $this->php . " " . $path])) {
+                        if (!isset($result[$time . " " . $this->phpExecutable . " " . $path])) {
                             $arg = $redirect === true ? " > /dev/null 2>&1" : "";
-                            $commands[$path] = "echo -e  \"`crontab -l`\n" . $time . " " . $this->php . " " . $path . "" . $arg . "\" | crontab -";
+                            $commands[$path] = "echo -e  \"`crontab -l`\n" . $time . " " . $this->phpExecutable . " " . $path . "" . $arg . "\" | crontab -";
                         }
                     }
                 }

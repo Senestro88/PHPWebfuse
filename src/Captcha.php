@@ -21,7 +21,7 @@ class Captcha
     // PRIVATE CONSTANTS
 
     /**
-     * @var const Supported options
+     * @var const Default options
      */
     private const OPTIONS = array(
         'bgColor' => "#fff",
@@ -45,12 +45,12 @@ class Captcha
     );
 
     /**
-     * @var const Available formats for creating the captcha image
+     * @var const The default formats when saving the captcha image
      */
     private const FORMATS = array("png", "jpg", "jpeg", "gif");
 
     /**
-     * @var const The character from which the captcha will generate it text
+     * @var const The characters from which the captcha will generate it text from
      */
     private const CHARSET = 'abcdefghijkmnopqrstuvwxzyABCDEFGHJKLMNPQRSTUVWXZY0123456789';
 
@@ -66,10 +66,10 @@ class Captcha
     }
 
     /**
-     * Create a base64 image
+     * Create a base64 captcha image
      * @param araay $options The captcha options
      * @param string $namespace The captcha namespace
-     * @param string $format The the image format, default to png
+     * @param string $format The the image format, default to png. only png, jpg, jpeg and gif are accepted, else the default will be used.
      * @return string
      */
     public function createBase64Image(array $options = array(), string $namespace = "default", string $format = "png"): string
@@ -79,10 +79,10 @@ class Captcha
     }
 
     /**
-     * Output image to browser
+     * Output captcha image to browser
      * @param araay $options The captcha options
      * @param string $namespace The captcha namespace
-     * @param string $format The the image format, default to png
+     * @param string $format The the image format, default to png. only png, jpg, jpeg and gif are accepted, else the default will be used.
      * @return void
      */
     public function createOuputImage(array $options = array(), string $namespace = "default", string $format = "png"): void
@@ -97,7 +97,7 @@ class Captcha
      * Validate the captcha code
      * @param string $value The captcha code value
      * @param string $namespace The captcha namespace
-     * @param bool $caseInsensitive Wether to validate in a case insensitive manner, default to true
+     * @param bool $caseInsensitive True to validate in a case insensitive manner, else sensitive manner, default to true
      * @return bool
      */
     public function validate(string $value, string $namespace = "default", bool $caseInsensitive = true): bool
@@ -108,10 +108,10 @@ class Captcha
     // PRIAVTE METHODS
 
     /**
-     * Create image data
+     * Create captcha image data
      * @param array $options The captcha options
      * @param string $namespace The captcha namespace
-     * @param string $format The the image format, default to png
+     * @param string $format The the image format, default to png. only png, jpg, jpeg and gif are accepted, else the default will be used.
      * @return array
      */
     private function createImageData(array $options = array(), string $namespace = "default", string $format = "png"): array
@@ -165,7 +165,7 @@ class Captcha
     }
 
     /**
-     * Filter option
+     * Filter options
      * @param array $options The captcha options
      * @return array
      */
@@ -189,7 +189,7 @@ class Captcha
     }
 
     /**
-     * Create the image
+     * Create the captcha image
      * @param array $options The captcha options
      * @return \GdImage
      */
@@ -203,12 +203,12 @@ class Captcha
     }
 
     /**
-     * Allocate color array for the image
-     * @param \GdImage $image
+     * Allocate colors array for the captcha image
+     * @param \GdImage $image Reference to the image
      * @param array $options The captcha options
      * @return array
      */
-    private function allocateImageColors(\GdImage $image, array $options = array()): array
+    private function allocateImageColors(\GdImage &$image, array $options = array()): array
     {
         $colors = array();
         if ($this->methods->isNotFalse($image)) {
@@ -228,14 +228,14 @@ class Captcha
     }
 
     /**
-     * Set the image background
-     * @param \GdImage $image
+     * Set the captcha image background
+     * @param \GdImage $image Reference to the image
      * @param array $options The captcha options
      * @param array $colors The captcha colors for creating the captcha
      * @param array $directories The private directories
      * @return void
      */
-    private function setBackground(\GdImage $image, array $options = array(), array $colors = array(), array $directories = array()): void
+    private function setBackground(\GdImage &$image, array $options = array(), array $colors = array(), array $directories = array()): void
     {
         if ($this->methods->isNotFalse($image) && $this->methods->isNotEmptyArray($colors) && $this->methods->isNotEmptyArray($directories)) {
             $backgroundImage = null;
@@ -314,13 +314,13 @@ class Captcha
     }
 
     /**
-     * Draw the noise on the image
-     * @param \GdImage $image
+     * Draw the noise on the captcha image
+     * @param \GdImage $image Reference to the image
      * @param array $options The captcha options
      * @param array $colors The captcha colors for creating the captcha
      * @return void
      */
-    private function drawNoise(\GdImage $image, array $options = array(), array $colors = array()): void
+    private function drawNoise(\GdImage &$image, array $options = array(), array $colors = array()): void
     {
         // Check if the image is valid, colors array is not empty, and noise level is set and greater than 0
         if ($this->methods->isNotFalse($image) && $this->methods->isNotEmptyArray($colors) && isset($options['noiseLevel']) && $options['noiseLevel'] > 0) {
@@ -352,13 +352,13 @@ class Captcha
     }
 
     /**
-     * Draw the lines on the image
-     * @param \GdImage $image
+     * Draw the lines on the captcha image
+     * @param \GdImage $image Reference to the image
      * @param array $options The captcha options
      * @param array $colors The captcha colors for creating the captcha
      * @return void
      */
-    private function drawLines(\GdImage $image, array $options = array(), array $colors = array()): void
+    private function drawLines(\GdImage &$image, array $options = array(), array $colors = array()): void
     {
         // Check if the image is valid, colors array is not empty, and numLines is set and greater than 0
         if ($this->methods->isNotFalse($image) && $this->methods->isNotEmptyArray($colors) && isset($options['numLines']) && $options['numLines'] > 0) {
@@ -411,14 +411,14 @@ class Captcha
     }
 
     /**
-     * Draw the signature on the image
-     * @param \GdImage $image
+     * Draw the signature on the captcha image
+     * @param \GdImage $image Reference to the image
      * @param array $options The captcha options
      * @param array $colors The captcha colors for creating the captcha
      * @param array $directories The private directories
      * @return void
      */
-    private function drawSignature(\GdImage $image, array $options = array(), array $colors = array(), array $directories = array()): void
+    private function drawSignature(\GdImage &$image, array $options = array(), array $colors = array(), array $directories = array()): void
     {
         // Check if the image is valid, colors array is not empty, and directories array is not empty
         if ($this->methods->isNotFalse($image) && $this->methods->isNotEmptyArray($colors) && $this->methods->isNotEmptyArray($directories)) {
@@ -441,15 +441,15 @@ class Captcha
     }
 
     /**
-     * Draw the captcha text on the image
-     * @param \GdImage $image
+     * Draw the captcha text on the captcha image
+     * @param \GdImage $image Reference to the image
      * @param array $options The captcha options
      * @param array $colors The captcha colors for creating the captcha
      * @param array $directories The private directories
      * @param string $generatedText The generated text to draw on the captcha image
      * @return void
      */
-    private function drawCaptchaText(\GdImage $image, array $options = array(), array $colors = array(), array $directories = array(), string $generatedText = ""): void
+    private function drawCaptchaText(\GdImage &$image, array $options = array(), array $colors = array(), array $directories = array(), string $generatedText = ""): void
     {
         // Check if the image is valid, colors array is not empty, directories array is not empty, and generated text is not empty
         if ($this->methods->isNotFalse($image) && $this->methods->isNotEmptyArray($colors) && $this->methods->isNotEmptyArray($directories) && $this->methods->isNotEmptyString($generatedText)) {
@@ -574,12 +574,12 @@ class Captcha
 
     /**
      * Create a base64 version of the captcha image
-     * @param \GdImage $image
+     * @param \GdImage $image Reference to the image
      * @param array $directories The private directories
-     * @param string $format The the image format, default to png
+     * @param string $format The the image format, default to png. only png, jpg, jpeg and gif are accepted, else the default will be used.
      * @return string
      */
-    private function createBase64FromImage(\GdImage $image, array $directories = array(), string $format = "png"): string
+    private function createBase64FromImage(\GdImage &$image, array $directories = array(), string $format = "png"): string
     {
         $base64Image = "";
         if ($this->methods->isNotFalse($image) && $this->methods->isNotEmptyArray($directories)) {
@@ -603,8 +603,8 @@ class Captcha
 
     /**
      * Send the image to browser for viewing
-     * @param \GdImage $image
-     * @param string $format The the image format, default to png
+     * @param \GdImage $image Reference to the image
+     * @param string $format The the image format, default to png. only png, jpg, jpeg and gif are accepted, else the default will be used.
      * @return void
      */
     private function sendToBrowserFromImage(\GdImage $image, string $format = "png"): void
@@ -652,7 +652,7 @@ class Captcha
      * Validate the captcha code value
      * @param string $value The captcha code value to validate
      * @param string $namespace The captcha namespace
-     * @param bool $caseInsensitive Wether to validate in a case insensitive manner, default to true
+     * @param bool $caseInsensitive If to validate in a case insensitive manner, default to true
      * @return bool
      */
     private function validateValue(string $value, string $namespace = "default", bool $caseInsensitive = true): bool

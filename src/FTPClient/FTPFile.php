@@ -59,111 +59,195 @@ class FTPFile
         $this->line = $line;
         $this->RPS = $RPS;
         $this->FtpPath = new \PHPWebfuse\FTPClient\FTPPath($RPS);
-        $this->validate();
+        $this->validateLine();
     }
 
+    /**
+     * Get the file type (file, directory, link or unknown)
+     * @return string
+     */
     public function getType(): string
     {
         return $this->type;
     }
 
+    /**
+     * Get the real path to the file
+     * @return string
+     */
     public function getRealPath(): string
     {
         return $this->realPath;
     }
-
+    
+    /**
+     * Get the unique key
+     * @return string
+     */
     public function getKey(): string
     {
         return $this->key;
     }
 
+    /** 
+     * Get the unique Id
+     * @return int
+     */
     public function getId(): int
     {
         return $this->id;
     }
 
+    /**
+     * Get the basename of the file
+     * @return string
+     */
     public function getBasename(): string
     {
         return $this->basename;
     }
 
+    /**
+     * Unlike getBasename, it removes the extension from the basename
+     * @return string
+     */
     public function getName(): string
     {
         return $this->methods->removeExtension($this->getBasename());
     }
 
+    /**
+     * Ge the file extension
+     * @return string
+     */
     public function getEtension(): string
     {
         return $this->methods->getExtension($this->getBasename());
     }
 
+    /**
+     * Removes extension from the real path
+     * @return string
+     */
     public function removeExtension(): string
     {
         return $this->methods->removeExtension($this->getRealPath());
     }
-
+    
+    /**
+     * Get the raw permission, like -drwx
+     * @return string
+     */
     public function getRawPermission(): string
     {
         return $this->rawPermission;
     }
 
+    /**
+     * Get the octal permssion, like 0775
+     * @return int
+     */
     public function getOctalPermission(): int
     {
         return $this->octalPermission;
     }
 
+    /**
+     * Get the owner
+     * @return string
+     */
     public function getOwner(): string
     {
         return $this->owner;
     }
 
+    /**
+     * Get the group
+     * @return string
+     */
     public function getGroup(): string
     {
         return $this->group;
     }
 
+    /**
+     * Get the size
+     * @return int
+     */
     public function getSize(): int
     {
         return $this->size;
     }
 
+    /**
+     * Get the size to human readable
+     * @return string
+     */
     public function getReadableSize(): string
     {
         return $this->readableSize;
     }
 
+    /**
+     * Get the month
+     * @return string
+     */
     public function getMonth(): string
     {
         return $this->month;
     }
-
+    
+    /**
+     * Get the day
+     * @return string
+     */
     public function getDay(): string
     {
         return $this->day;
     }
 
+    /**
+     * Ge the time
+     * @return string
+     */
     public function getTime(): string
     {
         return $this->time;
     }
 
+    /**
+     * Get the target if it's a link
+     * @return string
+     */
     public function getTarget(): string
     {
         return $this->target;
     }
 
+    /**
+     * Get the directory
+     * @return string
+     */
     public function getDir(): string
     {
         return $this->FtpPath->insert_dir_separator($this->arrangeRPath($this->remotedir), true);
     }
     
+    /**
+     * Determine if it's a directory
+     * @return bool
+     */
     public function isDir(): bool {
         return $this->getType() === "directory";
     }
     
     // PRIVATE FUNCTIONS
 
-    private function validate(): void
+    /**
+     * Validate the line
+     * @return void
+     */
+    private function validateLine(): void
     {
         // Make sure the line is not empty
         if($this->methods->isNotEmptyString($this->line)) {
@@ -187,7 +271,7 @@ class FTPFile
                     $notValid = empty($basename) || $basename == "." || $basename == "..";
                     // Include when basename is not empty or basename is not the current directory or parent directory
                     if(!$notValid) {
-                        // Get the file type (ile, directory, link or unknown)
+                        // Get the file type (file, directory, link or unknown)
                         $this->type = $this->convertRawPermissionToType($permission);
                         // Get the full path of the item
                         $this->realPath = $this->arrangeRPath($this->remotedir . $this->RPS . $basename);

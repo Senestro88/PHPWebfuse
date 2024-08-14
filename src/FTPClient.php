@@ -59,18 +59,15 @@ class FTPClient
      * @var string
      */
     private $RST = "unix";
-
     /* PRIVATE VARIABLES */
 
     /**
-     * The connection stream
      * @var \FTP\Connection
      */
     private ?\FTP\Connection $connection;
 
     /**
-     * FTP functions adapter
-     * @var \PHPWebfuse\FTPClient\Container
+     * @var \PHPWebfuse\FTPClient\FTPAdapter
      */
     private ?\PHPWebfuse\FTPClient\FTPAdapter $adapter;
 
@@ -79,10 +76,13 @@ class FTPClient
      */
     private \PHPWebfuse\FTPClient\FTPPath $FtpPath;
 
+    private bool $connected = false;
+    private bool $loggedIn = false;
+
     /* PUBLIC METHODS */
 
     /**
-     * The constructor
+     * TConstruct a new FTPClient instance
      * @throws \Exception
      */
     public function __construct()
@@ -90,14 +90,19 @@ class FTPClient
         $this->methods = new \PHPWebfuse\Methods();
         $this->path = new \PHPWebfuse\Path();
         $this->FtpPath = new \PHPWebfuse\FTPClient\FTPPath($this->RPS);
+        $this->connection = null;
+        $this->adapter = null;
         if (!extension_loaded('ftp')) {
             throw new \Exception('FTP extension is not loaded!');
         }
     }
 
+    /**
+     * This closes the connection
+     */
     public function __destruct()
     {
-        $this->close();
+        $this->disconnect();
     }
 
     /**
@@ -128,7 +133,7 @@ class FTPClient
      * Login to the FTP server
      * @param string $username
      * @param string $password
-     * @param bool $enablePasv Wether to enable passive connection
+     * @param bool $enablePassive True to enable passive mode
      * @return bool
      */
     public function login(string $username, string $password, bool $enablePassive = true): bool
@@ -138,12 +143,12 @@ class FTPClient
             $this->password = $password;
             // Get and set the remote path separator
             $systype = $this->adapter->systype();
-            if(is_string($systype)) {
+            if (is_string($systype)) {
                 $systype = strtolower($systype);
                 $this->RST = $systype;
-                if($this->methods->containText("unix", $systype) || $this->methods->containText("linux", $systype)) {
+                if ($this->methods->containText("unix", $systype) || $this->methods->containText("linux", $systype)) {
                     $this->RPS = "/";
-                } elseif($this->methods->containText("windows", $systype) || $this->methods->containText("win", $systype) || $this->methods->containText("ms", $systype)) {
+                } elseif ($this->methods->containText("windows", $systype) || $this->methods->containText("win", $systype) || $this->methods->containText("ms", $systype)) {
                     $this->RPS = "\\";
                 }
             }
@@ -153,18 +158,23 @@ class FTPClient
         return false;
     }
 
+    /**
+     * To enable passive mode
+     * @param bool $enable
+     * @return type
+     */
     public function enablePassiveMode(bool $enable = true)
     {
-        return $this->isValid() ? $this->adapter->pasv($enable) : false;
+        return $this->isValid() && $this->loggedIn ? $this->adapter->pasv($enable) : false;
     }
 
     /**
-     * Close the FTP connection
+     * Disconnected the FTP connection
      * @return void
      */
-    public function close(): void
+    public function disconnect(): void
     {
-        if ($this->isValid()) {
+        if ($this->isValid() && $this->connected) {
             try {
                 $this->adapter->close();
                 $this->adapter = null;
@@ -172,6 +182,8 @@ class FTPClient
                 $this->setErrorMessage($e->getMessage());
             }
             $this->connection = null;
+            $this->connected = false;
+            $this->loggedIn = false;
         }
     }
 
@@ -182,7 +194,7 @@ class FTPClient
      */
     public function getCurrentDir(): ?string
     {
-        if ($this->isValidStream() && $this->isValidAdapter()) {
+        if ($this->isValid() && $this->loggedIn) {
             $currentdir = $this->adapter->pwd();
             if (is_string($currentdir)) {
                 return $currentdir;
@@ -199,7 +211,7 @@ class FTPClient
      */
     public function changeDir(string $remotedir): bool
     {
-        return $this->isValid() ? $this->adapter->chdir($remotedir) : false;
+        return $this->isValid()  && $this->loggedIn ? $this->adapter->chdir($remotedir) : false;
     }
 
     /**
@@ -209,7 +221,7 @@ class FTPClient
      */
     public function upDir(): bool
     {
-        return $this->isValid() ? $this->adapter->cdup() : false;
+        return $this->isValid() && $this->loggedIn ? $this->adapter->cdup() : false;
     }
 
     /**
@@ -219,7 +231,7 @@ class FTPClient
      */
     public function isDir(string $remotedir): bool
     {
-        if ($this->isValid()) {
+        if ($this->isValid() && $this->loggedIn) {
             $currentdir = $this->getCurrentDir();
             if ($this->adapter->chdir($remotedir)) {
                 $this->adapter->chdir($currentdir);
@@ -236,7 +248,7 @@ class FTPClient
      */
     public function isFile(string $remotefile): bool
     {
-        if($this->isValid()) {
+        if ($this->isValid() && $this->loggedIn) {
             $size = $this->adapter->size($remotefile);
             return $size != -1;
         }
@@ -250,12 +262,12 @@ class FTPClient
      */
     public function cleanDir(string $remotedir): bool
     {
-        if ($this->isValid() && $this->isDir($remotedir)) {
+        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir)) {
             $list = $this->list($remotedir, true, true);
             $list = $this->sortFilesFirstForList($list);
             foreach ($list as $info) {
                 $realPath = $info->getRealPath();
-                if(!$info->isDir()) {
+                if (!$info->isDir()) {
                     // Delete file
                     $this->adapter->delete($realPath);
                 } else {
@@ -279,7 +291,7 @@ class FTPClient
      */
     public function deleteDir(string $remotedir): bool
     {
-        if ($this->isValid() && $this->isDir($remotedir)) {
+        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir)) {
             return $this->cleanDir($remotedir) && $this->adapter->rmdir($remotedir);
         }
         return false;
@@ -295,7 +307,7 @@ class FTPClient
      */
     public function raw(string $command): array
     {
-        if ($this->isValid()) {
+        if ($this->isValid() && $this->loggedIn) {
             $command = trim($command);
             if (!$raw = $this->adapter->raw($command)) {
                 throw new \Exception("Failed to send the command [{$command}] to the server.");
@@ -327,7 +339,7 @@ class FTPClient
      */
     public function exec(string $command): bool
     {
-        return $this->isValid() ? $this->adapter->exec($command) : false;
+        return $this->isValid() && $this->loggedIn ? $this->adapter->exec($command) : false;
     }
 
     /**
@@ -337,7 +349,7 @@ class FTPClient
      */
     public function site(string $command): bool
     {
-        return $this->isValid() ? $this->adapter->site($command) : false;
+        return $this->isValid() && $this->loggedIn ? $this->adapter->site($command) : false;
     }
 
     /**
@@ -361,7 +373,7 @@ class FTPClient
     {
         $list = array();
         $remotedir = $remotedir == "." ? $this->RPS : $remotedir;
-        if ($this->isValid()) {
+        if ($this->isValid() && $this->loggedIn) {
             // Retrieve the raw list of directory contents
             $remotedirlines = $this->adapter->rawlist($remotedir);
             // Ensure the raw list is an array
@@ -474,7 +486,7 @@ class FTPClient
      */
     public function deleteFile(string $remotefile): bool
     {
-        if ($this->isValid() && $this->isFile($remotefile)) {
+        if ($this->isValid() && $this->loggedIn && $this->isFile($remotefile)) {
             return $this->adapter->delete($remotefile);
         }
         return false;
@@ -498,7 +510,7 @@ class FTPClient
      */
     public function lastModifiedTime(string $remotefile, ?string $format = null): int|string
     {
-        if ($this->isValid() && $this->isFile($remotefile)) {
+        if ($this->isValid() && $this->loggedIn && $this->isFile($remotefile)) {
             $time = $this->adapter->mdtm($remotefile);
             if ($time != -1) {
                 return is_string($format) && $this->methods->isNotEmptyString($format) ? date($format, $time) : $time;
@@ -532,7 +544,7 @@ class FTPClient
      */
     public function getSize(string $remotefile, bool $format = false): int|string
     {
-        if ($this->isValid() && $this->isFile($remotefile)) {
+        if ($this->isValid() && $this->loggedIn && $this->isFile($remotefile)) {
             $size = $this->adapter->size($remotefile);
             if ($size != -1) {
                 return $format ? $this->methods->formatSize((int) $size) : $size;
@@ -549,7 +561,7 @@ class FTPClient
      */
     public function rename(string $from, string $to): bool
     {
-        return $this->isValid() ? $this->adapter->rename($from, $to) : false;
+        return $this->isValid() && $this->loggedIn ? $this->adapter->rename($from, $to) : false;
     }
 
     /**
@@ -560,7 +572,7 @@ class FTPClient
      */
     public function move(string $from, string $to): bool
     {
-        return $this->isValid() ? $this->adapter->rename($from, $to) : false;
+        return $this->isValid() && $this->loggedIn ? $this->adapter->rename($from, $to) : false;
     }
 
     /**
@@ -590,7 +602,7 @@ class FTPClient
      */
     public function allocateSpace(int $bytes): bool
     {
-        return $this->isValid() ? $this->adapter->alloc($bytes) : false;
+        return $this->isValid() && $this->loggedIn ? $this->adapter->alloc($bytes) : false;
     }
 
     /**
@@ -602,7 +614,7 @@ class FTPClient
      */
     public function getContent(string $remotefile, int $mode = FTP_BINARY, int $offset = 0): string
     {
-        if ($this->isValid() && $this->isFile($remotefile)) {
+        if ($this->isValid() && $this->loggedIn && $this->isFile($remotefile)) {
             $temp = tempnam(sys_get_temp_dir(), $remotefile);
             $content = $this->adapter->get($temp, $remotefile, $mode, $offset);
             if ($content === true) {
@@ -625,7 +637,7 @@ class FTPClient
      */
     public function createFile(string $remotefile, ?string $content = null, int $mode = FTP_BINARY): bool
     {
-        if ($this->isValid() && !$this->isFile($remotefile)) {
+        if ($this->isValid() && $this->loggedIn && !$this->isFile($remotefile)) {
             $handle = @fopen('php://temp', 'w');
             if (!is_bool($handle)) {
                 if ($this->methods->isNonNull($content) && $this->methods->isNotEmptyString($content)) {
@@ -653,10 +665,10 @@ class FTPClient
      */
     public function saveContent(string $remotefile, string $content, int $mode = FTP_BINARY): bool
     {
-        if ($this->isValid() && $this->isFile($remotefile)) {
+        if ($this->isValid() && $this->loggedIn && $this->isFile($remotefile)) {
             // Open a temporary stream for writing
             $handle = @fopen('php://temp', 'w');
-            if(!is_bool($handle)) {
+            if (!is_bool($handle)) {
                 // Write the content to the temporary file
                 fwrite($handle, $content);
                 // Rewind the pointer of the temporary file
@@ -678,14 +690,14 @@ class FTPClient
      */
     public function createDir(string $remotedir): bool
     {
-        if ($this->isValid()) {
+        if ($this->isValid() && $this->loggedIn) {
             if ($this->isDir($remotedir)) {
                 return true;
             } else {
                 $currentdir = $this->getCurrentDir();
                 $parts = array_filter(explode($this->RPS, $remotedir));
-                foreach($parts as $part) {
-                    if(!$this->adapter->chdir($part)) {
+                foreach ($parts as $part) {
+                    if (!$this->adapter->chdir($part)) {
                         $this->adapter->mkdir($part);
                         $this->adapter->chmod(0775, $part);
                         $this->adapter->chdir($part);
@@ -710,7 +722,7 @@ class FTPClient
     public function uploadFile(string $localfile, string $remotedir, ?string $name = null, int $mode = FTP_BINARY, int $offset = 0): bool
     {
         // Check if the current instance is valid, the remote directory exists, and the local file exists
-        if ($this->isValid() && $this->isDir($remotedir) && $this->methods->isFile($localfile)) {
+        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir) && $this->methods->isFile($localfile)) {
             // Determine the destination path on the remote server
             $destination = $remotedir . $this->RPS . (
                 // Use the provided name if it's non-null and non-empty, otherwise use the basename of the local file
@@ -737,7 +749,7 @@ class FTPClient
     public function downloadFile(string $remotefile, string $localdir, ?string $localname = null, int $mode = FTP_BINARY, int $offset = 0): bool
     {
         // Check if the current instance is valid, the remote file is not a directory, and the local directory can be created
-        if ($this->isValid() && $this->isFile($remotefile) && $this->methods->makeDir($localdir)) {
+        if ($this->isValid() && $this->loggedIn && $this->isFile($remotefile) && $this->methods->makeDir($localdir)) {
             // Determine the destination path on the local machine
             $destination = $localdir . DIRECTORY_SEPARATOR . (
                 // Use the provided local name if it's non-null and non-empty, otherwise use the basename of the remote file
@@ -761,11 +773,11 @@ class FTPClient
     public function downloadDir(string $remotedir, string $localdir): bool
     {
         // Check if the current instance is valid, the remote directory exists, and the local directory can be created or created
-        if ($this->isValid() && $this->isDir($remotedir) && $this->methods->makeDir($localdir)) {
+        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir) && $this->methods->makeDir($localdir)) {
             // Arrange the local directory path and append a directory separator
             $localdir = $this->arrangeLPath($this->methods->resolvePath($localdir));
             // Create fisrt level directory on local filesystem
-            $localdir = $this->arrangeLPath($localdir.DIRECTORY_SEPARATOR.basename($remotedir));
+            $localdir = $this->arrangeLPath($localdir . DIRECTORY_SEPARATOR . basename($remotedir));
             $this->methods->makeDir($localdir);
             return $this->downloadDirContents($remotedir, $localdir);
         }
@@ -782,7 +794,7 @@ class FTPClient
     public function uploadDir(string $localdir, string $remotedir): bool
     {
         // Check if the current instance is valid and the local directory exists
-        if ($this->isValid() && $this->isDir($remotedir) && $this->methods->isDir($localdir)) {
+        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir) && $this->methods->isDir($localdir)) {
             // Arrange the local directory path
             $localdir = $this->arrangeLPath($localdir);
             // Set the remote root directory path by appending the basename of the local directory
@@ -817,7 +829,7 @@ class FTPClient
      */
     public function setPermission(string $remotefile, int $mode): bool
     {
-        return $this->isValid() ? $this->adapter->chmod(octdec(str_pad($mode, 4, '0', STR_PAD_LEFT)), $remotefile) : false;
+        return $this->isValid() && $this->loggedIn ? $this->adapter->chmod(octdec(str_pad($mode, 4, '0', STR_PAD_LEFT)), $remotefile) : false;
     }
 
     /**
@@ -843,23 +855,26 @@ class FTPClient
     /**
      * Open a new FTP connection
      * @param string $host
-     * @param bool $secure Wether to use a secure connection
+     * @param bool $secure If to use a secure connection
      * @param int $port
      * @param int $timeout
      * @return bool
      */
     private function FTPConnect(string $host, bool $secure = false, int $port = 21, int $timeout = 90): bool
     {
-        $stream = $secure ? @ftp_ssl_connect($host, $port, $timeout) : @ftp_connect($host, $port, $timeout);
-        if (is_resource($stream) || $stream instanceof \FTP\Connection) {
-            $this->connection = $stream;
-            $this->host = $host;
-            $this->port = $port;
-            $this->timeout = $timeout;
-            $this->setAdapter(new \PHPWebfuse\FTPClient\FTPAdapter($this->connection));
-            return true;
+        if(!$this->connected) {
+            $stream = $secure ? @ftp_ssl_connect($host, $port, $timeout) : @ftp_connect($host, $port, $timeout);
+            if (is_resource($stream) || $stream instanceof \FTP\Connection) {
+                $this->connection = $stream;
+                $this->host = $host;
+                $this->port = $port;
+                $this->timeout = $timeout;
+                $this->setAdapter(new \PHPWebfuse\FTPClient\FTPAdapter($this->connection));
+                $this->connected = true;
+            }
+            $this->connected = false;
         }
-        return false;
+        return $this->connected;
     }
 
     /**
@@ -870,7 +885,7 @@ class FTPClient
      */
     private function FTPLogin(string $username, string $password): ?bool
     {
-        return $this->isValid() ? $this->adapter->login($username, $password) : false;
+        return $this->loggedIn ? $this->loggedIn : ($this->isValid() && $this->connected ? $this->adapter->login($username, $password) : false);
     }
 
     /**
@@ -879,7 +894,7 @@ class FTPClient
      */
     private function isValidStream(): bool
     {
-        return is_resource($this->connection) || $this->connection instanceof \FTP\Connection;
+        return $this->methods->isNonNull($this->connection) && (is_resource($this->connection) || $this->connection instanceof \FTP\Connection);
     }
 
     /**
@@ -1019,33 +1034,33 @@ class FTPClient
     private function downloadDirContents(string $remotedir, string $localdir): bool
     {
         $downloadedAll = false;
-        if($this->isValid() && $this->isDir($remotedir)) {
+        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir)) {
             $files = $this->adapter->nlist($remotedir);
-            if(is_array($files)) {
+            if (is_array($files)) {
                 $toDownload = 0;
                 $downloaded = 0;
                 foreach ($files as $file) {
                     # To prevent an infinite loop
                     if ($file != "." && $file != "..") {
                         $toDownload++;
-                        $localPath = $this->arrangeLPath($localdir.DIRECTORY_SEPARATOR.basename($file));
-                        if($this->isDir($file)) {
+                        $localPath = $this->arrangeLPath($localdir . DIRECTORY_SEPARATOR . basename($file));
+                        if ($this->isDir($file)) {
                             // Create directory on local filesystem
                             $this->methods->makeDir($localPath);
                             // Recursive part
-                            if($this->downloadDirContents($file, $localPath)) {
+                            if ($this->downloadDirContents($file, $localPath)) {
                                 $downloaded++;
                             }
                         } else {
                             // Download files
-                            if($this->adapter->get($localPath, $file, FTP_BINARY)) {
+                            if ($this->adapter->get($localPath, $file, FTP_BINARY)) {
                                 $downloaded++;
                             }
                         }
                     }
                 }
                 // Check all files and folders have been downloaded
-                if($toDownload === $downloaded) {
+                if ($toDownload === $downloaded) {
                     $downloadedAll = true;
                 }
             }

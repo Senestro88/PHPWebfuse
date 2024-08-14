@@ -21,7 +21,7 @@ class Csrf
     // PUBLIC VARIABLES
 
     /**
-     * @var string The default Cross Site Request Forgery key but can be changed
+     * @var string The default Cross Site Request Forgery key
      */
     public string $crsfKey = "1291707447071921";
 
@@ -131,7 +131,7 @@ class Csrf
     }
 
     /**
-     * Is the time minutes from the future
+     * Determine if the time minutes is from the future
      * @param int $minutes
      * @return bool
      */

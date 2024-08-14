@@ -30,7 +30,7 @@ class Archive
     }
 
     /**
-     * Create a .zip archive from PclZip library
+     * Creates a .zip archive from PclZip library
      * @param string $name The name of the archive. It generate a random name when it's an empty string provided
      * @param array $items The items can be a combination of files and directories
      * @param string $dirname The directory to save the archive
@@ -86,7 +86,7 @@ class Archive
     }
 
     /**
-     * Create a .tgz archive
+     * Creates a .tgz archive
      * @param string $name The name of the archive. It generate a random name when it's an empty string provided
      * @param array $items The items can be a combination of files and directories
      * @param string $dirname The directory to save the archive
@@ -98,7 +98,7 @@ class Archive
     }
 
     /**
-     * Create a .tar archive
+     * Creates a .tar archive
      * @param string $name The name of the archive. It generate a random name when it's an empty string provided
      * @param array $items The items can be a combination of files and directories
      * @param string $dirname The directory to save the archive
@@ -110,7 +110,7 @@ class Archive
     }
 
     /**
-     * Create a .zip archive from the standard ZipArchive
+     * Creates a .zip archive from the standard ZipArchive
      * @param string $name The name of the archive. It generate a random name when it's an empty string provided
      * @param array $items The items can be a combination of files and directories
      * @param string $dirname The directory to save the archive
@@ -217,16 +217,14 @@ class Archive
     // PRIVATE METHODS
 
     /**
-     * Set the archive name
+     * Set and return the archive name
      * @param string $name The name of the archive. It generate a random name when it's an empty string provided
      * @param string $extension Add the extension at the end of the name
      * @return string Returns the new name
      */
     private function setName(string $name, string $extension = "zip"): string
     {
-        if ($this->methods->isEmptyString($name)) {
-            $name = $this->methods->randUnique('key');
-        }
+        $name = $this->methods->isEmptyString($name) ? $this->methods->randUnique('key') : $anme;
         $ext = $this->methods->getExtension($name);
         $name = $this->methods->isNotEmptyString($ext) ? (strtolower($ext) == $extension ? $name : $name . '.' . $extension) : $name . '.' . $extension;
         return str_replace(array('\\', '/', ':', '*', '?', '<', '>', '|'), '_', $name);
@@ -253,7 +251,7 @@ class Archive
     }
 
     /**
-     * Create a .tgz or .tar archive
+     * Creates a .tgz or .tar archive
      * @param string $name The name of the archive. It generate a random name when it's an empty string provided
      * @param array $items The items can be a combination of files and directories
      * @param string $dirname The directory to save the archive
