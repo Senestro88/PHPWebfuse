@@ -6,12 +6,12 @@ use \PHPWebfuse\Utils;
 use \PHPWebfuse\File;
 
 class QrCodeImage {
-    // PRIVATE VARIABLES
 
+    // PRIVATE VARIABLES
     // PUBLIC METHODS
 
-    public function __construct()
-    {
+    public function __construct() {
+        
     }
 
     /**
@@ -21,18 +21,17 @@ class QrCodeImage {
      * @param string $secret The secret is the generated secret unique to that user
      * @param string|null $issuer Where you log in to
      */
-    public function createBase64Image(string $accountName, string $secret, ?string $issuer = null): string
-    {
-        if ($accountName === "" || strpos($accountName, ':') !== false) {
+    public function createBase64Image(string $accountName, string $secret, ?string $issuer = null): string {
+        if($accountName === "" || strpos($accountName, ':') !== false) {
             throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidAccountName($accountName);
         }
-        if ($secret === "") {
+        if($secret === "") {
             throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidSecret();
         }
         $label = $accountName;
         $content = 'otpauth://totp/%s?secret=%s';
-        if ($issuer !== null) {
-            if ($issuer === "" || strpos($issuer, ':') !== false) {
+        if($issuer !== null) {
+            if($issuer === "" || strpos($issuer, ':') !== false) {
                 throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidIssuer($issuer);
             }
             // Use both the issuer parameter and label prefix as recommended by Google for BC reasons
@@ -40,20 +39,23 @@ class QrCodeImage {
             $content .= '&issuer=%s';
         }
         $content = htmlspecialchars_decode(sprintf($content, $label, $secret, $issuer));
-        if (!defined('QR_MODE_NUL')) {
+        if(!defined('QR_MODE_NUL')) {
             Utils::loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
         }
         $tempPathname = File::insert_dir_separator(File::arrange_dir_separators(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
-        if (File::makeDir($tempPathname) && class_exists('\QRcode')) {
+        if(File::makeDir($tempPathname) && class_exists('\QRcode')) {
             $absolutePath = $tempPathname . '' . Utils::randUnique("key") . '.png';
             \QRcode::png($content, $absolutePath, QR_ECLEVEL_Q, 20, 2);
-            if (File::isFile($absolutePath)) {
-                clearstatcache(false, $absolutePath);
-                $mime = mime_content_type($absolutePath);
-                $baseEncode = base64_encode((string) File::getFileContent($absolutePath));
-                $data = 'data:' . $mime . ';base64,' . $baseEncode;
-                File::deleteFile($absolutePath);
-                return $data;
+            if(File::isFile($absolutePath)) {
+                $image = imagecreatefrompng($absolutePath);
+                if(Utils::isNotFalse($image)) {
+                    clearstatcache(false, $absolutePath);
+                    $mime = mime_content_type($absolutePath);
+                    $baseEncode = base64_encode((string) @\file_get_contents($absolutePath));
+                    $data = 'data:' . $mime . ';base64,' . $baseEncode;
+                    File::deleteFile($absolutePath);
+                    return $data;
+                }
             }
         }
         return "";
@@ -66,18 +68,17 @@ class QrCodeImage {
      * @param string $secret The secret is the generated secret unique to that user
      * @param string|null $issuer Where you log in to
      */
-    public function createOuputImage(string $accountName, string $secret, ?string $issuer = null): void
-    {
-        if ($accountName === "" || strpos($accountName, ':') !== false) {
+    public function createOuputImage(string $accountName, string $secret, ?string $issuer = null): void {
+        if($accountName === "" || strpos($accountName, ':') !== false) {
             throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidAccountName($accountName);
         }
-        if ($secret === "") {
+        if($secret === "") {
             throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidSecret();
         }
         $label = $accountName;
         $content = 'otpauth://totp/%s?secret=%s';
-        if ($issuer !== null) {
-            if ($issuer === "" || strpos($issuer, ':') !== false) {
+        if($issuer !== null) {
+            if($issuer === "" || strpos($issuer, ':') !== false) {
                 throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidIssuer($issuer);
             }
             // Use both the issuer parameter and label prefix as recommended by Google for BC reasons
@@ -85,16 +86,16 @@ class QrCodeImage {
             $content .= '&issuer=%s';
         }
         $content = htmlspecialchars_decode(sprintf($content, $label, $secret, $issuer));
-        if (!defined('QR_MODE_NUL')) {
+        if(!defined('QR_MODE_NUL')) {
             Utils::loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
         }
         $tempPathname = File::insert_dir_separator(File::arrange_dir_separators(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
-        if (File::makeDir($tempPathname) && class_exists('\QRcode')) {
+        if(File::makeDir($tempPathname) && class_exists('\QRcode')) {
             $absolutePath = $tempPathname . '' . Utils::randUnique("key") . '.png';
             \QRcode::png($content, $absolutePath, QR_ECLEVEL_Q, 4, 2);
-            if (File::isFile($absolutePath)) {
+            if(File::isFile($absolutePath)) {
                 $image = imagecreatefrompng($absolutePath);
-                if (Utils::isNotFalse($image) && !headers_sent()) {
+                if(Utils::isNotFalse($image) && !headers_sent()) {
                     $contentType = mime_content_type($absolutePath);
                     header("Expires: Mon, 7 Apr 1997 01:00:00 GMT");
                     header("Last-Modified: " . gmdate("D, d M Y H:i:s") . "GMT");

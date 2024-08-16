@@ -2,6 +2,8 @@
 
 namespace PHPWebfuse\Instance;
 
+use \PHPWebfuse\Http;
+
 /**
  * @author Senestro
  */
@@ -105,7 +107,7 @@ class MultiAuth
     {
         return (new \PHPWebfuse\Instance\MultiAuth\QrCodeUrl())->generate(sprintf('%s@%s', $user, $hostname), $key, $issuer);
     }
-
+    
     /**
      * Get the code
      * @param string $key
