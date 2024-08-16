@@ -2,87 +2,79 @@
 
 namespace PHPWebfuse;
 
+use \PHPWebfuse\Utils;
+
 /**
+ * @author Senestro
  */
 class Aes
 {
-    // PRIVATE VARIABLES
-
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
-
-    /**
-     * @var string The default cipher method for encrypting and decrypting data
-     */
-    private string $cipherMethod = "aes-128-cbc";
+    // PRIVATE VARIABLE
+    // 
+    // PUBLIC VARIABLES
 
     // PUBLIC METHODS
-
+    
     /**
-     * Construct a new instance of the Aes Class
-     * @param ?string $cipherMethod The cipher method. Use this to override the default cipher method, the default is null
+     * Prevent the constructor from being initialized
      */
-    public function __construct(string $cipherMethod = "aes-128-cbc")
-    {
-        $this->methods = new \PHPWebfuse\Methods();
-        if ($this->methods->isNotEmptyString($cipherMethod) && in_array($cipherMethod, openssl_get_cipher_methods(), true)) {
-            $this->cipherMethod = $cipherMethod;
-        }
+    private function __construct() {
+        
     }
-
+    
     /**
-     * Encrypt data to into a hex string or base64 encoded string
-     * @param string $data The content to encrypt
+     * Encrypt data to into raw binary string or base64 encoded string
+     * @param string $content The content to encrypt
+     * @param string $method The encryption cipher method
      * @param string $key The encryption key
-     * @param bool $toHex True means to return the encrypted data as a hex string or base64 encoded string
-     * @return bool|string Returns a hex string or base64 encoded string on success, otherwise returns false
+     * @param bool $rawData True means to return the encrypted data as raw binary string or base64 encoded string
+     * @return bool|string Returns a raw binary string or base64 encoded string on success, otherwise returns false
      */
-    public function encData(string $data, string $key, bool $toHex = true): bool|string
+    public static function encData(string $content, string $method = "aes-128-cbc", string $key = "", bool $rawData = false): bool|string
     {
-        if (in_array($this->cipherMethod, openssl_get_cipher_methods(), true) && !$this->methods->isEmptyString($data) && !$this->methods->isEmptyString($key)) {
+        if (in_array($method, openssl_get_cipher_methods(), true) && !Utils::isEmptyString($content) && !Utils::isEmptyString($key)) {
             try {
-                $data = trim($data);
+                $content = trim($content);
                 $key = trim($key);
-                $ivLenght = openssl_cipher_iv_length($this->cipherMethod);
-                if ($this->methods->isInt($ivLenght)) {
+                $ivLenght = openssl_cipher_iv_length($method);
+                if (Utils::isInt($ivLenght)) {
                     $iv = openssl_random_pseudo_bytes($ivLenght);
-                    $result = @openssl_encrypt($data, $this->cipherMethod, $key, $options = OPENSSL_RAW_DATA, $iv);
-                    if ($this->methods->isString($result)) {
-                        $data = $key = "";
-                        return $toHex ? bin2hex($iv . $result) : base64_encode($iv . $result);
+                    $result = @openssl_encrypt($content, $method, $key, $options = OPENSSL_RAW_DATA, $iv);
+                    if (Utils::isString($result)) {
+                        $content = $key = "";
+                        return $rawData ? $iv . $result : base64_encode($iv . $result);
                     }
                 }
             } catch (\Throwable $e) {
 
             }
         }
-        $data = $key = "";
+        $content = $key = "";
         return false;
     }
-
+    
     /**
-     * Decrypt the encrypted hex string or base64 encoded string to original data
-     * @param string $data The encrypted content to decrypt
+     * Decrypt the encrypted the raw binary string or base64 encoded string to original data
+     * @param string $content The encrypted content to decrypt
+     * @param string $method The encryption cipher method
      * @param string $key The decryption key
-     * @param bool $fromHex True means the $data is a hex string, else a base64 encoded string
-     * @return bool|string Returns the original data from an encrypted hex string or base64 encoded string, otherwise returns false
+     * @param bool $fromRaw True means the $data is a raw binary string, else a base64 encoded string
+     * @return bool|string Returns the original data from an encrypted raw binary string or base64 encoded string, otherwise returns false
      */
-    public function decData(string $data, string $key, bool $fromHex = true): bool|string
+    public static function decData(string $content, string $method = "aes-128-cbc", string $key = "", bool $fromRaw = false): bool|string
     {
-        if (in_array($this->cipherMethod, openssl_get_cipher_methods(), true) && $this->methods->isNotEmptyString($data) && $this->methods->isNotEmptyString($key)) {
+        if (in_array($method, openssl_get_cipher_methods(), true) && Utils::isNotEmptyString($content) && Utils::isNotEmptyString($key)) {
             try {
-                $data = trim($data);
+                $content = trim($content);
                 $key = trim($key);
-                $data = $fromHex ? hex2bin($data) : base64_decode($data);
-                $ivLenght = openssl_cipher_iv_length($this->cipherMethod);
-                if ($this->methods->isInt($ivLenght)) {
-                    $iv = substr($data, 0, $ivLenght);
-                    $cipher = substr($data, $ivLenght);
-                    $result = @openssl_decrypt($cipher, $this->cipherMethod, $key, $options = OPENSSL_RAW_DATA, $iv);
-                    if ($this->methods->isString($result)) {
-                        $data = $cipher = "";
+                $content = $fromRaw ? $content : base64_decode($content);
+                $ivLenght = openssl_cipher_iv_length($method);
+                if (Utils::isInt($ivLenght)) {
+                    $iv = substr($content, 0, $ivLenght);
+                    $cipher = substr($content, $ivLenght);
+                    $result = @openssl_decrypt($cipher, $method, $key, $options = OPENSSL_RAW_DATA, $iv);
+                    if (Utils::isString($result)) {
+                        $content = $cipher = "";
                         return $result;
                     }
                 }
@@ -93,4 +85,6 @@ class Aes
         $data = $key = "";
         return false;
     }
+
+    // PRIVATE METHODS
 }

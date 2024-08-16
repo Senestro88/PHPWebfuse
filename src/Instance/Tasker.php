@@ -1,17 +1,14 @@
 <?php
 
-namespace PHPWebfuse;
+namespace PHPWebfuse\Instance;
+
+use \PHPWebfuse\Utils;
 
 /**
+ * @author Senestro
  */
-class Tasker
-{
+class Tasker {
     // PRIVATE VARIABLES
-
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
 
     /**
      * @var array The tasks is an array containing arrays of background tasks to create
@@ -42,9 +39,7 @@ class Tasker
      * Construct new Tasker instance
      * @param array $tasks
      */
-    public function __construct(array $tasks = array())
-    {
-        $this->methods = new \PHPWebfuse\Methods();
+    public function __construct(array $tasks = array()) {
         $this->tasks = $tasks;
         $this->setPhpExecutable();
     }
@@ -54,14 +49,13 @@ class Tasker
      * @param array $tasks
      * @return array
      */
-    public function createTasks(array $tasks = array()): array
-    {
+    public function createTasks(array $tasks = array()): array {
         $this->tasks = $tasks;
         $this->setPhpExecutable();
-        if ($this->methods->isNotEmptyString($this->phpExecutable)) {
+        if (Utils::isNotEmptyString($this->phpExecutable)) {
             $commands = $this->formatTasksCommands();
             foreach ($commands as $path => $command) {
-                $this->createdTasks[$path] = $this->methods->executeCommandUsingPopen($command);
+                $this->createdTasks[$path] = Utils::executeCommandUsingPopen($command);
             }
         }
         return $this->createdTasks;
@@ -73,14 +67,13 @@ class Tasker
      * Get the php executable
      * @return string
      */
-    private function getPhpExecutable(): string
-    {
+    private function getPhpExecutable(): string {
         $executable = "";
         if (class_exists("\Symfony\Component\Process\PhpExecutableFinder")) {
             $finder = new \Symfony\Component\Process\PhpExecutableFinder();
             $_executable = $finder->find();
-            if ($this->methods->isString($_executable)) {
-                $executable = $this->methods->convertExtension($_executable);
+            if (Utils::isString($_executable)) {
+                $executable = Utils::convertExtension($_executable);
             }
         }
         return $executable;
@@ -90,10 +83,9 @@ class Tasker
      * Set the php executable
      * @return void
      */
-    private function setPhpExecutable(): void
-    {
+    private function setPhpExecutable(): void {
         $executable = $this->getPhpExecutable();
-        if ($this->methods->isString($executable) && $this->methods->isNotEmptyString($executable)) {
+        if (Utils::isString($executable) && Utils::isNotEmptyString($executable)) {
             $this->phpExecutable = $executable;
         }
     }
@@ -102,13 +94,12 @@ class Tasker
      * Format tasks
      * @return array
      */
-    private function formatTasks(): array
-    {
-        $os = strtolower($this->methods->getOS());
+    private function formatTasks(): array {
+        $os = strtolower(Utils::getOS());
         $results = array();
         foreach ($this->tasks as $data) {
             $path = isset($data['path']) ? (string) $data['path'] : "";
-            if ($this->methods->isFile($path)) {
+            if (Utils::isFile($path)) {
                 if ($os == "windows") {
                     $winTaskname = isset($data['winTaskname']) ? (string) $data['winTaskname'] : basename($path);
                     $winTime = isset($data['winTime']) ? (string) $data['winTime'] : "00:00";
@@ -128,11 +119,10 @@ class Tasker
      * @param type $redirect
      * @return array
      */
-    private function formatTasksCommands($redirect = false): array
-    {
-        $os = strtolower($this->methods->getOS());
+    private function formatTasksCommands($redirect = false): array {
+        $os = strtolower(Utils::getOS());
         $commands = array();
-        if ($this->methods->isNotEmptyString($this->phpExecutable) && function_exists("exec")) {
+        if (Utils::isNotEmptyString($this->phpExecutable) && function_exists("exec")) {
             $crons = $this->formatTasks();
             foreach ($crons as $index => $data) {
                 $path = $data['path'];

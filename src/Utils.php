@@ -2,34 +2,17 @@
 
 namespace PHPWebfuse;
 
+use \PHPWebfuse\File;
+
 /**
- * The PHPWebfuse 'Methods' class
+ * @author Senestro
  */
-class Methods
+class Utils
 {
     // PRIVATE VARIABLES
 
-    /**
-     * @var \PHPWebfuse\Path The default PHPWebfuse path class
-     */
-    private \PHPWebfuse\Path $path;
-
-    /**
-     * @var \DateTime Date time
-     */
-    private \DateTime $datetime;
-
     // PRIVATE CONSTANTS
 
-    /**
-     * @var const The default read and write chunk size (2MB)
-     */
-    private const CHUNK_SIZE = 2097152;
-
-    /**
-     * @var const The default read and write chunk size when encrypting or decrypting a file (5MB)
-     */
-    private const ENC_FILE_INTO_PARTS_CHUNK_SIZE = 5242880;
 
     /**
      * @var const The default character considered invalid
@@ -98,144 +81,18 @@ class Methods
 
     // PUBLIC METHODS
 
-    public function __construct()
-    {
-        $this->path = new \PHPWebfuse\Path();
-        $this->datetime = new \DateTime('now', new \DateTimeZone(self::TIMEZONE));
-    }
-
     /**
-     * Get the file size in bytes
-     * @param string $absolutePath
-     * @return int
+     * Prevent the constructor from being initialized
      */
-    public function getFIlesizeInBytes(string $absolutePath): int
+    private function __construct()
     {
-        $bytes = 0;
-        if ($this->isFile($absolutePath)) {
-            $absolutePath = $this->resolvePath($absolutePath);
-            clearstatcache(false, $absolutePath);
-            $size = @filesize($absolutePath);
-            if ($this->isInt($size)) {
-                $bytes = $size;
-            } else {
-                $handle = @fopen($absolutePath, 'rb');
-                if ($this->isResource($handle)) {
-                    while (($buffer = fgets($handle, self::CHUNK_SIZE)) !== false) {
-                        $bytes += strlen($buffer);
-                    }
-                }
-                fclose($handle);
-            }
-        }
-        return $bytes;
-    }
-
-    /**
-     * Create a file
-     * @param string $path
-     * @return bool
-     */
-    public function createFile(string $path): bool
-    {
-        $created = $this->isFile($path);
-        if ($this->isFalse($created)) {
-            $handle = @fopen($path, "w");
-            if ($this->isResource($handle)) {
-                fclose($handle);
-                $this->setPermissions($path);
-                $created = true;
-            }
-        }
-        return $this->isTrue($created);
-    }
-
-    /**
-     * Save content to file
-     *
-     * @param string $absolutePath
-     * @param string $content
-     * @param bool $append: Default to 'false'. Wether to append the content to the filename
-     * @param bool $newline: Default to 'false'. Wether to append the content on a new line if $append is true
-     * @return bool
-     */
-    public function saveContentToFile(string $absolutePath, string $content, bool $append = false, bool $newline = false): bool
-    {
-        $saved = false;
-        if ($this->isFile($absolutePath) || ($this->isNotFile($absolutePath) && $this->createFile($absolutePath))) {
-            $handle = @fopen($absolutePath, $append ? "a" : "w");
-            if ($this->isResource($handle) && flock($handle, LOCK_EX | LOCK_SH)) {
-                if ($this->isTrue($append) && $this->isTrue($newline) && $this->getFIlesizeInBytes($absolutePath) >= 1) {
-                    $content = "\n" . $content;
-                }
-                $saved = $this->writeContentToHandle($handle, $content);
-                // Flush output before releasing the lock
-                fflush($handle);
-                // Release the lock
-                flock($handle, LOCK_UN);
-                // Close the handle
-                @fclose($handle);
-            }
-        }
-        return $saved;
-    }
-
-    /**
-     * Get file content
-     *
-     * @param string $absolutePath
-     * @return string
-     */
-    public function getFileContent(string $absolutePath): string
-    {
-        $content = '';
-        if ($this->isFile($absolutePath)) {
-            $handle = @fopen($absolutePath, 'rb');
-            if ($this->isResource($handle) && flock($handle, LOCK_EX | LOCK_SH)) {
-                $start = null;
-                $timeout = @ini_get('default_socket_timeout');
-                while (!$this->safeFeof($handle, $start) && (microtime(true) - $start) < $timeout) {
-                    $read = fread($handle, self::CHUNK_SIZE);
-                    if ($this->isString($read)) {
-                        $content .= $read;
-                    } else {
-                        break;
-                    }
-                }
-                flock($handle, LOCK_UN);
-                @fclose($handle);
-            }
-        }
-        return str_ireplace(PHP_EOL, "\n", $content);
-    }
-
-    /**
-     * Write content to handle
-     *
-     * @param mixed $handle
-     * @param string $content
-     * @return bool
-     */
-    public function writeContentToHandle(mixed $handle, string $content): bool
-    {
-        $offset = 0;
-        if ($this->isResource($handle)) {
-            while ($offset < strlen($content)) {
-                $chunk = substr($content, $offset, self::CHUNK_SIZE);
-                if ((@fwrite($handle, $chunk)) === false) {
-                    break;
-                }
-                $offset += self::CHUNK_SIZE;
-            }
-        }
-        return $offset >= 1;
     }
 
     /**
      * Get the operating system
      * @return string
      */
-    public function getOS(): string
+    public static function getOS(): string
     {
         $os = strtolower(PHP_OS);
         if (substr($os, 0, 3) === "win") {
@@ -250,13 +107,12 @@ class Methods
 
     /**
      * Determine if resource is stream
-     *
      * @param mixed $resource
      * @return bool
      */
-    public function isResourceStream(mixed $resource): bool
+    public static function isResourceStream(mixed $resource): bool
     {
-        return $this->isResource($resource) && @get_resource_type($resource) == "stream";
+        return self::isResource($resource) && @get_resource_type($resource) == "stream";
     }
 
     /**
@@ -265,9 +121,9 @@ class Methods
      * @param mixed $resource
      * @return bool
      */
-    public function isResourceCurl(mixed $resource): bool
+    public static function isResourceCurl(mixed $resource): bool
     {
-        return $this->isResource($resource) && @get_resource_type($resource) == "curl";
+        return self::isResource($resource) && @get_resource_type($resource) == "curl";
     }
 
     /**
@@ -275,7 +131,7 @@ class Methods
      *
      * @return void
      */
-    public function unlimitedWorkflow(): void
+    public static function unlimitedWorkflow(): void
     {
         @ini_set("memory_limit", "-1");
         @ini_set("max_execution_time", "0");
@@ -284,7 +140,6 @@ class Methods
 
     /**
      * Create a web browser cookie
-     *
      * @param string $name
      * @param string $value
      * @param int $days
@@ -295,7 +150,7 @@ class Methods
      * @param string $samesite
      * @return bool
      */
-    public function createCookie(string $name, string $value, int $days, string $path, string $domain, bool $secure, bool $httponly, string $samesite): bool
+    public static function createCookie(string $name, string $value, int $days, string $path, string $domain, bool $secure, bool $httponly, string $samesite): bool
     {
         $expires = strtotime('+' . $days . ' days');
         return @setcookie($name, $value, array('expires' => $expires, 'path' => $path, 'domain' => $domain, 'secure' => $secure, 'httponly' => $httponly, 'samesite' => ucfirst($samesite)));
@@ -312,16 +167,15 @@ class Methods
      * @param string $samesite
      * @return bool
      */
-    public function deleteCookie(string $name, string $path, string $domain, bool $secure, bool $httponly, string $samesite): bool
+    public static function deleteCookie(string $name, string $path, string $domain, bool $secure, bool $httponly, string $samesite): bool
     {
         if (isset($_COOKIE[$name])) {
             $expires = strtotime('2010');
             $setcookie = @setcookie($name, "", array('expires' => $expires, 'path' => $path, 'domain' => $domain, 'secure' => $secure, 'httponly' => $httponly, 'samesite' => ucfirst($samesite)));
-            if ($this->isTrue($setcookie)) {
+            if (self::isTrue($setcookie)) {
                 try {
                     unset($_COOKIE['' . $name . '']);
                 } catch (\Throwable $e) {
-
                 }
                 return true;
             }
@@ -331,17 +185,16 @@ class Methods
 
     /**
      * Get the readable permission of a file
-     *
-     * @param string $absolutePath
+     * @param string $path The path to the file or directory
      * @return string
      */
-    public function getReadablePermission(string $absolutePath): string
+    public static function getReadablePermission(string $path): string
     {
         // Convert numeric mode to symbolic representation
         $info = '';
-        if ($this->isExists($absolutePath)) {
+        if (self::isExists($path)) {
             // Get the file permissions as a numeric mode
-            $perms = fileperms($absolutePath);
+            $perms = fileperms($path);
             // Determine file type
             $fileType = $perms & 0xF000;
             if ($fileType === 0xC000) {
@@ -353,7 +206,7 @@ class Methods
             } elseif ($fileType === 0x6000) {
                 $info = 'b'; // Block special
             } elseif ($fileType === 0x4000) {
-                $info = 'd'; // Directory
+                $info = 'd'; // Fileectory
             } elseif ($fileType === 0x2000) {
                 $info = 'c'; // Character special
             } elseif ($fileType === 0x1000) {
@@ -373,107 +226,15 @@ class Methods
 
     /**
      * Get the permission of a file
-     *
-     * @param string $absolutePath
+     * @param string $path The path to the file or directory
      * @return string
      */
-    public function getPermission(string $absolutePath): string
+    public static function getPermission(string $path): string
     {
-        if ($this->isFile($absolutePath) && $this->isInt(@fileperms($this->resolvePath($absolutePath)))) {
-            return substr(sprintf('%o', @fileperms($this->resolvePath($absolutePath))), -4);
+        if (self::isExists($path) && self::isInt(@fileperms(self::resolvePath($path)))) {
+            return substr(sprintf('%o', @fileperms(self::resolvePath($path))), -4);
         }
         return "";
-    }
-
-    /**
-     * Get a file type
-     *
-     * @param string $absolutePath
-     * @return string | bool
-     */
-    public function getFileType(string $absolutePath): string|bool
-    {
-        if ($this->isFile($absolutePath)) {
-            return @filetype($this->resolvePath($absolutePath));
-        }
-        return "unknown";
-    }
-
-    /**
-     * Gives information about a file or symbolic link
-     *
-     * @param string $absolutePath
-     * @param string $key
-     * @return array
-     */
-    public function getStats(string $absolutePath, string $key): array
-    {
-        if ($this->isFile($absolutePath)) {
-            $stat = @lstat($absolutePath);
-            $stats = array();
-            if ($this->isArray($stat)) {
-                foreach ($stat as $k => $v) {
-                    if ($this->isString($k)) {
-                        $stats[$k] = $v;
-                    }
-                }
-                if ($this->isNotEmptyString($key) && isset($stats[$key])) {
-                    return $stats[$key];
-                }
-                $stat = null;
-                return $stats;
-            }
-        }
-        return array();
-    }
-
-    /**
-     * Get a file info
-     *
-     * @param string $absolutePath
-     * @return array
-     */
-    public function getFileInfo(string $absolutePath): array
-    {
-        if ($this->isFile($absolutePath)) {
-            $array = array();
-            $i = new \SplFileInfo($absolutePath);
-            $array['realpath'] = $i->getRealPath();
-            $array['dirname'] = $i->getPath();
-            $array['basename'] = $i->getBasename();
-            $array['extension'] = $i->getExtension();
-            $array['filename'] = $i->getBasename("." . $i->getExtension());
-            $array['size'] = array('raw' => $i->getSize(), 'readable' => $this->formatSize($this->getFIlesizeInBytes($absolutePath)));
-            $array['atime'] = array('raw' => $i->getATime(), 'readable' => $this->readableUnix($i->getATime()));
-            $array['mtime'] = array('raw' => $i->getMTime(), 'readable' => $this->readableUnix($i->getMTime()));
-            $array['ctime'] = array('raw' => $i->getCTime(), 'readable' => $this->readableUnix($i->getCTime()));
-            $array['mime'] = $this->getMime($absolutePath);
-            $array['type'] = $i->getType();
-            $array['permission'] = array('raw' => $this->getPermission($absolutePath), 'readable' => $this->getReadablePermission($absolutePath));
-            $array['owner'] = array('raw' => $i->getOwner(), 'readable' => (function_exists("posix_getpwuid") ? posix_getpwuid($i->getOwner()) : ""));
-            $array['group'] = array('raw' => $i->getGroup(), 'readable' => (function_exists("posix_getgrgid") ? posix_getgrgid($i->getGroup()) : ""));
-            if ($i->isLink()) {
-                $array['target'] = $i->getLinkTarget();
-            }
-            $array['executable'] = $i->isExecutable();
-            $array['readable'] = $i->isReadable();
-            $array['writable'] = $i->isWritable();
-            return array_filter($array);
-        }
-        return array();
-    }
-
-    /**
-     * Touch a file (Sets access and modification time of file)
-     *
-     * @param string $absolutePath
-     * @param int $mtime: Defaults to 'null'
-     * @param int $atime: Defaults to 'null'
-     * @return bool
-     */
-    public function touchFile(string $absolutePath, ?int $mtime = null, ?int $atime = null): bool
-    {
-        return @touch($absolutePath, $mtime, $atime);
     }
 
     /**
@@ -482,163 +243,107 @@ class Methods
      * @param string $path
      * @return string
      */
-    public function getDirname(string $path): string
+    public static function getFilename(string $path): string
     {
         return isset(pathinfo($path)['dirname']) ? pathinfo($path)['dirname'] : $path;
     }
 
     /**
-     * Get file or directory extension
-     *
-     * @param string $path
-     * @return string
-     */
-    public function getExtension(string $path): string
-    {
-        return isset(pathinfo($path)['extension']) ? pathinfo($path)['extension'] : "";
-    }
-
-    /**
      * Get the owner of the file
-     * @param string $absolutePath
+     * @param string $file
      * @return int|false
      */
-    public function getOwner(string $absolutePath): int|false
+    public static function getOwner(string $file): int|false
     {
-        return @fileowner($absolutePath);
+        return @fileowner($file);
     }
 
     /**
      * Get the group of the file
-     * @param string $absolutePath
+     * @param string $file
      * @return int|false
      */
-    public function getGroup(string $absolutePath): int|false
+    public static function getGroup(string $file): int|false
     {
-        return @filegroup($absolutePath);
+        return @filegroup($file);
     }
 
     /**
      * Get the inode number of the file
-     * @param string $absolutePath
+     * @param string $file
      * @return int|false
      */
-    public function getInode(string $absolutePath): int|false
+    public static function getInode(string $file): int|false
     {
-        return @fileinode($absolutePath);
-    }
-
-    /**
-     * Get the type of the file
-     * @param string $absolutePath
-     * @return string|false
-     */
-    public function getType(string $absolutePath): string|false
-    {
-        return @filetype($absolutePath);
+        return @fileinode($file);
     }
 
     /**
      * Get the link target of the file
-     * @param string $absolutePath
+     * @param string $file
      * @return string|false
      */
-    public function getSymLinkTarget(string $absolutePath): string|false
+    public static function getSymLinkTarget(string $file): string|false
     {
-        return @readlink($absolutePath);
+        return @readlink($file);
     }
 
     /**
      * Get the real path of the file
-     * @param string $absolutePath
+     * @param string $file
      * @return string|false
      */
-    public function getRealPath(string $absolutePath): string|false
+    public static function getRealPath(string $file): string|false
     {
-        return @$this->resolvePath($absolutePath);
+        return @self::resolvePath($file);
     }
 
     /**
      * Get the owner name of the file
-     * @param string $absolutePath
+     * @param string $file
      * @return mixed
      */
-    public function getOwnerName(string $absolutePath): mixed
+    public static function getOwnerName(string $file): mixed
     {
-        return function_exists("posix_getpwuid") ? @posix_getpwuid($this->getOwner($absolutePath))['name'] : $this->getOwner($absolutePath);
+        return function_exists("posix_getpwuid") ? @posix_getpwuid(self::getOwner($file))['name'] : self::getOwner($file);
     }
 
     /**
      * Get the group name of the file
-     * @param string $absolutePath
+     * @param string $file
      * @return mixed
      */
-    public function getGroupName(string $absolutePath): mixed
+    public static function getGroupName(string $file): mixed
     {
-        return function_exists("posix_getpwuid") ? @posix_getgrgid($this->getGroup($absolutePath))['name'] : $this->getGroup($absolutePath);
+        return function_exists("posix_getpwuid") ? @posix_getgrgid(self::getGroup($file))['name'] : self::getGroup($file);
     }
 
     /**
      * Changes file group
-     * @param string $absolutePath
+     * @param string $file
      * @param string|int $group
      * @return bool
      */
-    public function changeGroup(string $absolutePath, string|int $group): bool
+    public static function changeGroup(string $file, string|int $group): bool
     {
-        if ($this->isFile($absolutePath)) {
-            return @chgrp($absolutePath, $group);
+        if (File::isFile($file)) {
+            return @chgrp($file, $group);
         }
         return false;
     }
 
     /**
      * Changes file owner
-     * @param string $absolutePath
+     * @param string $file
      * @param string|int $owner
      * @return bool
      */
-    public function changeOwner(string $absolutePath, string|int $owner = ''): bool
+    public static function changeOwner(string $file, string|int $owner = ''): bool
     {
-        if ($this->isFile($absolutePath)) {
-            return @chown($absolutePath, $owner);
+        if (File::isFile($file)) {
+            return @chown($file, $owner);
         }
         return false;
-    }
-
-    /**
-     * Remove extension from a path name
-     * @param string $path
-     * @return string
-     */
-    public function removeExtension(string $path): string
-    {
-        $extension = $this->getExtension($path);
-        if ($this->isNotEmptyString($extension)) {
-            return substr($path, 0, -(strlen($extension) + 1));
-        }
-        return $path;
-    }
-
-    /**
-     * Gets the size of a directory
-     * @param string $path
-     * @param bool $recursive
-     * @return int
-     */
-    public function getDirSize(string $path, bool $recursive = true): int
-    {
-        $size = 0;
-        $files = $this->isTrue($recursive) ? $this->scanDirRecursively($path) : $this->scanDir($path);
-        foreach ($files as $index => $value) {
-            if ($this->isFile($value) && $this->isReadable($value)) {
-                $size += $this->getFIlesizeInBytes($value);
-                clearstatcache(false, $value);
-            }
-        }
-        $files = null;
-        unset($files);
-        return $size;
     }
 
     /**
@@ -647,7 +352,7 @@ class Methods
      * @param string $pattern
      * @return bool
      */
-    public function matchFilename(string $filename, string $pattern): bool
+    public static function matchFilename(string $filename, string $pattern): bool
     {
         $inverted = false;
         if ($pattern[0] == '!') {
@@ -658,176 +363,18 @@ class Methods
     }
 
     /**
-     * Open a directory recursively and list out the files
-     * @param string $path
-     * @return array
-     */
-    public function scanDirRecursively(string $path): array
-    {
-        $lists = array();
-        if ($this->isNotEmptyString($path) && $this->isDir($path) && $this->isReadable($path)) {
-            $path = $this->resolvePath($path);
-            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::UNIX_PATHS | \FilesystemIterator::CURRENT_AS_FILEINFO), \RecursiveIteratorIterator::CHILD_FIRST);
-            foreach ($iterator as $list) {
-                $lists[] = $this->resolvePath($list->getRealPath());
-            }
-            $i = null;
-            unset($i);
-        }
-        return $lists;
-    }
-
-    /**
-     * Scan a directory and return files list
-     * @param string $path
-     * @return array
-     */
-    public function scanDir(string $path): array
-    {
-        $lists = array();
-        if ($this->isDir($path) && $this->isReadable($path)) {
-            $path = $this->resolvePath($path);
-            $iterator = new \IteratorIterator(new \DirectoryIterator($path));
-            foreach ($iterator as $list) {
-                if(!$list->isDot()) {
-                    $lists[] = $this->resolvePath($list->getRealPath());
-                }
-            }
-
-        }
-        return $lists;
-    }
-
-    public function scanDirForPattern(string $path, string $pattern = "", bool $recursive = false): array
-    {
-        $lists = array();
-        if ($this->isNotEmptyString($path) && $this->isDir($path) && $this->isReadable($path)) {
-            $path = $this->resolvePath($path);
-            $iterator = $recursive ? new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::UNIX_PATHS | \FilesystemIterator::CURRENT_AS_SELF) : new \DirectoryIterator($path);
-            if(!$this->isEmptyString($pattern)) {
-                $CallbackFilterIterator = $recursive ? "\RecursiveCallbackFilterIterator" : "\CallbackFilterIterator";
-                $iterator = new $CallbackFilterIterator($iterator, function ($current) use ($pattern) {
-                    // TRUE to accept the current item to the iterator, FALSE otherwise
-                    if ($current->isDir() && !$current->isDot()) {
-                        return true;
-                    } else {
-                        return $this->matchFilename($current->getRealPath(), $pattern);
-                    }
-                });
-            }
-            $iterator = $recursive ? new \RecursiveIteratorIterator($iterator) : new \IteratorIterator($iterator);
-            foreach ($iterator as $key => $list) {
-                $lists[] = $this->resolvePath($list->getRealPath());
-            }
-        }
-
-        return $lists;
-    }
-
-    /**
-     * Gets the information of file in a directory
-     * @param string $path
-     * @param bool $recursive
-     * @return array
-     */
-    public function getDirFilesInfo(string $path, bool $recursive = true): array
-    {
-        $array = array();
-        $files = $this->isTrue($recursive) ? $this->scanDirRecursively($path) : $this->scanDir($path);
-        foreach ($files as $index => $file) {
-            if ($this->isFile($file)) {
-                $array[] = $this->getFileInfo($file);
-            } elseif ($this->isDir($file)) {
-
-            }
-        }
-        $files = null;
-        unset($files);
-        return $array;
-    }
-
-    /**
-     * Search a directory
-     * @param string $path
-     * @param array $matches
-     * @param bool $asExtensions If true, it assume $matches are extensions to match against else match filenames containing the matches
-     * @param bool $recursive
-     * @return array
-     */
-    public function searchDir(string $path, array $matches = array(), bool $asExtensions = false, bool $recursive = true): array
-    {
-        $results = array();
-        // Get files list, either recursively or non-recursively
-        $files = $recursive ? $this->scanDirRecursively($path) : $this->scanDir($path);
-        // Iterate through each file in the directory
-        foreach ($files as $file) {
-            $info = $this->getFileInfo($file);
-            // Check each match pattern
-            foreach ($matches as $match) {
-                if ($asExtensions) {
-                    // If searching by extension, check the file extension
-                    $extension = $info['extension'] ?? "";
-                    if ($this->endsWith(strtolower($extension), strtolower($match))) {
-                        $results[] = $file;
-                    }
-                } else {
-                    // Otherwise, check if the file name contains the match string
-                    if ($this->containText(strtolower($match), strtolower($file))) {
-                        $results[] = $file;
-                    }
-                }
-            }
-        }
-        return $results;
-    }
-
-    /**
      * Convert a path name extension to either lowercase or uppercase
      * @param string $path
      * @param bool $toLowercase
      * @return string
      */
-    public function convertExtension(string $path, bool $toLowercase = true): string
+    public static function convertExtension(string $path, bool $toLowercase = true): string
     {
-        $extension = $this->getExtension($path);
-        if ($this->isNotEmptyString($extension)) {
-            return $this->removeExtension($path) . "." . ($toLowercase ? strtolower($extension) : strtoupper($extension));
+        $extension = File::getExtension($path);
+        if (self::isNotEmptyString($extension)) {
+            return File::removeExtension($path) . "." . ($toLowercase ? strtolower($extension) : strtoupper($extension));
         }
         return $path;
-    }
-
-    /**
-     * Delete a file based on extensions
-     * @param string $path
-     * @param array $extensions
-     * @param bool $recursive: Default to 'true'
-     * @return void
-     */
-    public function deleteFilesBasedOnExtension(string $path, array $extensions = array(), bool $recursive = true): void
-    {
-        if ($this->isDir($path) && $this->isReadable($path)) {
-            $path = $this->path->insert_dir_separator($this->resolvePath($path));
-            foreach ($extensions as $extension) {
-                if ($this->isTrue($recursive)) {
-                    $i = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
-                    foreach ($i as $list) {
-                        $list = $this->resolvePath($list->getRealPath());
-                        $info = $this->getFileInfo($list);
-                        $si = (isset($info['extension']) ? $info['extension'] : "");
-                        if (strtolower($si) == strtolower($extension)) {
-                            $this->deleteFile($list);
-                        }
-                    }
-                } else {
-                    $glob = glob($path . '*.' . $extension);
-                    if ($this->isNotFalse($glob) && $this->isArray($glob)) {
-                        foreach ($glob as $list) {
-                            $this->deleteFile($list);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     /**
@@ -835,7 +382,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function safeEncode(string $string): string
+    public static function safeEncode(string $string): string
     {
         return rtrim(strtr(base64_encode($string), '+/', '-_'), '=');
     }
@@ -845,7 +392,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function safeDecode(string $string): string
+    public static function safeDecode(string $string): string
     {
         return @base64_decode(str_pad(strtr($string, '-_', '+/'), (strlen($string) % 4), '=', STR_PAD_RIGHT));
     }
@@ -855,7 +402,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function clean(string $string): string
+    public static function clean(string $string): string
     {
         return strip_tags(htmlspecialchars($string));
     }
@@ -866,7 +413,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function replaceInvalidChars(string $string): string
+    public static function replaceInvalidChars(string $string): string
     {
         return isset($string) ? str_ireplace(self::INVALID_CHARS, array('-'), $string) : false;
     }
@@ -876,7 +423,7 @@ class Methods
      * @param string|null $string
      * @return string
      */
-    public function removeSpecialChars(?string $string = null): string
+    public static function removeSpecialChars(?string $string = null): string
     {
         return isset($string) ? preg_replace('/[^A-Za-z0-9]/', '', $string) : false;
     }
@@ -885,7 +432,7 @@ class Methods
      * Get the protocol (http or https)
      * @return string
      */
-    public function protocol(): string
+    public static function protocol(): string
     {
         return getenv("HTTPS") !== null && getenv("HTTPS") === 'on' ? "https" : "http";
     }
@@ -894,7 +441,7 @@ class Methods
      * Get the server protocol (HTTP/1.1)
      * @return string
      */
-    public function serverProtocol(): string
+    public static function serverProtocol(): string
     {
         return getenv("SERVER_PROTOCOL");
     }
@@ -905,7 +452,7 @@ class Methods
      * @return stringGet the host (localhost)
      * @return string
      */
-    public function host(): string
+    public static function host(): string
     {
         return getenv('HTTP_HOST');
     }
@@ -914,7 +461,7 @@ class Methods
      * Get the http referer
      * @return string
      */
-    public function referer(): string
+    public static function referer(): string
     {
         return getenv("HTTP_REFERER");
     }
@@ -923,7 +470,7 @@ class Methods
      * Get the server name (localhost)
      * @return string
      */
-    public function serverName(): string
+    public static function serverName(): string
     {
         return getenv("SERVER_NAME");
     }
@@ -932,7 +479,7 @@ class Methods
      * Get the php self value (/index.php)
      * @return string
      */
-    public function self(): string
+    public static function self(): string
     {
         return getenv("PHP_SELF");
     }
@@ -941,7 +488,7 @@ class Methods
      * Get the script filename (C:/xampp/htdocs/index.php)
      * @return string
      */
-    public function scriptFilename(): string
+    public static function scriptFilename(): string
     {
         return getenv("SCRIPT_FILENAME");
     }
@@ -950,7 +497,7 @@ class Methods
      * Get the script filename (/index.php)
      * @return string
      */
-    public function scriptName(): string
+    public static function scriptName(): string
     {
         return getenv("SCRIPT_NAME");
     }
@@ -959,7 +506,7 @@ class Methods
      * Get the unix timestamp
      * @return int
      */
-    public function unixTimestamp(): int
+    public static function unixTimestamp(): int
     {
         return time();
     }
@@ -968,25 +515,25 @@ class Methods
      * Get the current url
      * @return string
      */
-    public function currentUrl(): string
+    public static function currentUrl(): string
     {
-        return $this->protocol() . "://" . $this->host();
+        return self::protocol() . "://" . self::host();
     }
 
     /**
      * Get the complete current url with referer
      * @return string
      */
-    public function completeCurrentUrl(): string
+    public static function completeCurrentUrl(): string
     {
-        return $this->currentUrl() . $this->path->left_delete_dir_separator($this->requestURI());
+        return self::currentUrl() . File::left_delete_dir_separator(self::requestURI());
     }
 
     /**
      * Get the http user agent (Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36)
      * @return string
      */
-    public function userAgent(): string
+    public static function userAgent(): string
     {
         return getenv("HTTP_USER_AGENT");
     }
@@ -995,7 +542,7 @@ class Methods
      * Check if ssl is active
      * @return bool
      */
-    public function sslActive(): bool
+    public static function sslActive(): bool
     {
         return (getenv('HTTPS') == 'on' || getenv('HTTPS') == '1' || getenv('SERVER_PORT') == '443');
     }
@@ -1006,7 +553,7 @@ class Methods
      * @param string $value
      * @return bool
      */
-    public function createSession(string $name, string $value): bool
+    public static function createSession(string $name, string $value): bool
     {
         @session_start();
         $_SESSION[$name] = $value;
@@ -1018,7 +565,7 @@ class Methods
      * @param string $name
      * @return bool
      */
-    public function deleteSession(string $name): bool
+    public static function deleteSession(string $name): bool
     {
         @session_start();
         unset($_SESSION[$name]);
@@ -1030,7 +577,7 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isFunction(mixed $arg): bool
+    public static function isFunction(mixed $arg): bool
     {
         return ($arg instanceof Closure) && is_callable($arg);
     }
@@ -1039,7 +586,7 @@ class Methods
      * Get the request url
      * @return string
      */
-    public function requestURI(): string
+    public static function requestURI(): string
     {
         if (getenv('REQUEST_URI') !== null) {
             return getenv('REQUEST_URI');
@@ -1056,7 +603,7 @@ class Methods
      * @param array $array
      * @return string
      */
-    public function arrayToJson(array $array): string
+    public static function arrayToJson(array $array): string
     {
         return json_encode($array, JSON_FORCE_OBJECT);
     }
@@ -1066,7 +613,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function stringToJson(string $string): string
+    public static function stringToJson(string $string): string
     {
         return json_encode($string, JSON_FORCE_OBJECT);
     }
@@ -1076,7 +623,7 @@ class Methods
      * @param string $json
      * @return array
      */
-    public function jsonToArray(string $json): array
+    public static function jsonToArray(string $json): array
     {
         return json_decode($json, JSON_OBJECT_AS_ARRAY) ?? [];
     }
@@ -1087,9 +634,9 @@ class Methods
      * @param string $separator The character to use as the separator
      * @return string
      */
-    public function arrayToString(array $array, string $separator = ", "): string
+    public static function arrayToString(array $array, string $separator = ", "): string
     {
-        return $this->isArray($array) ? implode($separator, $array) : "";
+        return self::isArray($array) ? implode($separator, $array) : "";
     }
 
     /**
@@ -1097,7 +644,7 @@ class Methods
      * @param string $data
      * @return string
      */
-    public function base64_encode_no_padding(string $data): string
+    public static function base64_encode_no_padding(string $data): string
     {
         $encoded = base64_encode($data);
         return rtrim($encoded, '=');
@@ -1108,7 +655,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function base64_decode_no_padding(string $string): string
+    public static function base64_decode_no_padding(string $string): string
     {
         // Add padding back if necessary
         $length = strlen($string) % 4;
@@ -1123,7 +670,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function base64_encode_crlf(string $string): string
+    public static function base64_encode_crlf(string $string): string
     {
         $encoded = base64_encode($string);
         return str_replace("\n", "\r\n", $encoded);
@@ -1134,7 +681,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function base64_decode_crlf(string $string): string
+    public static function base64_decode_crlf(string $string): string
     {
         $string = str_replace("\r\n", "\n", $string);
         return base64_decode($string);
@@ -1145,7 +692,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function base64_encode_url_safe(string $string): string
+    public static function base64_encode_url_safe(string $string): string
     {
         $encoded = strtr(base64_encode($string), '+/', '-_');
         return rtrim($encoded, '=');
@@ -1156,7 +703,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function base64_decode_url_safe(string $string): string
+    public static function base64_decode_url_safe(string $string): string
     {
         $string = strtr($string, '-_', '+/');
         return base64_decode($string);
@@ -1167,7 +714,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function base64_encode_no_wrap(string $string): string
+    public static function base64_encode_no_wrap(string $string): string
     {
         $encoded = base64_encode($string);
         return str_replace("\n", '', $encoded);
@@ -1178,7 +725,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function base64_decode_no_wrap(string $string): string
+    public static function base64_decode_no_wrap(string $string): string
     {
         $string = str_replace("\n", '', $string);
         return base64_decode($string);
@@ -1190,19 +737,19 @@ class Methods
      * @param bool $recursive
      * @return bool
      */
-    public function setPermissions(string $path, bool $recursive = false): bool
+    public static function setPermissions(string $path, bool $recursive = false): bool
     {
-        if ($this->isFile($path)) {
-            $path = $this->resolvePath($path);
+        if (File::isFile($path)) {
+            $path = self::resolvePath($path);
             return @chmod($path, self::FILE_PERMISSION);
-        } elseif ($this->isDir($path)) {
-            if ($this->isTrue($recursive)) {
-                $i = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
+        } elseif (File::isFile($path)) {
+            if (self::isTrue($recursive)) {
+                $i = new \RecursiveIteratorIterator(new \RecursiveFileectoryIterator($path, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
                 foreach ($i as $list) {
-                    $list = $this->resolvePath($list->getRealPath());
-                    if ($this->isFile($list)) {
+                    $list = self::resolvePath($list->getRealPath());
+                    if (File::isFile($list)) {
                         @chmod($list, self::FILE_PERMISSION);
-                    } elseif ($this->isDir($list)) {
+                    } elseif (File::isFile($list)) {
                         @chmod($list, self::DIRECTORY_PERMISSION);
                     }
                 }
@@ -1213,88 +760,16 @@ class Methods
     }
 
     /**
-     * Make a directory. This function will return true if the directory already exist
-     * @param string $path
-     * @return bool
-     */
-    public function makeDir(string $path): bool
-    {
-        if ($this->isDir($path)) {
-            $this->setPermissions($path);
-            return true;
-        } else {
-            try {
-                if ($this->isTrue(@mkdir($path, self::DIRECTORY_PERMISSION, true))) {
-                    $this->setPermissions($path);
-                    return true;
-                }
-            } catch (\Throwable $e) {
-
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Delete a file
-     * @param string $absolutePath
-     * @return bool
-     */
-    public function deleteFile(string $absolutePath): bool
-    {
-        if ($this->isFile($absolutePath)) {
-            return @unlink($absolutePath);
-        }
-        return false;
-    }
-
-    /**
-     * Delete a directory
-     * @param string $path
-     * @return bool
-     */
-    public function deleteDir(string $path): bool
-    {
-        return $this->emptyDirectory($path, true);
-    }
-
-    /**
      * Delete a file or directory
      * @param string $path
      * @return bool
      */
-    public function delete(string $path): bool
+    public static function delete(string $path): bool
     {
-        if ($this->isFile($path)) {
-            return $this->deleteFile($path);
-        } elseif ($this->isDir($path)) {
-            return $this->deleteDir($path);
-        }
-        return false;
-    }
-
-    /**
-     * Empty a directory
-     * @param string $path
-     * @param bool $delete Wether to delete the directory is self after deleting the directory contents
-     * @return bool
-     */
-    public function emptyDirectory(string $path, bool $delete = false): bool
-    {
-        if ($this->isDir($path)) {
-            $i = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
-            foreach ($i as $list) {
-                $list = $this->resolvePath($list->getRealPath());
-                if ($this->isFile($list)) {
-                    $this->deleteFile($list);
-                } elseif ($this->isDir($list)) {
-                    @rmdir($list);
-                }
-            }
-            if ($this->isTrue($delete)) {
-                return @rmdir($path);
-            }
-            return true;
+        if (\is_file($path)) {
+            return File::deleteFile($path);
+        } elseif (\is_dir($path)) {
+            return File::deleteFile($path);
         }
         return false;
     }
@@ -1305,9 +780,9 @@ class Methods
      * @param type $reset Wether to reset
      * @return void
      */
-    public function setMBInternalEncoding($reset = false): void
+    public static function setMBInternalEncoding($reset = false): void
     {
-        if ($this->isFalse(function_exists('mb_internal_encoding'))) {
+        if (self::isFalse(function_exists('mb_internal_encoding'))) {
             return;
         }
         static $encodings = [];
@@ -1329,103 +804,10 @@ class Methods
      * Check if headers are sent to browser
      * @return bool
      */
-    public function headersSent(): bool
+    public static function headersSent(): bool
     {
         if (headers_sent() === true) {
             return true;
-        }return false;
-    }
-
-    /**
-     * Copy a file to destination
-     * @param string $source
-     * @param string $destination
-     * @return bool
-     */
-    public function copyFile(string $source, string $destination): bool
-    {
-        if ($this->isFile($destination)) {
-            return true;
-        } elseif ($this->isFile($source)) {
-            clearstatcache(false, $source);
-            if (@copy($source, $destination)) {
-                $this->setPermissions($destination);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Copy a file to the destination directory
-     * @param string $source
-     * @param string $dir
-     * @return bool
-     */
-    public function copyFileToDir(string $source, string $dir): bool
-    {
-        if ($this->isFile($source)) {
-            $dir = $this->path->insert_dir_separator($dir);
-            if ($this->isNotDir($dir)) {
-                $this->makeDir($dir);
-            }
-            $destination = $dir . basename($source);
-            if ($this->isFile($destination)) {
-                return true;
-            } elseif (@copy($source, $destination)) {
-                $this->setPermissions($destination);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Move a file or directory to destination
-     * @param string $source
-     * @param string $destination
-     * @return bool
-     */
-    public function moveFile(string $source, string $destination): bool
-    {
-        if ($this->isFile($destination)) {
-            return true;
-        } elseif ($this->isFile($source)) {
-            clearstatcache(false, $source);
-            if (@rename($source, $destination)) {
-                if ($source !== $destination) {
-                    $this->deleteFile($source);
-                }
-                $this->setPermissions($destination);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Move a file or directory to destination directory
-     * @param string $absolutePath
-     * @param string $dir
-     * @return bool
-     */
-    public function moveFileToDir(string $absolutePath, string $dir): bool
-    {
-        if ($this->isFile($absolutePath)) {
-            $dir = $this->path->insert_dir_separator($dir);
-            if ($this->isNotDir($dir)) {
-                $this->makeDir($dir);
-            }
-            $destination = $dir . basename($absolutePath);
-            if ($this->isFile($destination)) {
-                return true;
-            } elseif (@rename($absolutePath, $destination)) {
-                if ($absolutePath !== $destination) {
-                    $this->deleteFile($absolutePath);
-                }
-                $this->setPermissions($destination);
-                return true;
-            }
         }
         return false;
     }
@@ -1435,12 +817,12 @@ class Methods
      * @param string $which If value is not 'key' an id will be generated, else random characters
      * @return string
      */
-    public function randUnique(string $which = "key"): string
+    public static function randUnique(string $which = "key"): string
     {
         if (strtolower($which) == 'key') {
             return hash_hmac('sha256', bin2hex(random_bytes(16)), '');
         }
-        return str_shuffle(mt_rand(100000, 999999) . $this->unixTimestamp());
+        return str_shuffle(mt_rand(100000, 999999) . self::unixTimestamp());
     }
 
     /**
@@ -1448,7 +830,7 @@ class Methods
      * @param string $key
      * @return string
      */
-    public function getHeader(string $key): string
+    public static function getHeader(string $key): string
     {
         $heades = getallheaders();
         if (isset($heades[$key])) {
@@ -1461,9 +843,9 @@ class Methods
      * Get the authorization header
      * @return string
      */
-    public function getAuthorizationHeader(): string
+    public static function getAuthorizationHeader(): string
     {
-        return $this->getHeader("Authorization");
+        return self::getHeader("Authorization");
     }
 
     /**
@@ -1472,7 +854,7 @@ class Methods
      * @return string
      * @throws \Exception
      */
-    public function parseJSON(string $string): string
+    public static function parseJSON(string $string): string
     {
         $parsed = @json_decode($string ?: '{}');
         $errors = array(
@@ -1500,7 +882,7 @@ class Methods
      * @param int $height
      * @return array
      */
-    public function scaleIDemention(int $originalWidth, int $originalHeight, int $width, int $height): array
+    public static function scaleIDemention(int $originalWidth, int $originalHeight, int $width, int $height): array
     {
         if ($originalWidth > $width && ($originalWidth / $width) > ($originalHeight / $height)) {
             $width = $originalWidth * ($width / $originalWidth);
@@ -1521,15 +903,15 @@ class Methods
      * @param string $extension
      * @param bool $useWandH
      * @param bool $scaleIDemention
-     * @param string $absolutePath If empty, the source will be used
+     * @param string $file If empty, the source will be used
      * @return bool
      */
-    public function convertImage(string $source, string $extension = "webp", bool $useWandH = false, bool $scaleIDemention = false, string $absolutePath = ""): bool
+    public static function convertImage(string $source, string $extension = "webp", bool $useWandH = false, bool $scaleIDemention = false, string $file = ""): bool
     {
         $validExtensions = array("webp", "png", "jpg", "gif");
         if (in_array($extension, $validExtensions)) {
             $sourceData = @getimagesize($source);
-            if ($this->isNotFalse($sourceData)) {
+            if (self::isNotFalse($sourceData)) {
                 $width = $sourceData[0];
                 $height = $sourceData[1];
                 $mime = $sourceData['mime'];
@@ -1551,16 +933,16 @@ class Methods
                     default:
                         $image = false;
                 }
-                if ($this->isNotFalse($image)) {
+                if (self::isNotFalse($image)) {
                     $imageWidth = $useWandH ? $width : self::IMAGE_WIDTH;
                     $imageHeight = $useWandH ? $height : self::IMAGE_HEIGHT;
                     if ($scaleIDemention) {
-                        list($imageWidth, $imageHeight) = $this->scaleIDemention($width, $height, $imageWidth, $imageHeight);
+                        list($imageWidth, $imageHeight) = self::scaleIDemention($width, $height, $imageWidth, $imageHeight);
                     }
                     $color = @imagecreatetruecolor($imageWidth, $imageHeight);
-                    if ($this->isNotFalse($color)) {
+                    if (self::isNotFalse($color)) {
                         @imagecopyresampled($color, $image, 0, 0, 0, 0, $imageWidth, $imageHeight, $width, $height);
-                        $outputPath = $this->isNotEmptyString($absolutePath) ? $absolutePath : $source;
+                        $outputPath = self::isNotEmptyString($file) ? $file : $source;
                         $saved = false;
                         switch ($extension) {
                             case "webp":
@@ -1589,7 +971,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function hashString(string $string): string
+    public static function hashString(string $string): string
     {
         return password_hash($string, PASSWORD_BCRYPT, array('cost' => 12));
     }
@@ -1600,7 +982,7 @@ class Methods
      * @param string $hash
      * @return bool
      */
-    public function hashVerified(string $string, string $hash): bool
+    public static function hashVerified(string $string, string $hash): bool
     {
         return password_verify($string, $hash);
     }
@@ -1610,7 +992,7 @@ class Methods
      * @param string $hash
      * @return bool
      */
-    public function hashNeedsRehash(string $hash): bool
+    public static function hashNeedsRehash(string $hash): bool
     {
         return password_needs_rehash($hash, PASSWORD_BCRYPT, array('cost' => 12));
     }
@@ -1621,9 +1003,9 @@ class Methods
      * @param string $string
      * @return bool
      */
-    public function containText(string $text, string $string): bool
+    public static function containText(string $text, string $string): bool
     {
-        return $this->isNotFalse(strpos($string, $text));
+        return self::isNotFalse(strpos($string, $text));
     }
 
     /**
@@ -1632,7 +1014,7 @@ class Methods
      * @param string $string
      * @return bool
      */
-    public function startsWith(string $start, string $string): bool
+    public static function startsWith(string $start, string $string): bool
     {
         $start = trim($start);
         return substr($string, 0, strlen($start)) === $start;
@@ -1644,7 +1026,7 @@ class Methods
      * @param string $string
      * @return bool
      */
-    public function endsWith(string $end, string $string): bool
+    public static function endsWith(string $end, string $string): bool
     {
         $end = trim($end);
         return substr($string, -strlen($end)) === $end;
@@ -1656,7 +1038,7 @@ class Methods
      * @param int $precision
      * @return string
      */
-    public function formatSize(int $bytes, int $precision = 2): string
+    public static function formatSize(int $bytes, int $precision = 2): string
     {
         if ($bytes > 0) {
             $base = log($bytes, 1024);
@@ -1671,7 +1053,7 @@ class Methods
      * @param string $email
      * @return string
      */
-    public function hideEmailWithStarts(string $email): string
+    public static function hideEmailWithStarts(string $email): string
     {
         if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $explodedEmail = explode("@", $email);
@@ -1687,7 +1069,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function randomizeString(string $string): string
+    public static function randomizeString(string $string): string
     {
         if (empty($string)) {
             $string = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -1700,20 +1082,20 @@ class Methods
 
     /**
      * Download a file
-     * @param string $absolutePath
+     * @param string $file
      * @return bool
      */
-    public function downloadFile(string $absolutePath): bool
+    public static function downloadFile(string $file): bool
     {
-        if ($this->isFile($absolutePath) && $this->headersSent() !== true) {
+        if (File::isFile($file) && self::headersSent() !== true) {
             header('Content-Description: File Transfer');
             header('Content-Type: application/octet-stream');
-            header('Content-Disposition: attachment; filename=' . basename($absolutePath));
+            header('Content-Disposition: attachment; filename=' . basename($file));
             header('Content-Transfer-Encoding: binary');
             header('Expires: 0');
             header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
             header('Pragma: public');
-            header('Content-Length: ' . $this->getFIlesizeInBytes($absolutePath));
+            header('Content-Length: ' . File::getFIlesizeInBytes($file));
             flush();
             readfile($a);
             return true;
@@ -1725,9 +1107,9 @@ class Methods
      * Generate a unique id
      * @return int
      */
-    public function generateUniqueId(): int
+    public static function generateUniqueId(): int
     {
-        $uId = str_shuffle(mt_rand(100000, 999999) . $this->unixTimestamp());
+        $uId = str_shuffle(mt_rand(100000, 999999) . self::unixTimestamp());
         return substr($uId, 0, 10);
     }
 
@@ -1737,7 +1119,7 @@ class Methods
      * @param string $method
      * @return mixed
      */
-    public function createStreamContext(string $context = "http", string $method = "HEAD"): mixed
+    public static function createStreamContext(string $context = "http", string $method = "HEAD"): mixed
     {
         $options = array();
         if ($context == "http" or $context == "curl") {
@@ -1756,15 +1138,14 @@ class Methods
      * @param string $remoteFilename
      * @return bool
      */
-    public function remoteFileExist(string $remoteFilename): bool
+    public static function remoteFileExist(string $remoteFilename): bool
     {
         try {
-            $getFile = @file_get_contents($remoteFilename, false, $this->createStreamContext(), 0, 5);
-            if ($this->isNotFalse($getFile)) {
+            $getFile = @file_get_contents($remoteFilename, false, self::createStreamContext(), 0, 5);
+            if (self::isNotFalse($getFile)) {
                 return true;
             }
         } catch (\Throwable $e) {
-
         }
         return false;
     }
@@ -1774,7 +1155,7 @@ class Methods
      * @param string $host
      * @return string
      */
-    public function getDomain(string $host): string
+    public static function getDomain(string $host): string
     {
         $domain = strtolower(trim($host));
         $count = substr_count($domain, '.');
@@ -1783,7 +1164,7 @@ class Methods
                 $domain = explode('.', $domain, 2)[1];
             }
         } elseif ($count > 2) {
-            $domain = $this->getDomain(explode('.', $domain, 2)[1]);
+            $domain = self::getDomain(explode('.', $domain, 2)[1]);
         }
         return $domain;
     }
@@ -1793,9 +1174,9 @@ class Methods
      * @param string $string
      * @return bool
      */
-    public function isEmptyString(string $string): bool
+    public static function isEmptyString(string $string): bool
     {
-        return $this->isString($string) && $this->isEmpty($string);
+        return self::isString($string) && self::isEmpty($string);
     }
 
     /**
@@ -1803,9 +1184,9 @@ class Methods
      * @param string $string
      * @return bool
      */
-    public function isNotEmptyString(string $string): bool
+    public static function isNotEmptyString(string $string): bool
     {
-        return $this->isString($string) && $this->isNotEmpty($string);
+        return self::isString($string) && self::isNotEmpty($string);
     }
 
     /**
@@ -1813,7 +1194,7 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isString(mixed $arg): bool
+    public static function isString(mixed $arg): bool
     {
         return is_string($arg);
     }
@@ -1823,7 +1204,7 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isNotString(mixed $arg): bool
+    public static function isNotString(mixed $arg): bool
     {
         return !is_string($arg);
     }
@@ -1833,7 +1214,7 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isEmpty(mixed $arg): bool
+    public static function isEmpty(mixed $arg): bool
     {
         return @empty($arg);
     }
@@ -1843,9 +1224,9 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isNotEmpty(mixed $arg): bool
+    public static function isNotEmpty(mixed $arg): bool
     {
-        return !$this->isEmpty($arg);
+        return !self::isEmpty($arg);
     }
 
     /**
@@ -1854,7 +1235,7 @@ class Methods
      * @param array $array
      * @return bool
      */
-    public function inArray(mixed $value, array $array): bool
+    public static function inArray(mixed $value, array $array): bool
     {
         return @in_array($value, $array);
     }
@@ -1865,9 +1246,9 @@ class Methods
      * @param array $array
      * @return bool
      */
-    public function isNotInArray(mixed $value, array $array): bool
+    public static function isNotInArray(mixed $value, array $array): bool
     {
-        return !$this->inArray($value, $array);
+        return !self::inArray($value, $array);
     }
 
     /**
@@ -1875,7 +1256,7 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isArray(mixed $arg): bool
+    public static function isArray(mixed $arg): bool
     {
         return is_array($arg);
     }
@@ -1885,9 +1266,9 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isNotArray(mixed $arg): bool
+    public static function isNotArray(mixed $arg): bool
     {
-        return !$this->isArray($arg);
+        return !self::isArray($arg);
     }
 
     /**
@@ -1895,9 +1276,9 @@ class Methods
      * @param array $array
      * @return bool
      */
-    public function isEmptyArray(array $array): bool
+    public static function isEmptyArray(array $array): bool
     {
-        return $this->isArray($array) && $this->isEmpty($array);
+        return self::isArray($array) && self::isEmpty($array);
     }
 
     /**
@@ -1905,9 +1286,9 @@ class Methods
      * @param array $array
      * @return bool
      */
-    public function isNotEmptyArray(array $array): bool
+    public static function isNotEmptyArray(array $array): bool
     {
-        return !$this->isEmptyArray($array);
+        return !self::isEmptyArray($array);
     }
 
     /**
@@ -1915,7 +1296,7 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isBool(mixed $arg): bool
+    public static function isBool(mixed $arg): bool
     {
         return @is_bool($arg);
     }
@@ -1925,9 +1306,9 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isNotBool(mixed $arg): bool
+    public static function isNotBool(mixed $arg): bool
     {
-        return !$this->isBool($arg);
+        return !self::isBool($arg);
     }
 
     /**
@@ -1935,7 +1316,7 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isInt(mixed $arg): bool
+    public static function isInt(mixed $arg): bool
     {
         return @is_int($arg);
     }
@@ -1945,9 +1326,9 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isNotInt(mixed $arg): bool
+    public static function isNotInt(mixed $arg): bool
     {
-        return !$this->isInt($arg);
+        return !self::isInt($arg);
     }
 
     /**
@@ -1955,7 +1336,7 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isNull(mixed $arg): bool
+    public static function isNull(mixed $arg): bool
     {
         return @is_null($arg);
     }
@@ -1965,9 +1346,9 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isNonNull(mixed $arg): bool
+    public static function isNonNull(mixed $arg): bool
     {
-        return !$this->isNull($arg);
+        return !self::isNull($arg);
     }
 
     /**
@@ -1975,7 +1356,7 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isTrue(mixed $arg): bool
+    public static function isTrue(mixed $arg): bool
     {
         return $arg === true;
     }
@@ -1985,9 +1366,9 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isNotTrue(mixed $arg): bool
+    public static function isNotTrue(mixed $arg): bool
     {
-        return !$this->isTrue($arg);
+        return !self::isTrue($arg);
     }
 
     /**
@@ -1995,7 +1376,7 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isFalse(mixed $arg): bool
+    public static function isFalse(mixed $arg): bool
     {
         return $arg === false;
     }
@@ -2005,9 +1386,9 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isNotFalse(mixed $arg): bool
+    public static function isNotFalse(mixed $arg): bool
     {
-        return !$this->isFalse($arg);
+        return !self::isFalse($arg);
     }
 
     /**
@@ -2015,7 +1396,7 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isFloat(mixed $arg): bool
+    public static function isFloat(mixed $arg): bool
     {
         return @is_float($arg);
     }
@@ -2025,9 +1406,9 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isNotFloat(mixed $arg): bool
+    public static function isNotFloat(mixed $arg): bool
     {
-        return !$this->isFloat($arg);
+        return !self::isFloat($arg);
     }
 
     /**
@@ -2035,7 +1416,7 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isNumeric(mixed $arg): bool
+    public static function isNumeric(mixed $arg): bool
     {
         return @is_numeric($arg);
     }
@@ -2045,9 +1426,9 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isNotNumeric(mixed $arg): bool
+    public static function isNotNumeric(mixed $arg): bool
     {
-        return !$this->isNumeric($arg);
+        return !self::isNumeric($arg);
     }
 
     /**
@@ -2055,7 +1436,7 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isResource(mixed $arg): bool
+    public static function isResource(mixed $arg): bool
     {
         return @is_resource($arg);
     }
@@ -2065,253 +1446,79 @@ class Methods
      * @param mixed $arg
      * @return bool
      */
-    public function isNotResource(mixed $arg): bool
+    public static function isNotResource(mixed $arg): bool
     {
-        return !$this->isResource($arg);
+        return !self::isResource($arg);
     }
 
     /**
      * Get file size in bytes
-     * @param string $absolutePath
+     * @param string $file
      * @return int|false
      */
-    public function getSize(string $absolutePath): int|false
+    public static function getSize(string $file): int|false
     {
-        return @filesize($absolutePath);
+        return @filesize($file);
     }
 
     /**
      * Get file modification time
-     * @param string $absolutePath
+     * @param string $file
      * @return int|false
      */
-    public function getMtime(string $absolutePath): int|false
+    public static function getMtime(string $file): int|false
     {
-        return @filemtime($absolutePath);
+        return @filemtime($file);
     }
 
     /**
      * Get file mime content type
-     * @param string $absolutePath
+     * @param string $file
      * @return string|false
      */
-    public function getMime(string $absolutePath): string|false
+    public static function getMime(string $file): string|false
     {
-        return @mime_content_type($absolutePath);
+        return @mime_content_type($file);
     }
 
     /**
      * Checks whether a file or directory exists
-     * @param string $absolutePath
+     * @param string $file
      * @return bool
      */
-    public function isExists(string $absolutePath): bool
+    public static function isExists(string $file): bool
     {
-        return @file_exists($absolutePath);
+        return @file_exists($file);
     }
 
     /**
      * Tells whether a file exists and is readable
-     * @param string $absolutePath
+     * @param string $file
      * @return bool
      */
-    public function isReadable(string $absolutePath): bool
+    public static function isReadable(string $file): bool
     {
-        return @is_readable($absolutePath);
+        return @is_readable($file);
     }
 
     /**
      * Tells whether the filename is executable
-     * @param string $absolutePath
+     * @param string $file
      * @return bool
      */
-    public function isExecutable(string $absolutePath): bool
+    public static function isExecutable(string $file): bool
     {
-        return @is_executable($absolutePath);
+        return @is_executable($file);
     }
 
     /**
      * Tells whether the filename is writable
-     * @param string $absolutePath
+     * @param string $file
      * @return bool
      */
-    public function isWritable(string $absolutePath): bool
+    public static function isWritable(string $file): bool
     {
-        return @is_writable($absolutePath);
-    }
-
-    /**
-     * Tells whether the filename is a regular file
-     * @param string $absolutePath
-     * @return bool
-     */
-    public function isFile(string $absolutePath): bool
-    {
-        return @is_file($absolutePath);
-    }
-
-    /**
-     * Tells whether the filename is not a regular file
-     * @param string $absolutePath
-     * @return bool
-     */
-    public function isNotFile(string $absolutePath): bool
-    {
-        return !$this->isFile($absolutePath);
-    }
-
-    /**
-     * Tells whether the filename is a directory
-     * @param string $dirname
-     * @return bool
-     */
-    public function isDir(string $dirname): bool
-    {
-        return @is_dir($dirname);
-    }
-
-    /**
-     * Tells whether the filename is not a directory
-     * @param string $dirname
-     * @return bool
-     */
-    public function isNotDir(string $dirname): bool
-    {
-        return !$this->isDir($dirname);
-    }
-
-    /**
-     * Tells whether the filename is a symbolic link
-     * @param string $absolutePath
-     * @return bool
-     */
-    public function isLink(string $absolutePath): bool
-    {
-        return @is_link($absolutePath);
-    }
-
-    /**
-     * Tells whether the filename is not a symbolic link
-     * @param string $absolutePath
-     * @return bool
-     */
-    public function isNotLink(string $absolutePath): bool
-    {
-        return !$this->isLink($absolutePath);
-    }
-
-    /**
-     * Check if directory is empty
-     * @param string $dirname
-     * @return bool
-     */
-    public function isEmptyDir(string $dirname): bool
-    {
-        return ($this->isDir($dirname)) ? !(new \FilesystemIterator($dirname))->valid() : false;
-    }
-
-    /**
-     * Check if directory is not empty
-     * @param string $dirname
-     * @return bool
-     */
-    public function isNotEmptyDir(string $dirname): bool
-    {
-        return !$this->isEmptyDir($dirname);
-    }
-
-    /**
-     * Encrypt (AES) file into parts and save in directory
-     * @param string $sourceFile The file to encrypt
-     * @param string $toPath The directory to save the parts
-     * @param string $key The encryption key
-     * @param string $iv The encryption iv
-     * @param string $method The encryption method
-     * @return bool
-     */
-    public function encFileIntoParts(string $sourceFile, string $toPath, string $key, string $iv, string $method = "aes-128-cbc"): bool
-    {
-        if (in_array($method, openssl_get_cipher_methods())) {
-            try {
-                if ($this->isFile($sourceFile)) {
-                    if ($this->isNotDir($toPath)) {
-                        $this->makeDir($toPath);
-                    }
-                    $chunkSize = self::ENC_FILE_INTO_PARTS_CHUNK_SIZE;
-                    $index = 1;
-                    $startBytes = 0;
-                    $totalBytes = $this->getFIlesizeInBytes($sourceFile);
-                    while ($startBytes < $totalBytes) {
-                        $remainingBytes = $totalBytes - $startBytes;
-                        $chunkBytes = min($chunkSize, $remainingBytes);
-                        $plainText = @file_get_contents($sourceFile, false, null, $startBytes, $chunkBytes);
-                        if ($plainText !== false) {
-                            $absolutePath = $this->path->insert_dir_separator($toPath) . '' . $index . '.part';
-                            $index += 1;
-                            $startBytes += $chunkBytes;
-                            $encryptedText = @openssl_encrypt($plainText, $method, $key, $option = OPENSSL_RAW_DATA, $iv);
-                            if ($encryptedText !== false) {
-                                $this->saveContentToFile($absolutePath, $encryptedText);
-                            }
-                        }
-                    }
-                    return true;
-                }
-            } catch (Throwable $e) {
-
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Decrypt (AES) a directory parts into a single file @see encFileIntoParts
-     * @param string $sourcePath The parts directory
-     * @param string $toFilename The filename to append parts to it
-     * @param string $key The decryption key
-     * @param string $iv The decryption iv
-     * @param string $method The decryption method
-     * @return bool
-     */
-    public function decPartsIntoFile(string $sourcePath, string $toFilename, string $key, string $iv, string $method = "aes-128-cbc"): bool
-    {
-        if (in_array($method, openssl_get_cipher_methods())) {
-            try {
-                if ($this->isDir($sourcePath)) {
-                    if ($this->isFile($toFilename)) {
-                        $this->deleteFile($toFilename);
-                    }
-                    $dirFiles = @scandir($sourcePath, $sortingOrder = SCANDIR_SORT_NONE);
-                    $numOfParts = 0;
-                    if ($dirFiles != false) {
-                        foreach ($dirFiles as $currentFile) {
-                            if (preg_match('/^\d+\.part$/', $currentFile)) {
-                                $numOfParts++;
-                            }
-                        }
-                    }
-                    if ($numOfParts >= 1) {
-                        for ($index = 1; $index <= $numOfParts; $index++) {
-                            $absolutePath = $this->path->insert_dir_separator($sourcePath) . '' . $index . '.part';
-                            if ($this->isFile($absolutePath)) {
-                                $cipherText = @file_get_contents($absolutePath, false, null, 0, null);
-                                if ($this->isNotFalse($cipherText)) {
-                                    $this->deleteFile($absolutePath);
-                                    $decryptedText = @openssl_decrypt($cipherText, $method, $key, $option = OPENSSL_RAW_DATA, $iv);
-                                    if ($decryptedText !== false) {
-                                        $this->saveContentToFile($toFilename, $decryptedText, true);
-                                    }
-                                }
-                            }
-                        }
-                        return true;
-                    }
-                }
-            } catch (Throwable $e) {
-
-            }
-        }
-        return false;
+        return @is_writable($file);
     }
 
     /**
@@ -2319,7 +1526,7 @@ class Methods
      * @param string $extension
      * @return bool
      */
-    public function loadExtension(string $extension): bool
+    public static function loadExtension(string $extension): bool
     {
         if (extension_loaded($extension)) {
             return true;
@@ -2345,7 +1552,7 @@ class Methods
      * Clear the browser cache
      * @return bool
      */
-    public function clearCache(): bool
+    public static function clearCache(): bool
     {
         try {
             @header("Expires: Tue, 01 Jan 2000 00:00:00 GMT");
@@ -2355,7 +1562,6 @@ class Methods
             @header("Pragma: no-cache");
             return true;
         } catch (\Throwable $e) {
-
         }
         return false;
     }
@@ -2365,27 +1571,13 @@ class Methods
      * @param float $num
      * @return float|string
      */
-    public function formatInt(float $num): float|string
+    public static function formatInt(float $num): float|string
     {
-        if ($num > 0 && $this->inArray("NumberFormatter", get_declared_classes())) {
+        if ($num > 0 && self::inArray("NumberFormatter", get_declared_classes())) {
             $formater = new \NumberFormatter('en_US', \NumberFormatter::PADDING_POSITION);
             return $formater->format($num);
         }
         return $num;
-    }
-
-    /**
-     * Rename a file or directory
-     * @param string $source
-     * @param string $destination
-     * @return bool
-     */
-    public function renameFile(string $source, string $destination): bool
-    {
-        if ($this->isFile($source) && $this->isNotFile($destination)) {
-            return @rename($source, $destination);
-        }
-        return false;
     }
 
     /**
@@ -2394,9 +1586,9 @@ class Methods
      * @param mixed $value
      * @return string
      */
-    public function replaceUrlParamValue(string $param, mixed $value): string
+    public static function replaceUrlParamValue(string $param, mixed $value): string
     {
-        $currentUrl = $this->completeCurrentUrl();
+        $currentUrl = self::completeCurrentUrl();
         $parts = parse_url($currentUrl);
         $scheme = $parts['scheme'];
         $host = $parts['host'];
@@ -2413,7 +1605,7 @@ class Methods
      * @param string $string
      * @return string
      */
-    public function reverseString(string $string): string
+    public static function reverseString(string $string): string
     {
         return strrev($string);
     }
@@ -2424,7 +1616,7 @@ class Methods
      * @param string|null $encoding
      * @return string
      */
-    public function mb_reverseString(string $string, ?string $encoding = null): string
+    public static function mb_reverseString(string $string, ?string $encoding = null): string
     {
         $chars = mb_str_split($string, 1, $encoding ?: mb_internal_encoding());
         return implode('', array_reverse($chars));
@@ -2435,9 +1627,9 @@ class Methods
      * @param string $string
      * @return string|array|null
      */
-    public function onlyDigits(string $string): string|array|null
+    public static function onlyDigits(string $string): string|array|null
     {
-        return $this->isString($string) ? @preg_replace('/[^0-9]/', '', $string) : null;
+        return self::isString($string) ? @preg_replace('/[^0-9]/', '', $string) : null;
     }
 
     /**
@@ -2445,22 +1637,22 @@ class Methods
      * @param string $string
      * @return string|array|null
      */
-    public function onlyString(string $string): string|array|null
+    public static function onlyString(string $string): string|array|null
     {
-        return $this->isString($string) ? @preg_replace('/[0-9]/', '', $string) : null;
+        return self::isString($string) ? @preg_replace('/[0-9]/', '', $string) : null;
     }
 
     /**
      * The current path url
      * @return string
      */
-    public function currentPathURL(): string
+    public static function currentPathURL(): string
     {
-        $ccUrl = $this->completeCurrentUrl();
+        $ccUrl = self::completeCurrentUrl();
         $parse = parse_url($ccUrl);
         $scheme = $parse['scheme'];
         $host = $parse['host'];
-        $path = $this->path->arrange_dir_separators($parse['path'], true);
+        $path = File::arrange_dir_separators($parse['path'], true);
         return $scheme . '://' . $host . '' . $path;
     }
 
@@ -2470,7 +1662,7 @@ class Methods
      * @param string $encoding
      * @return string
      */
-    public function xssafe(string $string, string $encoding = 'UTF-8'): string
+    public static function xssafe(string $string, string $encoding = 'UTF-8'): string
     {
         return htmlspecialchars($string, ENT_QUOTES | ENT_HTML401, $encoding);
     }
@@ -2482,14 +1674,14 @@ class Methods
      * @param string $append The text to prepend to the filename
      * @return string|false
      */
-    public function createTemporaryFilename(string $extension, string $prepend = "", string $append = ""): string|false
+    public static function createTemporaryFilename(string $extension, string $prepend = "", string $append = ""): string|false
     {
-        $extension = $this->isNotEmptyString($extension) ? $extension : 'tmp';
-        $prepend = $this->isNotEmptyString($prepend) ? $prepend . '_' : '';
-        $append = $this->isNotEmptyString($append) ? '_' . $append : '';
-        $path = $this->path->insert_dir_separator(sys_get_temp_dir());
-        $absolutePath = $path . '' . $prepend . '' . substr($this->randUnique("key"), 0, 16) . '' . $append . '.' . $extension;
-        return $this->createFile($absolutePath) ? $absolutePath : false;
+        $extension = self::isNotEmptyString($extension) ? $extension : 'tmp';
+        $prepend = self::isNotEmptyString($prepend) ? $prepend . '_' : '';
+        $append = self::isNotEmptyString($append) ? '_' . $append : '';
+        $path = File::insert_dir_separator(sys_get_temp_dir());
+        $file = $path . '' . $prepend . '' . substr(self::randUnique("key"), 0, 16) . '' . $append . '.' . $extension;
+        return File::createFile($file) ? $file : false;
     }
 
     /**
@@ -2499,28 +1691,12 @@ class Methods
      * @param string $append The text to prepend to the filename
      * @return string|false
      */
-    public function generateRandomFilename(string $extension, string $prepend = "", string $append = ""): string|false
+    public static function generateRandomFilename(string $extension, string $prepend = "", string $append = ""): string|false
     {
-        $extension = $this->isNotEmptyString($extension) ? $extension : 'tmp';
-        $prepend = $this->isNotEmptyString($prepend) ? $prepend . '_' : '';
-        $append = $this->isNotEmptyString($append) ? '_' . $append : '';
-        return $prepend . '' . substr($this->randUnique("key"), 0, 16) . '' . $append . '.' . $extension;
-    }
-
-    /**
-     * Safe file end of file
-     *
-     * $timeout = @ini_get('default_socket_timeout');
-     * while (!$this->safeFeof($handle, $start) && (microtime(true) - $start) < $timeout) {}
-     *
-     * @param type $handle
-     * @param type $start
-     * @return bool
-     */
-    public function safeFeof($handle, &$start = null): bool
-    {
-        $start = microtime(true);
-        return feof($handle);
+        $extension = self::isNotEmptyString($extension) ? $extension : 'tmp';
+        $prepend = self::isNotEmptyString($prepend) ? $prepend . '_' : '';
+        $append = self::isNotEmptyString($append) ? '_' . $append : '';
+        return $prepend . '' . substr(self::randUnique("key"), 0, 16) . '' . $append . '.' . $extension;
     }
 
     /**
@@ -2528,12 +1704,12 @@ class Methods
      * @param string $command
      * @return array|string
      */
-    public function executeCommand(string $command): array|string
+    public static function executeCommand(string $command): array|string
     {
         $output = "";
-        if ($this->isNotEmptyString($command)) {
+        if (self::isNotEmptyString($command)) {
             $command = escapeshellcmd($command);
-            $output = $this->executeCommandUsingExec($command);
+            $output = self::executeCommandUsingExec($command);
         }
         return $output;
     }
@@ -2543,14 +1719,14 @@ class Methods
      * @param string $command
      * @return string
      */
-    public function executeCommandUsingPopen(string $command): string
+    public static function executeCommandUsingPopen(string $command): string
     {
         $output = "";
-        if ($this->isNotEmptyString($command) && function_exists('popen')) {
+        if (self::isNotEmptyString($command) && function_exists('popen')) {
             $handle = @popen($command, 'r');
-            if ($this->isResource($handle)) {
+            if (self::isResource($handle)) {
                 $content = @stream_get_contents($handle);
-                if ($this->isString($content)) {
+                if (self::isString($content)) {
                     $output = $content;
                 }
                 @pclose($handle);
@@ -2564,11 +1740,11 @@ class Methods
      * @param string $command
      * @return string
      */
-    public function executeCommandUsingProcopen(string $command): string
+    public static function executeCommandUsingProcopen(string $command): string
     {
         $output = "";
-        if ($this->isNotEmptyString($command) && function_exists('proc_open')) {
-            $errorFilename = $this->createTemporaryFilename("proc", "execute_command_error_output");
+        if (self::isNotEmptyString($command) && function_exists('proc_open')) {
+            $errorFilename = self::createTemporaryFilename("proc", "execute_command_error_output");
             $descriptorspec = array(0 => array("pipe", "r"), 1 => array("pipe", "w"), 2 => array("file", $errorFilename, "a"));
             $process = @proc_open($command, $descriptorspec, $pipes);
             if (is_resource($process)) {
@@ -2580,7 +1756,7 @@ class Methods
                 if (isset($pipes[1])) {
                     $content = @stream_get_contents($pipes[1]);
                     fclose($pipes[1]);
-                    if ($this->isString($content)) {
+                    if (self::isString($content)) {
                         $output = $content;
                     }
                 }
@@ -2595,14 +1771,14 @@ class Methods
      * @param string $command
      * @return array
      */
-    public function executeCommandUsingExec(string $command): array
+    public static function executeCommandUsingExec(string $command): array
     {
         $output = array();
-        if ($this->isNotEmptyString($command) && function_exists('exec')) {
+        if (self::isNotEmptyString($command) && function_exists('exec')) {
             $content = array();
             $resultcode = 0;
             @exec($command, $content, $resultcode);
-            if ($this->isArray($content)) {
+            if (self::isArray($content)) {
                 $output = array_values($content);
             }
         }
@@ -2614,12 +1790,12 @@ class Methods
      * @param string $command
      * @return string
      */
-    public function executeCommandUsingShellexec(string $command): string
+    public static function executeCommandUsingShellexec(string $command): string
     {
         $output = "";
-        if ($this->isNotEmptyString($command) && function_exists('shell_exec')) {
+        if (self::isNotEmptyString($command) && function_exists('shell_exec')) {
             $content = shell_exec($command);
-            if ($this->isString($content)) {
+            if (self::isString($content)) {
                 $output = $content;
             }
         }
@@ -2631,13 +1807,13 @@ class Methods
      * @param string $command
      * @return string
      */
-    public function executeCommandUsingSystem(string $command): string
+    public static function executeCommandUsingSystem(string $command): string
     {
         $output = "";
-        if ($this->isNotEmptyString($command) && function_exists('system')) {
+        if (self::isNotEmptyString($command) && function_exists('system')) {
             $resultcode = 0;
             $content = system($command, $resultcode);
-            if ($this->isString($content)) {
+            if (self::isString($content)) {
                 $output = $content;
             }
         }
@@ -2649,15 +1825,15 @@ class Methods
      * @param string $command
      * @return string
      */
-    public function executeCommandUsingPassthru(string $command): string
+    public static function executeCommandUsingPassthru(string $command): string
     {
         $output = "";
-        if ($this->isNotEmptyString($command) && function_exists('passthru')) {
+        if (self::isNotEmptyString($command) && function_exists('passthru')) {
             $resultcode = 0;
             ob_start();
             passthru($command, $resultcode);
             $content = ob_get_contents();
-            if ($this->isString($content)) {
+            if (self::isString($content)) {
                 $output = $content;
             }
             // Use this instead of ob_flush()
@@ -2670,7 +1846,7 @@ class Methods
      * Get the current directory
      * @return string
      */
-    public function getCwd(): string
+    public static function getCwd(): string
     {
         return @getcwd();
     }
@@ -2680,12 +1856,12 @@ class Methods
      * @param string $dirname
      * @return bool
      */
-    public function chDir(string $dirname): bool
+    public static function chFile(string $dirname): bool
     {
-        if ($this->isDir($dirname)) {
+        if (File::isFile($dirname)) {
             @chdir($dirname);
         }
-        return $this->getCwd() === $dirname;
+        return self::getCwd() === $dirname;
     }
 
     /**
@@ -2694,14 +1870,14 @@ class Methods
      * @return void
      * @throws \Exception
      */
-    public function loadPlugin(string $plugin): void
+    public static function loadPlugin(string $plugin): void
     {
-        $dirname = $this->path->insert_dir_separator($this->path->arrange_dir_separators(PHPWebfuse['directories']['plugins']));
-        $plugin = $this->path->arrange_dir_separators($plugin);
-        $extension = $this->getExtension($plugin);
-        $name = $this->isNotEmptyString($extension) && strtolower($extension) == "php" ? $plugin : $plugin . '.php';
+        $dirname = File::insert_dir_separator(File::arrange_dir_separators(PHPWebfuse['directories']['plugins']));
+        $plugin = File::arrange_dir_separators($plugin);
+        $extension = File::getExtension($plugin);
+        $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $plugin : $plugin . '.php';
         $plugin = $dirname . '' . $name;
-        if ($this->isFile($plugin)) {
+        if (File::isFile($plugin)) {
             require_once $plugin;
         } else {
             throw new \Exception("The plugin \"" . $plugin . "\" doesn't exist.");
@@ -2714,14 +1890,14 @@ class Methods
      * @return void
      * @throws \Exception
      */
-    public function loadLib(string $lib): void
+    public static function loadLib(string $lib): void
     {
-        $dirname = $this->path->insert_dir_separator($this->path->arrange_dir_separators(PHPWebfuse['directories']['libraries']));
-        $lib = $this->path->arrange_dir_separators($lib);
-        $extension = $this->getExtension($lib);
-        $name = $this->isNotEmptyString($extension) && strtolower($extension) == "php" ? $lib : $lib . '.php';
+        $dirname = File::insert_dir_separator(File::arrange_dir_separators(PHPWebfuse['directories']['libraries']));
+        $lib = File::arrange_dir_separators($lib);
+        $extension = File::getExtension($lib);
+        $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $lib : $lib . '.php';
         $lib = $dirname . '' . $name;
-        if ($this->isFile($lib)) {
+        if (File::isFile($lib)) {
             require_once $lib;
         } else {
             throw new \Exception("The lib \"" . $lib . "\" doesn't exist.");
@@ -2734,7 +1910,7 @@ class Methods
      * @return void
      * @throws \Exception
      */
-    public function directTo(string $url): void
+    public static function directTo(string $url): void
     {
         if (!headers_sent()) {
             @header("location: " . $url);
@@ -2748,16 +1924,16 @@ class Methods
      * Register error handler
      * @return void
      */
-    public function registerErrorHandler(): void
+    public static function registerErrorHandler(): void
     {
         @set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline) {
             if (!(error_reporting() & $errno)) {
                 return false;
             } // This error code is not included in error_reporting, so let it fall through to the standard PHP error handler
             $errstr = htmlspecialchars($errstr);
-            $errorFilename = $this->path->insert_dir_separator(PHPWebfuse['directories']['root']) . "\$error-messages.log";
-            $this->saveContentToFile($errorFilename, strip_tags($errno . " ::Filename >> " . $errfile . " ::Line >> " . $errline . " ::Message >> " . $errstr . " ::Date >> " . date("F jS, Y", time()) . " @ " . date("h:i A", time())), true, true);
-            echo "<div style='" . self::ERRORS_CSS['error'] . "'>" . $errno . " :: " . ($this->isTrue($this->isLocalhost()) ? "<b>Filename >></b> " . $errfile . " <b>Line >></b> " . $errline . " <b>Message >></b> " : "") . "" . $errstr . "</div>";
+            $errorFilename = File::insert_dir_separator(PHPWebfuse['directories']['root']) . "\$error-messages.log";
+            File::saveContentToFile($errorFilename, strip_tags($errno . " ::Filename >> " . $errfile . " ::Line >> " . $errline . " ::Message >> " . $errstr . " ::Date >> " . date("F jS, Y", time()) . " @ " . date("h:i A", time())), true, true);
+            echo "<div style='" . self::ERRORS_CSS['error'] . "'>" . $errno . " :: " . (self::isTrue(self::isLocalhost()) ? "<b>Filename >></b> " . $errfile . " <b>Line >></b> " . $errline . " <b>Message >></b> " : "") . "" . $errstr . "</div>";
         });
     }
 
@@ -2765,12 +1941,12 @@ class Methods
      * Register exception handler
      * @return void
      */
-    public function registerExceptionHandler(): void
+    public static function registerExceptionHandler(): void
     {
         @set_exception_handler(function (\Throwable $ex) {
-            $exceptionFilename = $this->path->insert_dir_separator(PHPWebfuse['directories']['root']) . "\$exception-messages.log";
-            $this->saveContentToFile($exceptionFilename, strip_tags("Filename >> " . $ex->getFile() . " ::Line >> " . $ex->getLIne() . " ::Message >> " . $ex->getMessage() . " ::Date >> " . date("F jS, Y", time()) . " @ " . date("h:i A", time())), true, true);
-            echo "<div style='" . self::ERRORS_CSS['exception'] . "'>" . ($this->isTrue($this->isLocalhost()) ? "<b>Filename >></b> " . $ex->getFile() . " <b>Line >></b> " . $ex->getLIne() . " <b>Message >></b> " : "") . "" . $ex->getMessage() . "</div>";
+            $exceptionFilename = File::insert_dir_separator(PHPWebfuse['directories']['root']) . "\$exception-messages.log";
+            File::saveContentToFile($exceptionFilename, strip_tags("Filename >> " . $ex->getFile() . " ::Line >> " . $ex->getLIne() . " ::Message >> " . $ex->getMessage() . " ::Date >> " . date("F jS, Y", time()) . " @ " . date("h:i A", time())), true, true);
+            echo "<div style='" . self::ERRORS_CSS['exception'] . "'>" . (self::isTrue(self::isLocalhost()) ? "<b>Filename >></b> " . $ex->getFile() . " <b>Line >></b> " . $ex->getLIne() . " <b>Message >></b> " : "") . "" . $ex->getMessage() . "</div>";
         });
     }
 
@@ -2778,9 +1954,9 @@ class Methods
      * Check if running on a localhost web server
      * @return bool
      */
-    public function isLocalhost(): bool
+    public static function isLocalhost(): bool
     {
-        return $this->inArray($this->getIPAddress(), (array) self::LOCALHOST_DEFAULT_ADDRESSES);
+        return self::inArray(self::getIPAddress(), (array) self::LOCALHOST_DEFAULT_ADDRESSES);
     }
 
     /**
@@ -2788,12 +1964,12 @@ class Methods
      * @param string $ip
      * @return bool
      */
-    public function validateIPAddress(string $ip): bool
+    public static function validateIPAddress(string $ip): bool
     {
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-            if ($this->isTrue(self::CHECK_IP_ADDRESS_IN_RANGE)) {
+            if (self::isTrue(self::CHECK_IP_ADDRESS_IN_RANGE)) {
                 foreach (self::PRIVATE_IP_ADDRESS_RANGES as $range) {
-                    if ($this->isIPInPrivateRange($ip, $range)) {
+                    if (self::isIPInPrivateRange($ip, $range)) {
                         return false;
                     }
                 }
@@ -2807,20 +1983,20 @@ class Methods
      * Get the IP address
      * @return string
      */
-    public function getIPAddress(): string
+    public static function getIPAddress(): string
     {
         $headersToCheck = array('HTTP_X_REAL_IP', 'HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_FORWARDED_FOR', 'HTTP_FORWARDED', 'HTTP_X_FORWARDED_HOST', 'REMOTE_ADDR');
         foreach ($headersToCheck as $header) {
             $determinedHeader = getenv($header);
-            if ($this->isNotEmpty($determinedHeader)) {
+            if (self::isNotEmpty($determinedHeader)) {
                 if ($header == "HTTP_X_FORWARDED_FOR") {
                     $ipAddresses = explode(',', $determinedHeader);
                     foreach ($ipAddresses as $realIp) {
-                        if ($this->validateIPAddress((string) $realIp)) {
+                        if (self::validateIPAddress((string) $realIp)) {
                             return $realIp;
                         }
                     }
-                } elseif ($this->validateIPAddress((string) $determinedHeader)) {
+                } elseif (self::validateIPAddress((string) $determinedHeader)) {
                     return $determinedHeader;
                 }
             }
@@ -2834,9 +2010,9 @@ class Methods
      * @param string $range
      * @return bool
      */
-    public function isIPInPrivateRange(string $ip, string $range): bool
+    public static function isIPInPrivateRange(string $ip, string $range): bool
     {
-        if ($this->isFalse(strpos($range, '/'))) {
+        if (self::isFalse(strpos($range, '/'))) {
             $range .= '/32';
         }
         list($subnet, $mask) = explode('/', $range);
@@ -2851,7 +2027,7 @@ class Methods
      * Get the temporary directory
      * @return string
      */
-    public function getTmpDir(): string
+    public static function getTmpFile(): string
     {
         return @sys_get_temp_dir();
     }
@@ -2860,7 +2036,7 @@ class Methods
      * Get the upload directory
      * @return string
      */
-    public function getUploadDir(): string
+    public static function getUploadFile(): string
     {
         return @ini_get('upload_tmp_dir');
     }
@@ -2869,45 +2045,48 @@ class Methods
      * Get the default directory
      * @return string
      */
-    public function getCurrentFileDir(): string
+    public static function getCurrentFileFile(): string
     {
         return @dirname(__FILE__);
     }
 
     /**
      * Gets last access time of file
-     * @param string $absolutePath
+     * @param string $file
      * @return int
      */
-    public function accessTime(string $absolutePath): int
+    public static function accessTime(string $file): int
     {
-        if ($this->isFile($absolutePath)) {
-            return @fileatime($absolutePath);
-        }return 0;
+        if (File::isFile($file)) {
+            return @fileatime($file);
+        }
+        return 0;
     }
 
     /**
      * Gets file modification time
-     * @param string $absolutePath
+     * @param string $file
      * @return int
      */
-    public function modificationTime(string $absolutePath): int
+    public static function modificationTime(string $file): int
     {
-        if ($this->isFile($absolutePath)) {
-            return @filemtime($absolutePath);
-        }return 0;
+        if (File::isFile($file)) {
+            return @filemtime($file);
+        }
+        return 0;
     }
 
     /**
      * Gets inode change time of file
-     * @param string $absolutePath
+     * @param string $file
      * @return int
      */
-    public function changeTime(string $absolutePath): int
+    public static function changeTime(string $file): int
     {
-        if ($this->isFile($absolutePath)) {
-            return @filectime($absolutePath);
-        }return 0;
+        if (File::isFile($file)) {
+            return @filectime($file);
+        }
+        return 0;
     }
 
     /**
@@ -2915,9 +2094,9 @@ class Methods
      * @param string|int $unix
      * @return string
      */
-    public function readableUnix(string|int $unix): string
+    public static function readableUnix(string|int $unix): string
     {
-        if ($this->isNumeric($unix)) {
+        if (self::isNumeric($unix)) {
             return @date("l, F jS, Y g:i:s A", $unix);
         }
         return "";
@@ -2929,9 +2108,9 @@ class Methods
      * @param string $link
      * @return bool
      */
-    public function createHardLink(string $target, string $link): bool
+    public static function createHardLink(string $target, string $link): bool
     {
-        if ($this->isExists($target)) {
+        if (self::isExists($target)) {
             return @link($target, $link);
         }
         return false;
@@ -2943,9 +2122,9 @@ class Methods
      * @param string $link
      * @return bool
      */
-    public function createSymLink(string $target, string $link): bool
+    public static function createSymLink(string $target, string $link): bool
     {
-        if ($this->isExists($target)) {
+        if (self::isExists($target)) {
             return @symlink($target, $link);
         }
         return false;
@@ -2956,7 +2135,7 @@ class Methods
      * @param int $unix
      * @return int
      */
-    public function calculateRemainingDaysFromUnix(int $unix)
+    public static function calculateRemainingDaysFromUnix(int $unix)
     {
         $days = 0;
         if ($unix > time()) {
@@ -2971,7 +2150,7 @@ class Methods
      * @param int $unix
      * @return int
      */
-    public function calculateElapsedDaysFromUnix(int $unix)
+    public static function calculateElapsedDaysFromUnix(int $unix)
     {
         $days = 0;
         if (time() > $unix) {
@@ -2983,24 +2162,24 @@ class Methods
 
     /**
      * Convert image to base64
-     * @param string $absolutePath
+     * @param string $file
      * @return string
      */
-    public function convertImageToBase64(string $absolutePath): string
+    public static function convertImageToBase64(string $file): string
     {
         $base64Image = "";
         // Supported image extensions
         $extensions = array('gif', 'jpg', 'jpeg', 'png');
         // Check if the file exists and is readable
-        if ($this->isFile($absolutePath) && $this->isReadable($absolutePath)) {
+        if (File::isFile($file) && self::isReadable($file)) {
             // Get the file extension
-            $extension = strtolower($this->getExtension($absolutePath));
+            $extension = strtolower(File::getExtension($file));
             // Check if the file extension is supported
-            if ($this->isNotEmptyString($extension) && $this->inArray($extension, $extensions)) {
+            if (self::isNotEmptyString($extension) && self::inArray($extension, $extensions)) {
                 // Get the image content and encode the image content to base64
-                $base64Encode = base64_encode($this->getFileContent($absolutePath));
+                $base64Encode = base64_encode(File::getFileContent($file));
                 // Add the appropriate data URI prefix
-                $base64Image = 'data:' . mime_content_type($absolutePath) . ';base64,' . $base64Encode;
+                $base64Image = 'data:' . mime_content_type($file) . ';base64,' . $base64Encode;
             }
         }
         return $base64Image;
@@ -3012,11 +2191,11 @@ class Methods
      * @param string $shortcode
      * @return bool|string
      */
-    public function validateMobileNumber(int|string $number, string $shortcode = "ng"): bool|string
+    public static function validateMobileNumber(int|string $number, string $shortcode = "ng"): bool|string
     {
-        $this->loadPlugin("CountriesList");
+        self::loadPlugin("CountriesList");
         $classesExists = class_exists("\libphonenumber\PhoneNumberUtil") && class_exists("\libphonenumber\PhoneNumberFormat") && class_exists("\libphonenumber\NumberParseException");
-        if (class_exists("\CountriesList") && $classesExists && $this->isNumeric($number)) {
+        if (class_exists("\CountriesList") && $classesExists && self::isNumeric($number)) {
             $countriesList = new \CountriesList();
             $shortcodes = $countriesList->getCountriesShortCode();
             if (isset($shortcodes[strtoupper($shortcode)])) {
@@ -3025,7 +2204,7 @@ class Methods
                     $util = \libphonenumber\PhoneNumberUtil::getInstance();
                     $parse = $util->parseAndKeepRawInput($number, $shortcode);
                     $isValid = $util->isValidNumber($parse);
-                    if ($this->isTrue($isValid)) {
+                    if (self::isTrue($isValid)) {
                         return trim($util->format($parse, \libphonenumber\PhoneNumberFormat::E164));
                     }
                 } catch (\libphonenumber\NumberParseException $e) {
@@ -3043,43 +2222,42 @@ class Methods
      * @param array $options
      * @return \SleekDB\Store|bool
      */
-    public function sleekDatabase(string $database, string $path, array $options = array()): \SleekDB\Store|bool
+    public static function sleekDatabase(string $database, string $path, array $options = array()): \SleekDB\Store|bool
     {
-        if ($this->isNotEmptyString($database) && $this->makeDir($path) && class_exists("\SleekDB\Store")) {
-            $options = $this->isEmptyArray($options) ? array('auto_cache' => false, 'timeout' => false, 'primary_key' => 'id', 'folder_permissions' => 0777) : $options;
-            return new \SleekDB\Store($database, $this->resolvePath($path), $options);
+        if (self::isNotEmptyString($database) && File::createFile($path) && class_exists("\SleekDB\Store")) {
+            $options = self::isEmptyArray($options) ? array('auto_cache' => false, 'timeout' => false, 'primary_key' => 'id', 'folder_permissions' => 0777) : $options;
+            return new \SleekDB\Store($database, self::resolvePath($path), $options);
         }
         return false;
     }
 
     /**
      * Get the audio duration. Returns 00:00:00 on default event if it's not an audio file or doesn't exist
-     * @param string $absolutePath
+     * @param string $file
      * @return string
      */
-    public function getAudioDuration(string $absolutePath): string
+    public static function getAudioDuration(string $file): string
     {
         $duration = "00:00:00";
-        if ($this->isFile($absolutePath)) {
+        if (File::isFile($file)) {
             try {
                 $rand = rand(0, 1);
                 if ($rand == 0) {
                     if (class_exists("\JamesHeinrich\GetID3\GetID3")) {
                         $getID3 = new \JamesHeinrich\GetID3\GetID3();
-                        $analyze = @$getID3->analyze($this->resolvePath($absolutePath));
+                        $analyze = @$getID3->analyze(self::resolvePath($file));
                         if (isset($analyze['playtime_seconds'])) {
                             $duration = gmdate("H:i:s", (int) $analyze['playtime_seconds']);
                         }
                     }
                 } else {
                     if (!in_array("\Mp3Info", get_declared_classes())) {
-                        $this->loadLib("Mp3Info" . DIRECTORY_SEPARATOR . "Mp3Info");
+                        self::loadLib("Mp3Info" . DIRECTORY_SEPARATOR . "Mp3Info");
                     }
-                    $info = new \Mp3Info($this->resolvePath($absolutePath));
+                    $info = new \Mp3Info(self::resolvePath($file));
                     $duration = gmdate("H:i:s", (int) $info->duration);
                 }
             } catch (\Throwable $e) {
-
             }
         }
         return $duration;
@@ -3092,14 +2270,14 @@ class Methods
      * @param array $options
      * @return bool
      */
-    public function setAudioMetaTags(string $audioname, string $covername, array $options = array()): bool
+    public static function setAudioMetaTags(string $audioname, string $covername, array $options = array()): bool
     {
-        if ($this->isFile($audioname) && $this->isFile($covername)) {
-            $audioname = $this->resolvePath($audioname);
-            $covername = $this->resolvePath($covername);
-            $this->unlimitedWorkflow();
+        if (File::isFile($audioname) && File::isFile($covername)) {
+            $audioname = self::resolvePath($audioname);
+            $covername = self::resolvePath($covername);
+            self::unlimitedWorkflow();
             $classesExists = class_exists("\JamesHeinrich\GetID3\GetID3") && class_exists("\JamesHeinrich\GetID3\WriteTags");
-            if ($this->isTrue($classesExists) && $this->isNotEmptyArray($options)) {
+            if (self::isTrue($classesExists) && self::isNotEmptyArray($options)) {
                 $getID3 = new \JamesHeinrich\GetID3\GetID3();
                 $writer = new \JamesHeinrich\GetID3\WriteTags();
                 $encoding = 'UTF-8';
@@ -3137,19 +2315,19 @@ class Methods
                 if (isset($options['unique_file_identifier'])) {
                     $data['unique_file_identifier'] = array('ownerid' => "email", 'data' => md5(time()));
                 }
-                $tempPathname = $this->path->insert_dir_separator($this->path->arrange_dir_separators(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . 'getid3' . DIRECTORY_SEPARATOR . 'temp'));
-                if ($this->makeDir($tempPathname)) {
-                    $random = $this->generateRandomFilename("png");
+                $tempPathname = File::insert_dir_separator(File::arrange_dir_separators(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . 'getid3' . DIRECTORY_SEPARATOR . 'temp'));
+                if (File::createFile($tempPathname)) {
+                    $random = self::generateRandomFilename("png");
                     $_covername = $tempPathname . '' . $random;
-                    if ($this->convertImage($covername, "png", false, true, $_covername)) {
+                    if (self::convertImage($covername, "png", false, true, $_covername)) {
                         $covername = $_covername;
                     }
-                    $data['attached_picture'][0]['data'] = $this->getFileContent($covername);
+                    $data['attached_picture'][0]['data'] = File::getFileContent($covername);
                     $data['attached_picture'][0]['picturetypeid'] = 3;
                     $data['attached_picture'][0]['description'] = isset($options['comment']) ? $options['comment'] : "";
                     $data['attached_picture'][0]['mime'] = mime_content_type($covername);
                     $writer->tag_data = $data;
-                    $this->deleteFile($_covername);
+                    File::deleteFile($_covername);
                     return @$writer->WriteTags();
                 }
             }
@@ -3161,12 +2339,12 @@ class Methods
      * Clean PHPWebfuse temporary files
      * @return void
      */
-    public function cleanPHPWebfuseTempDirs(): void
+    public static function cleanPHPWebfuseTempFiles(): void
     {
-        $paths = $this->searchDir(PHPWebfuse['directories']['root'], array("temp"));
+        $paths = File::searchFile(PHPWebfuse['directories']['root'], array("temp"));
         foreach ($paths as $index => $path) {
-            if ($this->isDir($path)) {
-                $this->emptyDirectory($path);
+            if (File::isFile($path)) {
+                File::emptyFileectory($path);
             }
         }
     }
@@ -3175,10 +2353,10 @@ class Methods
      * Initialize MobileDetect class
      * @return false|object
      */
-    public function intMobileDetect(): false|object
+    public static function intMobileDetect(): false|object
     {
         if (!class_exists("\MobileDetect")) {
-            $this->loadPlugin("MobileDetect");
+            self::loadPlugin("MobileDetect");
         }
         return class_exists("\Detection\MobileDetect") ? new \MobileDetect(new \Detection\MobileDetect()) : false;
     }
@@ -3187,11 +2365,11 @@ class Methods
      * Get the browser name
      * @return string
      */
-    public function getBrowser(): string
+    public static function getBrowser(): string
     {
         $browser = "";
-        $md = $this->intMobileDetect();
-        if ($this->isNotFalse($md)) {
+        $md = self::intMobileDetect();
+        if (self::isNotFalse($md)) {
             $browser = $md->getBrowser();
         }
         return $browser;
@@ -3201,11 +2379,11 @@ class Methods
      * Ge the device name
      * @return string
      */
-    public function getDevice(): string
+    public static function getDevice(): string
     {
         $devices = "";
-        $md = $this->intMobileDetect();
-        if ($this->isNotFalse($md)) {
+        $md = self::intMobileDetect();
+        if (self::isNotFalse($md)) {
             $devices = $md->getDevice();
         }
         return $devices;
@@ -3215,11 +2393,11 @@ class Methods
      * Get the device operating system
      * @return string
      */
-    public function getDeviceOsName(): string
+    public static function getDeviceOsName(): string
     {
         $os = "";
-        $md = $this->intMobileDetect();
-        if ($this->isNotFalse($md)) {
+        $md = self::intMobileDetect();
+        if (self::isNotFalse($md)) {
             $os = $md->getDeviceOsName();
         }
         return $os;
@@ -3229,11 +2407,11 @@ class Methods
      * Get the device brand
      * @return string
      */
-    public function getDeviceBrand(): string
+    public static function getDeviceBrand(): string
     {
         $brand = "";
-        $md = $this->intMobileDetect();
-        if ($this->isNotFalse($md)) {
+        $md = self::intMobileDetect();
+        if (self::isNotFalse($md)) {
             $brand = $md->getDeviceBrand();
         }
         return $brand;
@@ -3243,11 +2421,11 @@ class Methods
      * Get ip address information
      * @return array
      */
-    public function getIPInfo(): array
+    public static function getIPInfo(): array
     {
         $info = array();
-        $md = $this->intMobileDetect();
-        if ($this->isNotFalse($md)) {
+        $md = self::intMobileDetect();
+        if (self::isNotFalse($md)) {
             $info = $md->getIPInfo();
         }
         return $info;
@@ -3257,13 +2435,12 @@ class Methods
      * Check if you are connected to internet
      * @return bool
      */
-    public function isConnectedToInternet()
+    public static function isConnectedToInternet()
     {
         $socket = false;
         try {
             $socket = @fsockopen("www.google.com", 443, $errno, $errstr, 30);
         } catch (\Throwable $e) {
-
         }
         if ($socket !== false) {
             @fclose($socket);
@@ -3277,10 +2454,10 @@ class Methods
      * @param string $path
      * @return string
      */
-    public function resolvePath(string $path): string
+    public static function resolvePath(string $path): string
     {
-        $absolutePath = realpath($path);
-        return $this->isBool($absolutePath) ? $path : $absolutePath;
+        $file = realpath($path);
+        return self::isBool($file) ? $path : $file;
     }
 
     /**
@@ -3288,7 +2465,7 @@ class Methods
      * @param string $message
      * @return type
      */
-    public function debugTrace(string $message)
+    public static function debugTrace(string $message)
     {
         $trace = array_shift(debug_backtrace());
         return die($trace["file"] . ": Line " . $trace["line"] . ": " . $message);
@@ -3300,18 +2477,17 @@ class Methods
      * @param string $token
      * @return bool|array
      */
-    public function validatedGRecaptcha(string $serverkey, string $token): bool|array
+    public static function validatedGRecaptcha(string $serverkey, string $token): bool|array
     {
-        if ($this->isNotEmptyString($serverkey) && $this->isNotEmptyString($token) && $this->isNumeric($token)) {
+        if (self::isNotEmptyString($serverkey) && self::isNotEmptyString($token) && self::isNumeric($token)) {
             try {
-                $data = array("secret" => $serverkey, 'response' => $token, 'remoteip' => $this->getIPAddress());
+                $data = array("secret" => $serverkey, 'response' => $token, 'remoteip' => self::getIPAddress());
                 $options = array('http' => array('header' => "Content-Type: application/x-www-form-urlencoded\r\n", 'method' => "POST", 'content' => http_build_query($data)));
                 $serverresponse = @file_get_contents("https://google.com/recaptcha/api/siteverify", false, stream_context_create($options));
-                if ($this->isNotFalse($serverresponse)) {
-                    return $this->jsonToArray($serverresponse);
+                if (self::isNotFalse($serverresponse)) {
+                    return self::jsonToArray($serverresponse);
                 }
             } catch (\Throwable $e) {
-
             }
         }
         return false;
@@ -3323,19 +2499,19 @@ class Methods
      * @param string $filename
      * @return string|bool
      */
-    public function generateQrCode(string $content, string $filename): string|bool
+    public static function generateQrCode(string $content, string $filename): string|bool
     {
         $result = false;
         if (!defined('QR_MODE_NUL')) {
-            $this->loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
+            self::loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
         }
         if (class_exists("\QRcode")) {
-            $extension = $this->getExtension($filename);
-            $filename = $this->isNotEmptyString($extension) ? (strtolower($extension) !== "png" ? $filename . ".png" : $filename) : $filename . ".png";
+            $extension = File::getExtension($filename);
+            $filename = self::isNotEmptyString($extension) ? (strtolower($extension) !== "png" ? $filename . ".png" : $filename) : $filename . ".png";
             \QRcode::png($content, $filename, QR_ECLEVEL_Q, 20, 2);
-            if ($this->isFile($filename)) {
+            if (File::isFile($filename)) {
                 clearstatcache(false, $filename);
-                $result = $this->resolvePath($filename);
+                $result = self::resolvePath($filename);
             }
         }
         return $result;
@@ -3345,7 +2521,7 @@ class Methods
      * Get the current script file
      * @return string
      */
-    public function getScriptFile(): string
+    public static function getScriptFile(): string
     {
         return @getenv('SCRIPT_FILENAME');
     }
@@ -3354,7 +2530,7 @@ class Methods
      * Get the current script name
      * @return string
      */
-    public function getScriptName(): string
+    public static function getScriptName(): string
     {
         return @getenv('SCRIPT_NAME');
     }
@@ -3363,25 +2539,25 @@ class Methods
      * Get the current script path
      * @return string
      */
-    public function getScriptPath(): string
+    public static function getScriptPath(): string
     {
-        return @dirname($this->getScriptFile());
+        return @dirname(self::getScriptFile());
     }
 
     /**
      * Get the current script URL
      * @return string
      */
-    public function getScriptUrl(): string
+    public static function getScriptUrl(): string
     {
-        return $this->protocol() . '://' . @getenv('HTTP_HOST') . $this->getScriptName();
+        return self::protocol() . '://' . @getenv('HTTP_HOST') . self::getScriptName();
     }
 
     /**
      * Get the current request URI
      * @return string
      */
-    public function getRequestUri(): string
+    public static function getRequestUri(): string
     {
         return @getenv('REQUEST_URI');
     }
@@ -3390,7 +2566,7 @@ class Methods
      * Get the current request method
      * @return string
      */
-    public function getRequestMethod(): string
+    public static function getRequestMethod(): string
     {
         return @getenv('REQUEST_METHOD');
     }
@@ -3399,7 +2575,7 @@ class Methods
      * Get the current request time
      * @return int
      */
-    public function getRequestTime(): int
+    public static function getRequestTime(): int
     {
         return @getenv('REQUEST_TIME');
     }
@@ -3408,7 +2584,7 @@ class Methods
      * Get the current request time in seconds
      * @return float
      */
-    public function getRequestTimeFloat(): float
+    public static function getRequestTimeFloat(): float
     {
         return @getenv('REQUEST_TIME_FLOAT');
     }
@@ -3417,7 +2593,7 @@ class Methods
      * Get the current query string
      * @return string
      */
-    public function getQueryString(): string
+    public static function getQueryString(): string
     {
         return @getenv('QUERY_STRING');
     }
@@ -3426,7 +2602,7 @@ class Methods
      * Get the current HTTP accept
      * @return string
      */
-    public function getHttpAccept(): string
+    public static function getHttpAccept(): string
     {
         return @getenv('HTTP_ACCEPT');
     }
@@ -3435,7 +2611,7 @@ class Methods
      * Get the current HTTP accept charset
      * @return string
      */
-    public function getHttpAcceptCharset(): string
+    public static function getHttpAcceptCharset(): string
     {
         return @getenv('HTTP_ACCEPT_CHARSET');
     }
@@ -3444,7 +2620,7 @@ class Methods
      * Get the current HTTP accept encoding
      * @return string
      */
-    public function getHttpAcceptEncoding(): string
+    public static function getHttpAcceptEncoding(): string
     {
         return @getenv('HTTP_ACCEPT_ENCODING');
     }
@@ -3453,7 +2629,7 @@ class Methods
      * Get the current HTTP accept language
      * @return string
      */
-    public function getHttpAcceptLanguage(): string
+    public static function getHttpAcceptLanguage(): string
     {
         return @getenv('HTTP_ACCEPT_LANGUAGE');
     }
@@ -3462,7 +2638,7 @@ class Methods
      * Get the current HTTP connection
      * @return string
      */
-    public function getHttpConnection(): string
+    public static function getHttpConnection(): string
     {
         return @getenv('HTTP_CONNECTION');
     }
@@ -3471,7 +2647,7 @@ class Methods
      * Get the current HTTP host
      * @return string
      */
-    public function getHttpHost(): string
+    public static function getHttpHost(): string
     {
         return @getenv('HTTP_HOST');
     }
@@ -3480,7 +2656,7 @@ class Methods
      * Get the current HTTP referer
      * @return string
      */
-    public function getHttpReferer(): string
+    public static function getHttpReferer(): string
     {
         return @getenv('HTTP_REFERER');
     }
@@ -3489,7 +2665,7 @@ class Methods
      * Get the current HTTP user agent
      * @return string
      */
-    public function getHttpUserAgent(): string
+    public static function getHttpUserAgent(): string
     {
         return @getenv('HTTP_USER_AGENT');
     }
@@ -3498,7 +2674,7 @@ class Methods
      * Get the current HTTP X-Requested-With
      * @return string
      */
-    public function getHttpXRequestedWith(): string
+    public static function getHttpXRequestedWith(): string
     {
         return @getenv('HTTP_X_REQUESTED_WITH');
     }
@@ -3507,7 +2683,7 @@ class Methods
      * Get the current HTTP X-Forwarded-For
      * @return string
      */
-    public function getHttpXForwardedFor(): string
+    public static function getHttpXForwardedFor(): string
     {
         return @getenv('HTTP_X_FORWARDED_FOR');
     }
@@ -3516,7 +2692,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Host
      * @return string
      */
-    public function getHttpXForwardedHost(): string
+    public static function getHttpXForwardedHost(): string
     {
         return @getenv('HTTP_X_FORWARDED_HOST');
     }
@@ -3525,7 +2701,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Proto
      * @return string
      */
-    public function getHttpXForwardedProto(): string
+    public static function getHttpXForwardedProto(): string
     {
         return @getenv('HTTP_X_FORWARDED_PROTO');
     }
@@ -3534,7 +2710,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Port
      * @return string
      */
-    public function getHttpXForwardedPort(): string
+    public static function getHttpXForwardedPort(): string
     {
         return @getenv('HTTP_X_FORWARDED_PORT');
     }
@@ -3543,7 +2719,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Server
      * @return string
      */
-    public function getHttpXForwardedServer(): string
+    public static function getHttpXForwardedServer(): string
     {
         return @getenv('HTTP_X_FORWARDED_SERVER');
     }
@@ -3552,7 +2728,7 @@ class Methods
      * Get the current HTTP X-Forwarded-For-IP
      * @return string
      */
-    public function getHttpXForwardedForIp(): string
+    public static function getHttpXForwardedForIp(): string
     {
         return @getenv('HTTP_X_FORWARDED_FOR_IP');
     }
@@ -3561,7 +2737,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Proto-IP
      * @return string
      */
-    public function getHttpXForwardedProtoIp(): string
+    public static function getHttpXForwardedProtoIp(): string
     {
         return @getenv('HTTP_X_FORWARDED_PROTO_IP');
     }
@@ -3570,7 +2746,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Host-IP
      * @return string
      */
-    public function getHttpXForwardedHostIp(): string
+    public static function getHttpXForwardedHostIp(): string
     {
         return @getenv('HTTP_X_FORWARDED_HOST_IP');
     }
@@ -3579,7 +2755,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Port-IP
      * @return string
      */
-    public function getHttpXForwardedPortIp(): string
+    public static function getHttpXForwardedPortIp(): string
     {
         return @getenv('HTTP_X_FORWARDED_PORT_IP');
     }
@@ -3588,7 +2764,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Server-IP
      * @return string
      */
-    public function getHttpXForwardedServerIp(): string
+    public static function getHttpXForwardedServerIp(): string
     {
         return @getenv('HTTP_X_FORWARDED_SERVER_IP');
     }
@@ -3597,7 +2773,7 @@ class Methods
      * Get the current HTTP X-Forwarded-For-Client-IP
      * @return string
      */
-    public function getHttpXForwardedForClientIp(): string
+    public static function getHttpXForwardedForClientIp(): string
     {
         return @getenv('HTTP_X_FORWARDED_FOR_CLIENT_IP');
     }
@@ -3606,7 +2782,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Proto-Client-IP
      * @return string
      */
-    public function getHttpXForwardedProtoClientIp(): string
+    public static function getHttpXForwardedProtoClientIp(): string
     {
         return @getenv('HTTP_X_FORWARDED_PROTO_CLIENT_IP');
     }
@@ -3615,7 +2791,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Host-Client-IP
      * @return string
      */
-    public function getHttpXForwardedHostClientIp(): string
+    public static function getHttpXForwardedHostClientIp(): string
     {
         return @getenv('HTTP_X_FORWARDED_HOST_CLIENT_IP');
     }
@@ -3624,7 +2800,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Port-Client-IP
      * @return string
      */
-    public function getHttpXForwardedPortClientIp(): string
+    public static function getHttpXForwardedPortClientIp(): string
     {
         return @getenv('HTTP_X_FORWARDED_PORT_CLIENT_IP');
     }
@@ -3633,7 +2809,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Server-Client-IP
      * @return string
      */
-    public function getHttpXForwardedServerClientIp(): string
+    public static function getHttpXForwardedServerClientIp(): string
     {
         return @getenv('HTTP_X_FORWARDED_SERVER_CLIENT_IP');
     }
@@ -3642,7 +2818,7 @@ class Methods
      * Get the current HTTP X-Forwarded-For-Client
      * @return string
      */
-    public function getHttpXForwardedForClient(): string
+    public static function getHttpXForwardedForClient(): string
     {
         return @getenv('HTTP_X_FORWARDED_FOR_CLIENT');
     }
@@ -3651,7 +2827,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Proto-Client
      * @return string
      */
-    public function getHttpXForwardedProtoClient(): string
+    public static function getHttpXForwardedProtoClient(): string
     {
         return @getenv('HTTP_X_FORWARDED_PROTO_CLIENT');
     }
@@ -3660,7 +2836,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Host-Client
      * @return string
      */
-    public function getHttpXForwardedHostClient(): string
+    public static function getHttpXForwardedHostClient(): string
     {
         return @getenv('HTTP_X_FORWARDED_HOST_CLIENT');
     }
@@ -3669,7 +2845,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Port-Client
      * @return string
      */
-    public function getHttpXForwardedPortClient(): string
+    public static function getHttpXForwardedPortClient(): string
     {
         return @getenv('HTTP_X_FORWARDED_PORT_CLIENT');
     }
@@ -3678,7 +2854,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Server-Client
      * @return string
      */
-    public function getHttpXForwardedServerClient(): string
+    public static function getHttpXForwardedServerClient(): string
     {
         return @getenv('HTTP_X_FORWARDED_SERVER_CLIENT');
     }
@@ -3687,7 +2863,7 @@ class Methods
      * Get the current HTTP X-Forwarded-For-Client-IP-Client
      * @return string
      */
-    public function getHttpXForwardedForClientIpClient(): string
+    public static function getHttpXForwardedForClientIpClient(): string
     {
         return @getenv('HTTP_X_FORWARDED_FOR_CLIENT_IP_CLIENT');
     }
@@ -3696,7 +2872,7 @@ class Methods
      * Get the current HTTP X-Forwarded-Proto-Client-IP-Client
      * @return string
      */
-    public function getHttpXForwardedProtoClientIpClient(): string
+    public static function getHttpXForwardedProtoClientIpClient(): string
     {
         return @getenv('HTTP_X_FORWARDED_PROTO_CLIENT_IP_CLIENT');
     }
@@ -3705,18 +2881,19 @@ class Methods
      * Get the current HTTP X-Forwarded-Host-Client-IP-Client
      * @return string
      */
-    public function getHttpXForwardedHostClientIpClient(): string
+    public static function getHttpXForwardedHostClientIpClient(): string
     {
         return @getenv('HTTP_X_FORWARDED_HOST_CLIENT_IP_CLIENT');
     }
-    
+
     /**
      * Loads environment variables from .env to getenv(), $_ENV and $_SERVER automatically.
      * @param string $inPath The directory to load the .env file from
      * @param bool $overwrite Wether to overwrite existing .env variables
      * @return void
      */
-    public function loadEnvVars(string $inPath, bool $overwrite = true): void {
+    public static function loadEnvVars(string $inPath, bool $overwrite = true): void
+    {
         $dotenv = $overwrite ? \Dotenv\Dotenv::createMutable($inPath) : \Dotenv\Dotenv::createImmutable($inPath);
         $dotenv->safeLoad();
     }

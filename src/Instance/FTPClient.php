@@ -1,22 +1,16 @@
 <?php
 
-namespace PHPWebfuse;
+namespace PHPWebfuse\Instance;
+
+use \PHPWebfuse\Utils;
+use \PHPWebfuse\File;
 
 /**
+ * @author Senestro
  */
 class FTPClient
 {
     /* PUBLIC VARIABLES */
-
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
-
-    /**
-     * @var \PHPWebfuse\Path
-     */
-    private \PHPWebfuse\Path $path;
 
     /**
      * The host to connect to
@@ -69,12 +63,12 @@ class FTPClient
     /**
      * @var \PHPWebfuse\FTPClient\FTPAdapter
      */
-    private ?\PHPWebfuse\FTPClient\FTPAdapter $adapter;
+    private ?\PHPWebfuse\Instance\FTPClient\FTPAdapter $adapter;
 
     /**
      * @var \PHPWebfuse\FTPClient\FTPPath
      */
-    private \PHPWebfuse\FTPClient\FTPPath $FtpPath;
+    private \PHPWebfuse\Instance\FTPClient\FTPPath $FtpPath;
 
     private bool $connected = false;
     private bool $loggedIn = false;
@@ -87,8 +81,6 @@ class FTPClient
      */
     public function __construct()
     {
-        $this->methods = new \PHPWebfuse\Methods();
-        $this->path = new \PHPWebfuse\Path();
         $this->FtpPath = new \PHPWebfuse\FTPClient\FTPPath($this->RPS);
         $this->connection = null;
         $this->adapter = null;
@@ -146,9 +138,9 @@ class FTPClient
             if (is_string($systype)) {
                 $systype = strtolower($systype);
                 $this->RST = $systype;
-                if ($this->methods->containText("unix", $systype) || $this->methods->containText("linux", $systype)) {
+                if (Utils::containText("unix", $systype) || Utils::containText("linux", $systype)) {
                     $this->RPS = "/";
-                } elseif ($this->methods->containText("windows", $systype) || $this->methods->containText("win", $systype) || $this->methods->containText("ms", $systype)) {
+                } elseif (Utils::containText("windows", $systype) || Utils::containText("win", $systype) || Utils::containText("ms", $systype)) {
                     $this->RPS = "\\";
                 }
             }
@@ -394,7 +386,7 @@ class FTPClient
             // Loop to remove hidden when list hideen is false
             if (!$showHidden) {
                 foreach ($list as $lk => $li) {
-                    if ($this->methods->startsWith(".", $li->getBasename())) {
+                    if (Utils::startsWith(".", $li->getBasename())) {
                         unset($list[$lk]);
                         continue;
                     }
@@ -513,7 +505,7 @@ class FTPClient
         if ($this->isValid() && $this->loggedIn && $this->isFile($remotefile)) {
             $time = $this->adapter->mdtm($remotefile);
             if ($time != -1) {
-                return is_string($format) && $this->methods->isNotEmptyString($format) ? date($format, $time) : $time;
+                return is_string($format) && Utils::isNotEmptyString($format) ? date($format, $time) : $time;
             }
         }
         return 0;
@@ -640,7 +632,7 @@ class FTPClient
         if ($this->isValid() && $this->loggedIn && !$this->isFile($remotefile)) {
             $handle = @fopen('php://temp', 'w');
             if (!is_bool($handle)) {
-                if ($this->methods->isNonNull($content) && $this->methods->isNotEmptyString($content)) {
+                if (Utils::isNonNull($content) && Utils::isNotEmptyString($content)) {
                     // Write the content to the temporary file
                     fwrite($handle, $content);
                 }
@@ -722,11 +714,11 @@ class FTPClient
     public function uploadFile(string $localfile, string $remotedir, ?string $name = null, int $mode = FTP_BINARY, int $offset = 0): bool
     {
         // Check if the current instance is valid, the remote directory exists, and the local file exists
-        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir) && $this->methods->isFile($localfile)) {
+        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir) && File::isFile($localfile)) {
             // Determine the destination path on the remote server
             $destination = $remotedir . $this->RPS . (
                 // Use the provided name if it's non-null and non-empty, otherwise use the basename of the local file
-                $this->methods->isNonNull($name) && $this->methods->isNotEmptyString($name) ? $name : basename($localfile)
+                Utils::isNonNull($name) && Utils::isNotEmptyString($name) ? $name : basename($localfile)
             );
             // Arrange the remote path to be in the correct format
             $destination = $this->arrangeRPath($destination);
@@ -749,11 +741,11 @@ class FTPClient
     public function downloadFile(string $remotefile, string $localdir, ?string $localname = null, int $mode = FTP_BINARY, int $offset = 0): bool
     {
         // Check if the current instance is valid, the remote file is not a directory, and the local directory can be created
-        if ($this->isValid() && $this->loggedIn && $this->isFile($remotefile) && $this->methods->makeDir($localdir)) {
+        if ($this->isValid() && $this->loggedIn && $this->isFile($remotefile) && File::makeDir($localdir)) {
             // Determine the destination path on the local machine
             $destination = $localdir . DIRECTORY_SEPARATOR . (
                 // Use the provided local name if it's non-null and non-empty, otherwise use the basename of the remote file
-                $this->methods->isNonNull($localname) && $this->methods->isNotEmptyString($localname) ? $localname : basename($remotefile)
+                Utils::isNonNull($localname) && Utils::isNotEmptyString($localname) ? $localname : basename($remotefile)
             );
             // Arrange the local path to be in the correct format
             $destination = $this->arrangeLPath($destination);
@@ -773,12 +765,12 @@ class FTPClient
     public function downloadDir(string $remotedir, string $localdir): bool
     {
         // Check if the current instance is valid, the remote directory exists, and the local directory can be created or created
-        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir) && $this->methods->makeDir($localdir)) {
+        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir) && File::makeDir($localdir)) {
             // Arrange the local directory path and append a directory separator
-            $localdir = $this->arrangeLPath($this->methods->resolvePath($localdir));
+            $localdir = $this->arrangeLPath(Utils::resolvePath($localdir));
             // Create fisrt level directory on local filesystem
             $localdir = $this->arrangeLPath($localdir . DIRECTORY_SEPARATOR . basename($remotedir));
-            $this->methods->makeDir($localdir);
+            File::makeDir($localdir);
             return $this->downloadDirContents($remotedir, $localdir);
         }
         // Return false if any of the checks fail
@@ -794,7 +786,7 @@ class FTPClient
     public function uploadDir(string $localdir, string $remotedir): bool
     {
         // Check if the current instance is valid and the local directory exists
-        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir) && $this->methods->isDir($localdir)) {
+        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir) && File::isDir($localdir)) {
             // Arrange the local directory path
             $localdir = $this->arrangeLPath($localdir);
             // Set the remote root directory path by appending the basename of the local directory
@@ -802,7 +794,7 @@ class FTPClient
             // Create the remote root directory
             $this->createDir($remoterootdir);
             // Recursively scan the local directory to get a list of files and directories
-            $files = array_reverse($this->sortFilesFirst($this->methods->scanDirRecursively($localdir)));
+            $files = array_reverse($this->sortFilesFirst(File::scanDirRecursively($localdir)));
             // Loop through the sorted list and handle directories and files separately
             foreach ($files as $file) {
                 // Determine the remote destination path
@@ -869,7 +861,7 @@ class FTPClient
                 $this->host = $host;
                 $this->port = $port;
                 $this->timeout = $timeout;
-                $this->setAdapter(new \PHPWebfuse\FTPClient\FTPAdapter($this->connection));
+                $this->setAdapter(new \PHPWebfuse\Instance\FTPClient\FTPAdapter($this->connection));
                 $this->connected = true;
             }
             $this->connected = false;
@@ -894,7 +886,7 @@ class FTPClient
      */
     private function isValidStream(): bool
     {
-        return $this->methods->isNonNull($this->connection) && (is_resource($this->connection) || $this->connection instanceof \FTP\Connection);
+        return Utils::isNonNull($this->connection) && (is_resource($this->connection) || $this->connection instanceof \FTP\Connection);
     }
 
     /**
@@ -903,7 +895,7 @@ class FTPClient
      */
     private function isValidAdapter(): bool
     {
-        return $this->adapter !== null || $this->adapter instanceof \PHPWebfuse\FTPClient\FTPAdapter;
+        return $this->adapter !== null || $this->adapter instanceof \PHPWebfuse\Instance\FTPClient\FTPAdapter;
     }
 
     /**
@@ -919,7 +911,7 @@ class FTPClient
      * Set the FTP adapter
      * @param \PHPWebfuse\FTPClient\FTPAdapter $adapter
      */
-    private function setAdapter(\PHPWebfuse\FTPClient\FTPAdapter $adapter)
+    private function setAdapter(\PHPWebfuse\Instance\FTPClient\FTPAdapter $adapter)
     {
         $this->adapter = $adapter;
     }
@@ -944,7 +936,7 @@ class FTPClient
     private function getSepFromPath(string $path): string
     {
         $sep = "/";
-        if ($this->methods->containText("\\", $path)) {
+        if (Utils::containText("\\", $path)) {
             $sep = '\\';
         } else {
             $sep = '/';
@@ -959,7 +951,7 @@ class FTPClient
      */
     private function arrangeLPath(string $path, bool $closeEdges = false): string
     {
-        return $this->path->arrange_dir_separators($path, $closeEdges);
+        return File::arrange_dir_separators($path, $closeEdges);
     }
 
     /**
@@ -979,7 +971,7 @@ class FTPClient
      */
     private function sortFilesFirstForList(array $lists): array
     {
-        usort($lists, function (\PHPWebfuse\FTPClient\FTPFile $a, \PHPWebfuse\FTPClient\FTPFile $b) use ($lists) {
+        usort($lists, function (\PHPWebfuse\Instance\FTPClient\FTPFile $a, \PHPWebfuse\Instance\FTPClient\FTPFile $b) use ($lists) {
             if (!$a->isDir() && $b->isDir()) {
                 // File comes first
                 return -1;
@@ -1022,7 +1014,7 @@ class FTPClient
      */
     private function isUnixType(): bool
     {
-        return $this->methods->containText("unix", $this->RST) || $this->methods->containText("linux", $this->RST);
+        return Utils::containText("unix", $this->RST) || Utils::containText("linux", $this->RST);
     }
 
     /**
@@ -1046,7 +1038,7 @@ class FTPClient
                         $localPath = $this->arrangeLPath($localdir . DIRECTORY_SEPARATOR . basename($file));
                         if ($this->isDir($file)) {
                             // Create directory on local filesystem
-                            $this->methods->makeDir($localPath);
+                            File::makeDir($localPath);
                             // Recursive part
                             if ($this->downloadDirContents($file, $localPath)) {
                                 $downloaded++;

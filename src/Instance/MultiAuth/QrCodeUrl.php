@@ -1,6 +1,6 @@
 <?php
 
-namespace PHPWebfuse\MultiAuth;
+namespace PHPWebfuse\Instance\MultiAuth;
 
 /**
  * Responsible for QR image url generation.
@@ -44,16 +44,16 @@ class QrCodeUrl
     public function generate(string $accountName, string $secret, ?string $issuer = null): string
     {
         if ($accountName === "" || strpos($accountName, ':') !== false) {
-            throw \PHPWebfuse\MultiAuth\QrException::InvalidAccountName($accountName);
+            throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidAccountName($accountName);
         }
         if ($secret === "") {
-            throw \PHPWebfuse\MultiAuth\QrException::InvalidSecret();
+            throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidSecret();
         }
         $label = $accountName;
         $content = 'otpauth://totp/%s?secret=%s';
         if ($issuer !== null) {
             if ($issuer === "" || strpos($issuer, ':') !== false) {
-                throw \PHPWebfuse\MultiAuth\QrException::InvalidIssuer($issuer);
+                throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidIssuer($issuer);
             }
             // Use both the issuer parameter and label prefix as recommended by Google for BC reasons
             $label = $issuer . ':' . $label;

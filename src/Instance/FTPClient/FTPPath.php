@@ -1,6 +1,9 @@
 <?php
-namespace PHPWebfuse\FTPClient;
+namespace PHPWebfuse\Instance\FTPClient;
 
+/**
+ * @author Senestro
+ */
 class FTPPath {
     // PRIVATE VARIABLE
     

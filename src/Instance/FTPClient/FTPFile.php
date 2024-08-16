@@ -1,22 +1,22 @@
 <?php
 
-namespace PHPWebfuse\FTPClient;
+namespace PHPWebfuse\Instance\FTPClient;
+
+use \PHPWebfuse\Utils;
+use \PHPWebfuse\File;
+
 
 /**
+ * @author Senestro
  */
 class FTPFile
 {
     /* PUBLIC VARIABLES */
-
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
     
     /**
-     * @var \PHPWebfuse\FTPClient\FTPPath
+     * @var \PHPWebfuse\Instance\FTPClient\FTPPath
      */
-    private \PHPWebfuse\FTPClient\FTPPath $FtpPath;
+    private \PHPWebfuse\Instance\FTPClient\FTPPath $FtpPath;
 
     private string $remotedir;
     private string $line;
@@ -46,19 +46,18 @@ class FTPFile
 
     /**
      * The constructor
-     * @param \PHPWebfuse\FTPClient $client
-     * @param \PHPWebfuse\FTPClient\FTPAdapter $adapter
+     * @param \PHPWebfuse\Instance\FTPClient $client
+     * @param \PHPWebfuse\Instance\FTPClient\FTPAdapter $adapter
      * @param string $remotedir
      * @param string $line
      * @param string $RPS
      */
-    public function __construct(\PHPWebfuse\FTPClient $client, \PHPWebfuse\FTPClient\FTPAdapter $adapter, string $remotedir, string $line, string $RPS = "/")
+    public function __construct(\PHPWebfuse\Instance\FTPClient $client, \PHPWebfuse\Instance\FTPClient\FTPAdapter $adapter, string $remotedir, string $line, string $RPS = "/")
     {
-        $this->methods = new \PHPWebfuse\Methods();
         $this->remotedir = $remotedir;
         $this->line = $line;
         $this->RPS = $RPS;
-        $this->FtpPath = new \PHPWebfuse\FTPClient\FTPPath($RPS);
+        $this->FtpPath = new \PHPWebfuse\Instance\FTPClient\FTPPath($RPS);
         $this->validateLine();
     }
 
@@ -250,7 +249,7 @@ class FTPFile
     private function validateLine(): void
     {
         // Make sure the line is not empty
-        if($this->methods->isNotEmptyString($this->line)) {
+        if(Utils::isNotEmptyString($this->line)) {
             // Split the raw list entry by space
             $lineparts = preg_split("/\s+/", $this->line);
             // Making sure that the line parts are greater than or equal to 9
@@ -291,7 +290,7 @@ class FTPFile
                         $this->owner = $owner;
                         $this->group = $group;
                         $this->size = $size;
-                        $this->readableSize = $this->methods->formatSize($size);
+                        $this->readableSize = Utils::formatSize($size);
                         $this->month = $month;
                         $this->day = $day;
                         $this->time = $time;
@@ -350,7 +349,7 @@ class FTPFile
             foreach ($octalPermission as $index => $value) {
                 $permInt = 0;
                 // Check if the permission part is not empty
-                if ($this->methods->isNotEmptyString($value)) {
+                if (Utils::isNotEmptyString($value)) {
                     // Loop through each character in the permission part
                     foreach (str_split($value, 1) as $splitedValue) {
                         // Add the corresponding octal value if the character exists in the permsValues array
@@ -377,7 +376,7 @@ class FTPFile
     private function getSepFromPath(string $path): string
     {
         $sep = "/";
-        if ($this->methods->containText("\\", $path)) {
+        if (Utils::containText("\\", $path)) {
             $sep = '\\';
         } else {
             $sep = '/';

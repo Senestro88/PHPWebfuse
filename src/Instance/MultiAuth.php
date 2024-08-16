@@ -1,22 +1,13 @@
 <?php
 
-namespace PHPWebfuse;
+namespace PHPWebfuse\Instance;
 
 /**
+ * @author Senestro
  */
 class MultiAuth
 {
     // PRIVATE VARIABLES
-
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
-
-    /**
-     * @var \PHPWebfuse\Path
-     */
-    private \PHPWebfuse\Path $path;
 
     /**
      * @var int The length of the code
@@ -59,32 +50,12 @@ class MultiAuth
      */
     public function __construct(int $passcodelength = 6, int $keylength = 10, ?\DateTimeInterface $time = null, int $codeperiod = 30)
     {
-        $this->methods = new \PHPWebfuse\Methods();
-        $this->path = new \PHPWebfuse\Path();
         $this->passcodelength = $passcodelength;
         $this->keylength = $keylength;
         $this->codeperiod = $codeperiod;
         $this->periodsize = $codeperiod < $this->periodsize ? $codeperiod : $this->periodsize;
         $this->pinmodulo = 10 ** $passcodelength;
         $this->time = $time ?? new \DateTimeImmutable();
-        $srcDirname = $this->path->insert_dir_separator(PHPWebfuse['directories']['src']);
-        $dirname = $srcDirname . "MultiAuth" . DIRECTORY_SEPARATOR;
-        $scandir = $this->methods->scanDir($dirname);
-        if ($this->methods->isNotEmptyArray($scandir)) {
-            foreach ($scandir as $absolutePath) {
-                if ($this->methods->endsWith(".php", strtolower($absolutePath))) {
-                    $os = strtolower(PHPWebfuse['os']);
-                    if (($os == "unix" || $os == "linux") || $os == "unknown") {
-                        $exploded = array_filter(explode(DIRECTORY_SEPARATOR, $absolutePath));
-                        $absolutePath = DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $exploded);
-                    }
-                    if (is_file($absolutePath) && is_readable($absolutePath)) {
-                        require_once $absolutePath;
-                    }
-                    require_once $absolutePath;
-                }
-            }
-        }
     }
 
     /**
@@ -93,7 +64,7 @@ class MultiAuth
      */
     public function generateKey(): string
     {
-        return (new \PHPWebfuse\MultiAuth\FixedBitNotation(5, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567', true, true))->encode(random_bytes($this->keylength));
+        return (new \PHPWebfuse\Instance\MultiAuth\FixedBitNotation(5, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567', true, true))->encode(random_bytes($this->keylength));
     }
 
     /**
@@ -106,7 +77,7 @@ class MultiAuth
      */
     public function createBase64Image(string $user, string $hostname, string $issuer, string $key): string
     {
-        return (new \PHPWebfuse\MultiAuth\QrCodeImage())->createBase64Image(sprintf('%s@%s', $user, $hostname), $key, $issuer);
+        return (new \PHPWebfuse\Instance\MultiAuth\QrCodeImage())->createBase64Image(sprintf('%s@%s', $user, $hostname), $key, $issuer);
     }
 
     /**
@@ -119,7 +90,7 @@ class MultiAuth
      */
     public function createOuputImage(string $user, string $hostname, string $issuer, string $key): void
     {
-        (new \PHPWebfuse\MultiAuth\QrCodeImage())->createOuputImage(sprintf('%s@%s', $user, $hostname), $key, $issuer);
+        (new \PHPWebfuse\Instance\MultiAuth\QrCodeImage())->createOuputImage(sprintf('%s@%s', $user, $hostname), $key, $issuer);
     }
 
     /**
@@ -132,7 +103,7 @@ class MultiAuth
      */
     public function createImageUrl(string $user, string $hostname, string $issuer, string $key): string
     {
-        return (new \PHPWebfuse\MultiAuth\QrCodeUrl())->generate(sprintf('%s@%s', $user, $hostname), $key, $issuer);
+        return (new \PHPWebfuse\Instance\MultiAuth\QrCodeUrl())->generate(sprintf('%s@%s', $user, $hostname), $key, $issuer);
     }
 
     /**
@@ -151,7 +122,7 @@ class MultiAuth
         } else {
             $timeForCode = $time;
         }
-        $notation = new \PHPWebfuse\MultiAuth\FixedBitNotation(5, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567', true, true);
+        $notation = new \PHPWebfuse\Instance\MultiAuth\FixedBitNotation(5, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567', true, true);
         $key = $notation->decode($key);
         $timeForCode = str_pad(pack('N', $timeForCode), 8, \chr(0), \STR_PAD_LEFT);
         $hash = hash_hmac('sha1', $timeForCode, $key, true);

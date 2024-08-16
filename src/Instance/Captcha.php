@@ -1,22 +1,18 @@
 <?php
 
-namespace PHPWebfuse;
+namespace PHPWebfuse\Instance;
+
+
+use \PHPWebfuse\Utils;
+use \PHPWebfuse\File;
+
 
 /**
+ * @author Senestro
  */
 class Captcha
 {
     // PRIVATE VARIABLES
-
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
-
-    /**
-     * @var \PHPWebfuse\Path
-     */
-    private \PHPWebfuse\Path $path;
 
     // PRIVATE CONSTANTS
 
@@ -61,8 +57,6 @@ class Captcha
      */
     public function __construct()
     {
-        $this->methods = new \PHPWebfuse\Methods();
-        $this->path = new \PHPWebfuse\Path();
     }
 
     /**
@@ -121,7 +115,7 @@ class Captcha
         $directories = $this->getDirectories();
         $options = $this->filterOptions($options);
         $image = $this->createImage($options);
-        if ($this->methods->isNotFalse($image)) {
+        if (Utils::isNotFalse($image)) {
             $colors = $this->allocateImageColors($image, $options);
             $this->setBackground($image, $options, $colors, $directories);
             $generatedText = $this->createNameSpaceFileAndReturnCaptchaText($options, $directories, $namespace);
@@ -129,7 +123,7 @@ class Captcha
             $this->drawLines($image, $options, $colors);
             $this->drawSignature($image, $options, $colors, $directories);
             $this->drawCaptchaText($image, $options, $colors, $directories, $generatedText);
-            $format = $this->methods->inArray(strtolower($format), self::FORMATS) ? $format : "png";
+            $format = Utils::inArray(strtolower($format), self::FORMATS) ? $format : "png";
             $result['image'] = $image;
             $result['directories'] = $directories;
             $result['options'] = $options;
@@ -155,11 +149,11 @@ class Captcha
      */
     private function getDirectories(): array
     {
-        $captchaDirname = $this->path->insert_dir_separator($this->path->arrange_dir_separators(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . "captcha"));
-        $this->methods->makeDir($captchaDirname);
+        $captchaDirname = File::insert_dir_separator(File::arrange_dir_separators(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . "captcha"));
+        File::makeDir($captchaDirname);
         $directories = array("backgrounds" => $captchaDirname . "backgrounds" . DIRECTORY_SEPARATOR, "fonts" => $captchaDirname . "fonts" . DIRECTORY_SEPARATOR, "namespaces" => $captchaDirname . "namespaces" . DIRECTORY_SEPARATOR, "temp" => $captchaDirname . "temp" . DIRECTORY_SEPARATOR);
         foreach ($directories as $dirname) {
-            $this->methods->makeDir($dirname);
+            File::makeDir($dirname);
         }
         return $directories;
     }
@@ -211,7 +205,7 @@ class Captcha
     private function allocateImageColors(\GdImage &$image, array $options = array()): array
     {
         $colors = array();
-        if ($this->methods->isNotFalse($image)) {
+        if (Utils::isNotFalse($image)) {
             $alpha = intval($options['transparentPercentage'] / 100 * 127);
             $bg = $this->hex2rgb($options['bgColor']);
             $text = $this->hex2rgb($options['textColor']);
@@ -237,18 +231,18 @@ class Captcha
      */
     private function setBackground(\GdImage &$image, array $options = array(), array $colors = array(), array $directories = array()): void
     {
-        if ($this->methods->isNotFalse($image) && $this->methods->isNotEmptyArray($colors) && $this->methods->isNotEmptyArray($directories)) {
+        if (Utils::isNotFalse($image) && Utils::isNotEmptyArray($colors) && Utils::isNotEmptyArray($directories)) {
             $backgroundImage = null;
             imagefilledrectangle($image, 0, 0, $options['width'], $options['height'], $colors['background']);
-            if ($this->methods->isTrue($options['randomBackground']) && $this->methods->isDir($directories['backgrounds']) && $this->methods->isReadable($directories['backgrounds'])) {
+            if (Utils::isTrue($options['randomBackground']) && File::isDir($directories['backgrounds']) && Utils::isReadable($directories['backgrounds'])) {
                 $background = $this->getBackground($directories['backgrounds']);
-                if ($this->methods->isNonNull($background)) {
+                if (Utils::isNonNull($background)) {
                     $backgroundImage = $background;
                 }
             }
-            if ($this->methods->isNonNull($backgroundImage)) {
+            if (Utils::isNonNull($backgroundImage)) {
                 $backgroundSize = @getimagesize($backgroundImage);
-                if ($this->methods->isArray($backgroundSize)) {
+                if (Utils::isArray($backgroundSize)) {
                     if (isset($backgroundSize[2])) {
                         if ($backgroundSize[2] == 1) {
                             $img = @imagecreatefromgif($backgroundImage);
@@ -258,7 +252,7 @@ class Captcha
                             $img = @imagecreatefrompng($backgroundImage);
                         }
                     }
-                    if (isset($img) && $this->methods->isNotFalse($img)) {
+                    if (isset($img) && Utils::isNotFalse($img)) {
                         imagecopyresized($image, $img, 0, 0, 0, 0, $options['width'], $options['height'], imagesx($img), imagesy($img));
                     }
                 }
@@ -273,19 +267,19 @@ class Captcha
      */
     private function getBackground(string $dirname): ?string
     {
-        if ($this->methods->isDir($dirname) && $this->methods->isReadable($dirname)) {
+        if (File::isDir($dirname) && Utils::isReadable($dirname)) {
             $images = array();
             $extensions = array("jpg", "gif", "png", "jpeg");
-            $scandir = $this->methods->scanDir($dirname);
+            $scandir = File::scanDir($dirname);
             foreach ($scandir as $filename) {
-                if ($this->methods->isFile($filename)) {
-                    $extension = $this->methods->getExtension($filename);
-                    if ($this->methods->inArray(strtolower($extension), $extensions)) {
+                if (File::isFile($filename)) {
+                    $extension = File::getExtension($filename);
+                    if (Utils::inArray(strtolower($extension), $extensions)) {
                         $images[] = $filename;
                     }
                 }
             }
-            if ($this->methods->isNotEmptyArray($images)) {
+            if (Utils::isNotEmptyArray($images)) {
                 return $images[mt_rand(0, count($images) - 1)];
             }
         }
@@ -302,13 +296,13 @@ class Captcha
     private function createNameSpaceFileAndReturnCaptchaText(array $options = array(), array $directories = array(), string $namespace = "default"): string
     {
         $code = "";
-        if ($this->methods->isNotEmptyArray($directories)) {
+        if (Utils::isNotEmptyArray($directories)) {
             for ($i = 0; $i < $options['textLength']; $i++) {
                 $code .= substr(self::CHARSET, rand(0, strlen(self::CHARSET) - 1), 1);
             }
             $data = array('expires' => time() + (int) $options['expires'], 'code' => $code);
             $namespaceFilename = $directories['namespaces'] . $namespace . '.json';
-            $this->methods->saveContentToFile($namespaceFilename, $this->methods->arrayToJson($data));
+            File::saveContentToFile($namespaceFilename, Utils::arrayToJson($data));
         }
         return $code;
     }
@@ -323,7 +317,7 @@ class Captcha
     private function drawNoise(\GdImage &$image, array $options = array(), array $colors = array()): void
     {
         // Check if the image is valid, colors array is not empty, and noise level is set and greater than 0
-        if ($this->methods->isNotFalse($image) && $this->methods->isNotEmptyArray($colors) && isset($options['noiseLevel']) && $options['noiseLevel'] > 0) {
+        if (Utils::isNotFalse($image) && Utils::isNotEmptyArray($colors) && isset($options['noiseLevel']) && $options['noiseLevel'] > 0) {
             // Limit noise level to a maximum of 10 and adjust by logarithm base 2 of e
             $noiseLevel = min($options['noiseLevel'], 10) * M_LOG2E;
             // Extract width and height from options
@@ -361,7 +355,7 @@ class Captcha
     private function drawLines(\GdImage &$image, array $options = array(), array $colors = array()): void
     {
         // Check if the image is valid, colors array is not empty, and numLines is set and greater than 0
-        if ($this->methods->isNotFalse($image) && $this->methods->isNotEmptyArray($colors) && isset($options['numLines']) && $options['numLines'] > 0) {
+        if (Utils::isNotFalse($image) && Utils::isNotEmptyArray($colors) && isset($options['numLines']) && $options['numLines'] > 0) {
             // Extract width, height, and number of lines from options
             $width = $options['width'];
             $height = $options['height'];
@@ -421,11 +415,11 @@ class Captcha
     private function drawSignature(\GdImage &$image, array $options = array(), array $colors = array(), array $directories = array()): void
     {
         // Check if the image is valid, colors array is not empty, and directories array is not empty
-        if ($this->methods->isNotFalse($image) && $this->methods->isNotEmptyArray($colors) && $this->methods->isNotEmptyArray($directories)) {
+        if (Utils::isNotFalse($image) && Utils::isNotEmptyArray($colors) && Utils::isNotEmptyArray($directories)) {
             // Define the path to the font file
             $font = $directories['fonts'] . "signature.ttf";
             // Check if the font file exists and is readable
-            if ($this->methods->isFile($font) && $this->methods->isReadable($font)) {
+            if (File::isFile($font) && Utils::isReadable($font)) {
                 // Get bounding box details for the signature text
                 $bboxDetails = $this->bboxDetails(15, 0, $font, $options['signature']);
                 // Check if width is available in bounding box details
@@ -452,7 +446,7 @@ class Captcha
     private function drawCaptchaText(\GdImage &$image, array $options = array(), array $colors = array(), array $directories = array(), string $generatedText = ""): void
     {
         // Check if the image is valid, colors array is not empty, directories array is not empty, and generated text is not empty
-        if ($this->methods->isNotFalse($image) && $this->methods->isNotEmptyArray($colors) && $this->methods->isNotEmptyArray($directories) && $this->methods->isNotEmptyString($generatedText)) {
+        if (Utils::isNotFalse($image) && Utils::isNotEmptyArray($colors) && Utils::isNotEmptyArray($directories) && Utils::isNotEmptyString($generatedText)) {
             // Define the path to the font file
             $font = $directories['fonts'] . "captcha.ttf";
             // Set the font ratio, defaulting to 0.4 if not provided or out of bounds
@@ -461,14 +455,14 @@ class Captcha
                 $ratio = 0.4;
             }
             // Check if the font file exists and is readable
-            if ($this->methods->isFile($font) && $this->methods->isReadable($font)) {
+            if (File::isFile($font) && Utils::isReadable($font)) {
                 // Extract height and width from options
                 $height = $options['height'];
                 $width = $options['width'];
                 $fontSize = $height * $ratio;
                 $scale = 1;
                 // Add random spaces to the generated text if the option is enabled
-                if ($this->methods->isTrue($options['randomSpaces']) && $this->methods->isFalse($this->strpos($generatedText, ' '))) {
+                if (Utils::isTrue($options['randomSpaces']) && Utils::isFalse($this->strpos($generatedText, ' '))) {
                     if (mt_rand(1, 100) % 5 > 0) {
                         $index = mt_rand(1, strlen($generatedText) - 1);
                         $spaces = mt_rand(1, 3);
@@ -485,8 +479,8 @@ class Captcha
                 $angle0 = mt_rand(10, 20);
                 $angleN = round(mt_rand(-20, 10));
                 // Adjust angles if the option is enabled
-                if ($this->methods->isNotFalse($angle0) && $this->methods->isNotFalse($angleN)) {
-                    if ($this->methods->isFalse($options['textAngles'])) {
+                if (Utils::isNotFalse($angle0) && Utils::isNotFalse($angleN)) {
+                    if (Utils::isFalse($options['textAngles'])) {
                         $angle0 = $angleN = $step = 0;
                     }
                     if (mt_rand(0, 99) % 2 == 0) {
@@ -539,7 +533,7 @@ class Captcha
                     $cx = floor($width / 2 - ($txtWid / 2));
                     $x = mt_rand(5 * $scale, max($cx * 2 - (5 * 1), 5 * $scale));
                     // Calculate the initial y-position for the text
-                    if ($this->methods->isTrue($options['randomBaseline'])) {
+                    if (Utils::isTrue($options['randomBaseline'])) {
                         $y = mt_rand($dims[0][1], $height - 10);
                     } else {
                         $y = ($height / 2 + $dims[0][1] / 2 - $dims[0][2]);
@@ -552,7 +546,7 @@ class Captcha
                         $angle = $angles[$i];
                         $dim = $dims[$i];
                         // Adjust y-position for each character if the option is enabled
-                        if ($this->methods->isTrue($options['randomBaseline'])) {
+                        if (Utils::isTrue($options['randomBaseline'])) {
                             $y = $nextYPos($y, $i, $randScale);
                         }
                         // Draw the character on the image
@@ -582,8 +576,8 @@ class Captcha
     private function createBase64FromImage(\GdImage &$image, array $directories = array(), string $format = "png"): string
     {
         $base64Image = "";
-        if ($this->methods->isNotFalse($image) && $this->methods->isNotEmptyArray($directories)) {
-            $format = $this->methods->inArray(strtolower($format), self::FORMATS) ? $format : "png";
+        if (Utils::isNotFalse($image) && Utils::isNotEmptyArray($directories)) {
+            $format = Utils::inArray(strtolower($format), self::FORMATS) ? $format : "png";
             $filename = $directories['temp'] . "" . md5(time()) . "." . $format;
             if ($format == "jpg" or $format == "jpeg") {
                 imagejpeg($image, $filename, 100);
@@ -594,9 +588,9 @@ class Captcha
             }
             imagedestroy($image);
             clearstatcache(false, $filename);
-            $base64Image = $this->methods->convertImageToBase64($filename);
+            $base64Image = Utils::convertImageToBase64($filename);
             clearstatcache(false, $filename);
-            $this->methods->deleteFile($filename);
+            File::deleteFile($filename);
         }
         return $base64Image;
     }
@@ -609,8 +603,8 @@ class Captcha
      */
     private function sendToBrowserFromImage(\GdImage $image, string $format = "png"): void
     {
-        if ($this->methods->isNotFalse($image) && !headers_sent()) {
-            $format = $this->methods->inArray(strtolower($format), self::FORMATS) ? $format : "png";
+        if (Utils::isNotFalse($image) && !headers_sent()) {
+            $format = Utils::inArray(strtolower($format), self::FORMATS) ? $format : "png";
             $contentType = ($format === "png" ? 'image/png' : ($format === "jpg" ? 'image/jpeg' : 'image/gif'));
             header("Expires: Mon, 7 Apr 1997 01:00:00 GMT");
             header("Last-Modified: " . gmdate("D, d M Y H:i:s") . "GMT");
@@ -637,10 +631,10 @@ class Captcha
     private function getNamespaceFileData(string $namespaceFilename): array
     {
         $data = array();
-        if ($this->methods->isFile($namespaceFilename) && $this->methods->isReadable($namespaceFilename)) {
+        if (File::isFile($namespaceFilename) && Utils::isReadable($namespaceFilename)) {
             $json = $this->methods->getFileContent($namespaceFilename);
             $decoded = $this->methods->jsonToArray($json);
-            if ($this->methods->isArray($decoded) && isset($decoded['expires']) && isset($decoded['code'])) {
+            if (Utils::isArray($decoded) && isset($decoded['expires']) && isset($decoded['code'])) {
                 $data['expires'] = $decoded['expires'];
                 $data['code'] = $decoded['code'];
             }
@@ -660,22 +654,22 @@ class Captcha
         $directories = $this->getDirectories();
         $namespaceFilename = $directories['namespaces'] . $namespace . '.json';
         $data = $this->getNamespaceFileData($namespaceFilename);
-        if ($this->methods->isNotEmptyArray($data)) {
+        if (Utils::isNotEmptyArray($data)) {
             $code = $data['code'] ?? "";
             $expires = $data['expires'] ?? 0;
-            if ($this->methods->isNotFalse($this->strpos($code, ' '))) {
+            if (Utils::isNotFalse($this->strpos($code, ' '))) {
                 $code = preg_replace('/\s+/', ' ', $code);
             }
-            if ($this->methods->isNotFalse($this->strpos($value, ' '))) {
+            if (Utils::isNotFalse($this->strpos($value, ' '))) {
                 $value = preg_replace('/\s+/', ' ', $value);
             }
             if (time() < $expires) {
                 $comparism = $caseInsensitive ? strcasecmp($value, $code) : strcmp($value, $code);
                 $validated = $comparism == 0;
-                if ($this->methods->isTrue($validated) && $this->methods->isFile($namespaceFilename)) {
-                    $this->methods->deleteFile($namespaceFilename);
+                if (Utils::isTrue($validated) && File::isFile($namespaceFilename)) {
+                    File::deleteFile($namespaceFilename);
                 }
-                return $this->methods->isTrue($validated);
+                return Utils::isTrue($validated);
             }
         }
         return false;
@@ -693,7 +687,7 @@ class Captcha
     {
         $bbox = @imagettfbbox($size, $angle, $font, $text);
         $data = array();
-        if ($this->methods->isNotFalse($bbox)) {
+        if (Utils::isNotFalse($bbox)) {
             $xCorr = 0 - $bbox[6]; // northwest X
             $yCorr = 0 - $bbox[7]; // northwest Y
             $data['left'] = $bbox[6] + $xCorr;
@@ -781,7 +775,7 @@ class Captcha
     private function characterDimensions(string $string, float $size, $angle, string $font): array | false
     {
         $box = imagettfbbox($size, $angle, $font, $string);
-        return $this->methods->isArray($box) ? array($box[2] - $box[0], max($box[1] - $box[7], $box[5] - $box[3]), $box[1]) : false;
+        return Utils::isArray($box) ? array($box[2] - $box[0], max($box[1] - $box[7], $box[5] - $box[3]), $box[1]) : false;
     }
 
     /**

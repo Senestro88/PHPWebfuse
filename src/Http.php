@@ -2,19 +2,15 @@
 
 namespace PHPWebfuse;
 
+use \PHPWebfuse\Utils;
+
 /**
+ * @author Senestro
  */
 class Http
 {
-    // PRIVATE VARIABLES
-
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
-
-    // PRIVATE CONSTANTS
-
+    // PRIVATE VARIABLE
+    
     /**
      * @var const The default request methods allowed
      */
@@ -25,18 +21,19 @@ class Http
     /**
      * @var string Any request last error are stored here
      */
-    public string $message = "";
+    public static string $message = "";
 
     // PUBLIC METHODS
-
+    
+    
     /**
-     * Construct new Http instance
+     * Prevent the constructor from being initialized
      */
-    public function __construct()
-    {
-        $this->methods = new \PHPWebfuse\Methods();
+    private function __construct() {
+        
     }
 
+    
     /**
      * Make an HTTP request
      * @param string $method The request method
@@ -45,17 +42,17 @@ class Http
      * @param array $params The request parameters
      * @return mixed
      */
-    public function request(string $method, string $url, ?array $headers = null, array $params = []): mixed
+    public static function request(string $method, string $url, ?array $headers = null, array $params = []): mixed
     {
         $method = strtoupper(trim($method));
-        if ($this->methods->isNotInArray($method, self::REQUEST_METHODS)) {
-            $this->message = "The request method must be one of the following: " . implode(", ", self::REQUEST_METHODS);
+        if (Utils::isNotInArray($method, self::REQUEST_METHODS)) {
+            self::$message = "The request method must be one of the following: " . implode(", ", self::REQUEST_METHODS);
         } elseif (!function_exists('curl_init')) {
-            $this->message = "Curl extension isn't loaded";
+            self::$message = "Curl extension isn't loaded";
         } else {
             $curl = curl_init();
-            if ($this->methods->isFalse($curl)) {
-                $this->message = "Can't initialize Curl handle";
+            if (Utils::isFalse($curl)) {
+                self::$message = "Can't initialize Curl handle";
             } else {
                 $_headers = [];
                 if (self::isArray($headers)) {
@@ -71,7 +68,7 @@ class Http
                     CURLOPT_SSL_VERIFYPEER => false, // Stop cURL from verifying the peer's certificate
                     CURLOPT_SSL_VERIFYSTATUS => false, // Do not verify the certificate's status.
                     CURLOPT_PROXY_SSL_VERIFYPEER => false, // Stop cURL from verifying the peer's certificate
-                    CURLOPT_USERAGENT => $this->methods->USER_AGENT,
+                    CURLOPT_USERAGENT => Utils::USER_AGENT,
                     CURLOPT_HEADER => false, // Include the header in the output
                     CURLOPT_RETURNTRANSFER => true, // To return the transfer as a string of the return value of curl_exec() instead of outputting it directly
                     CURLOPT_FOLLOWLOCATION => true, // Follow any "Location: " header that the server sends as part of the HTTP header
@@ -98,12 +95,12 @@ class Http
                     $options[CURLOPT_NOBODY] = true;
                 }
 
-                if ($this->methods->isFalse(curl_setopt_array($curl, $options))) {
-                    $this->message = "Failed to set Curl options";
+                if (Utils::isFalse(curl_setopt_array($curl, $options))) {
+                    self::$message = "Failed to set Curl options";
                 } else {
                     $response = curl_exec($curl);
-                    if ($this->methods->isFalse($response)) {
-                        $this->message = "Failed to execute Curl session: " . curl_error($curl);
+                    if (Utils::isFalse($response)) {
+                        self::$message = "Failed to execute Curl session: " . curl_error($curl);
                     } else {
                         curl_close($curl);
                         return $response;
@@ -113,4 +110,6 @@ class Http
         }
         return false;
     }
+
+    // PRIVATE METHODS
 }

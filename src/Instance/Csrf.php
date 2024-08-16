@@ -1,22 +1,17 @@
 <?php
 
-namespace PHPWebfuse;
+namespace PHPWebfuse\Instance;
+
+
+use \PHPWebfuse\Utils;
+use \PHPWebfuse\Aes;
 
 /**
+ * @author Senestro
  */
 class Csrf
 {
     // PRIVATE VARIABLES
-
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
-
-    /**
-     * @var \PHPWebfuse\Aes
-     */
-    private \PHPWebfuse\Aes $aesInstance;
 
     // PUBLIC VARIABLES
 
@@ -33,9 +28,7 @@ class Csrf
      */
     public function __construct(?string $csrfKey = null)
     {
-        $this->methods = new \PHPWebfuse\Methods();
-        $this->aesInstance = new \PHPWebfuse\Aes();
-        if ($this->methods->isString($csrfKey) && $this->methods->isNotEmptyString($csrfKey)) {
+        if (Utils::isString($csrfKey) && Utils::isNotEmptyString($csrfKey)) {
             $this->crsfKey = $csrfKey;
         }
     }
@@ -47,7 +40,7 @@ class Csrf
      */
     public function setKey(string $csrfKey): void
     {
-        if (!$this->methods->isEmptyString($csrfKey)) {
+        if (!Utils::isEmptyString($csrfKey)) {
             $this->crsfKey = $csrfKey;
         }
     }
@@ -59,13 +52,13 @@ class Csrf
      */
     public function generateToken(int $minutes = 10): string
     {
-        if ($this->methods->isNonNull($this->aesInstance) && $this->methods->isNotEmptyString($this->crsfKey)) {
+        if (Utils::isNonNull($this->aesInstance) && Utils::isNotEmptyString($this->crsfKey)) {
             try {
                 $hex = $this->newHex();
                 $salt = hash_hmac('sha256', $hex, $this->crsfKey);
                 $expires = $this->setFutureMinutes($minutes);
-                $json = $this->methods->arrayToJson(array("data" => $hex, "salt" => $salt, "expires" => $expires));
-                $enc = $this->aesInstance->encData($json, $this->crsfKey);
+                $json = Utils::arrayToJson(array("data" => $hex, "salt" => $salt, "expires" => $expires));
+                $enc = Aes::encData($json, "aes-128-cbc", $this->crsfKey);
                 return $enc ? $enc : '';
             } catch (\Throwable $e) {
 
@@ -81,11 +74,11 @@ class Csrf
      */
     public function validateToken(string $generatedToken): bool
     {
-        if ($this->methods->isNonNull($this->aesInstance) && $this->methods->isNotEmptyString($generatedToken) && $this->methods->isNotEmptyString($this->crsfKey)) {
+        if (Utils::isNonNull($this->aesInstance) && Utils::isNotEmptyString($generatedToken) && Utils::isNotEmptyString($this->crsfKey)) {
             try {
-                $dec = $this->aesInstance->decData($generatedToken, $this->crsfKey);
+                $dec = Aes::decData($generatedToken, "aes-128-cbc", $this->crsfKey);
                 if ($dec) {
-                    $array = $this->methods->jsonToArray($dec);
+                    $array = Utils::jsonToArray($dec);
                     $data = $array['data'] ?? '';
                     $salt = $array['salt'] ?? '';
                     $expires = (int) ($array['expires'] ?? 0);

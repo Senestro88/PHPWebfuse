@@ -3,17 +3,16 @@
 namespace PHPWebfuse;
 
 /**
+ * @author Senestro
  */
 class Time
 {
-    // PUBLIC METHODS
 
     /**
-     * Construct new Time instance
+     * Prevent the constructor from being initialized
      */
-    public function __construct()
+    private function __construct()
     {
-
     }
 
     /**
@@ -21,17 +20,17 @@ class Time
      * @param int|null $timestamp
      * @return array
      */
-    public function getDate(?int $timestamp = null): array
+    public static function getDate(?int $timestamp = null): array
     {
         return getdate($timestamp);
     }
 
     /**
-     * Organize a time unix timestamp
+     * Organize a time unix timestamp to human readable
      * @param ?int  $timestamp
      * @return string
      */
-    public function organizeTime(?int $timestamp = null): string
+    public static function organizeTime(?int $timestamp = null): string
     {
         $currentDate = $this->getDate();
         $targetDate = $this->getDate($timestamp);
@@ -46,11 +45,11 @@ class Time
     }
 
     /**
-     * Format a time unix timestamp into time ago
+     * Format a time unix timestamp into time ago to human readable
      * @param int $timestamp:
      * @return string
      */
-    public function FormatTimeAgoVersion1(int $timestamp): string
+    public static function FormatTimeAgoVersion1(int $timestamp): string
     {
         $difference = time() - $timestamp;
         if ($difference < 5) {
@@ -68,11 +67,11 @@ class Time
     }
 
     /**
-     * Format a time unix timestamp into time ago
+     * Format a time unix timestamp into time ago to human readable
      * @param int $timestamp
      * @return string
      */
-    public function FormatTimeAgoVersion2(int $timestamp): string
+    public static function FormatTimeAgoVersion2(int $timestamp): string
     {
         $date = new \DateTime();
         $date->setTimestamp($timestamp);

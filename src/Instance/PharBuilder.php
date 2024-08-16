@@ -1,22 +1,18 @@
 <?php
 
-namespace PHPWebfuse;
+namespace PHPWebfuse\Instance;
+
+use \PHPWebfuse\Utils;
+use \PHPWebfuse\File;
+use \PHPWebfuse\FileInfo;
+
 
 /**
+ * @author Senestro
  */
 class PharBuilder
 {
     // PRIVATE VARIABLES
-
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
-
-    /**
-     * @var \PHPWebfuse\Path
-     */
-    private \PHPWebfuse\Path $path;
 
     /**
      * @var string The root path
@@ -57,15 +53,13 @@ class PharBuilder
      */
     public function __construct(string $rootPath)
     {
-        $this->methods = new \PHPWebfuse\Methods();
-        $this->path = new \PHPWebfuse\Path();
         $pharReadonly = ini_get('phar.readonly');
         if (is_string($pharReadonly) && (strtolower($pharReadonly) == "on" || $pharReadonly == "1" || $pharReadonly == 1)) {
             throw new \Exception('Creation of Phar archives is disabled in php.ini. Please make sure that "phar.readonly" is set to "off".');
         } else {
             $realPath = $this->realPath($rootPath);
             if (is_string($realPath) && is_dir($rootPath) && is_readable($rootPath)) {
-                $this->rootPath = $this->path->arrange_dir_separators($realPath);
+                $this->rootPath = File::arrange_dir_separators($realPath);
             } else {
                 throw new \Exception('To creation a Phar archive, the root path must exists and readable.');
             }
@@ -79,7 +73,7 @@ class PharBuilder
      */
     public function addFile(string $file): void
     {
-        $entry = $this->path->arrange_dir_separators($file);
+        $entry = File::arrange_dir_separators($file);
         $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . $entry);
         if (is_string($realPath) && is_file($realPath) && is_readable($realPath)) {
             $this->files[$entry] = $realPath;
@@ -112,7 +106,7 @@ class PharBuilder
      */
     public function addDirectory(string $directory, string $excludePattern = ""): void
     {
-        $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . $this->path->arrange_dir_separators($directory));
+        $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . File::arrange_dir_separators($directory));
         if (is_string($realPath) && is_dir($realPath)) {
             $iterator = new \RecursiveDirectoryIterator($realPath, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::UNIX_PATHS | \FilesystemIterator::CURRENT_AS_SELF);
             if (!empty($excludePattern)) {
@@ -152,7 +146,7 @@ class PharBuilder
      */
     public function setInterface(string $file, string $sapi = 'cli'): void
     {
-        $entry = $this->path->arrange_dir_separators($file);
+        $entry = File::arrange_dir_separators($file);
         $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . $entry);
         if (is_string($realPath) && is_file($realPath) && is_readable($realPath)) {
             $sapi = strtolower($sapi);
@@ -175,7 +169,7 @@ class PharBuilder
      */
     public function overrideInterfaces(string $file): void
     {
-        $entry = $this->path->arrange_dir_separators($file);
+        $entry = File::arrange_dir_separators($file);
         $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . $entry);
         if (is_string($realPath) && is_file($realPath) && is_readable($realPath)) {
             if(in_array($entry, array_keys($this->files))) {
@@ -214,7 +208,7 @@ class PharBuilder
      * @return \PHPWebfuse\FileInfo | false
      * @throws \Exception if no interface is defined
      */
-    public function build(string $output, bool $compress = false, bool $addshebang = false): \PHPWebfuse\FileInfo | false
+    public function build(string $output, bool $compress = false, bool $addshebang = false): array | false
     {
         $this->output = $output;
         if(!is_file($this->index) && empty($this->interfaces)) {
@@ -248,7 +242,7 @@ class PharBuilder
             @chmod($this->output, 0770);
             unset($phar);
             if(is_file($this->output)) {
-                return new \PHPWebfuse\FileInfo($this->output);
+                return FileInfo::getInfo($this->output);
             }
         }
         return false;
@@ -323,9 +317,9 @@ class PharBuilder
     private function setPharStubFromIndex(\Phar $phar, bool $addshebang = false): void
     {
         // Get content and trim white spaces
-        $content = trim($this->methods->getFileContent($this->index));
+        $content = trim(File::getFileContent($this->index));
         // Add the shebang if $addshebang is set to true
-        $content = $addshebang && !$this->methods->startsWith($this->shebang, $content) ? $this->shebang."[newline]".$content : $content;
+        $content = $addshebang && !Utils::startsWith($this->shebang, $content) ? $this->shebang."[newline]".$content : $content;
         // Set the stub by formatting and adding the __HALT_COMPILER()
         $phar->setStub($this->contentFormatter($this->addHalt($content)));
     }

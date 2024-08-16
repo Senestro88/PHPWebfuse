@@ -1,8 +1,9 @@
 <?php
 
-namespace PHPWebfuse\FTPClient;
+namespace PHPWebfuse\Instance\FTPClient;
 
 /**
+ * @author Senestro
  */
 class FTPAdapter
 {

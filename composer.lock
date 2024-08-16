@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8dfbe8a413f999333c3ff5cde4d55ab3",
+    "content-hash": "8764f06cbc9f805b42148ffd81065eb7",
     "packages": [
         {
             "name": "giggsey/libphonenumber-for-php",
-            "version": "8.13.41",
+            "version": "8.13.43",
             "source": {
                 "type": "git",
                 "url": "https://github.com/giggsey/libphonenumber-for-php.git",
-                "reference": "d7131cda85cf9244e7c97d73edd14d8dad73640c"
+                "reference": "62250ef492ea8afedf534381844194f43ff1f7f2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/giggsey/libphonenumber-for-php/zipball/d7131cda85cf9244e7c97d73edd14d8dad73640c",
-                "reference": "d7131cda85cf9244e7c97d73edd14d8dad73640c",
+                "url": "https://api.github.com/repos/giggsey/libphonenumber-for-php/zipball/62250ef492ea8afedf534381844194f43ff1f7f2",
+                "reference": "62250ef492ea8afedf534381844194f43ff1f7f2",
                 "shasum": ""
             },
             "require": {
@@ -79,7 +79,7 @@
                 "issues": "https://github.com/giggsey/libphonenumber-for-php/issues",
                 "source": "https://github.com/giggsey/libphonenumber-for-php"
             },
-            "time": "2024-07-24T12:24:43+00:00"
+            "time": "2024-08-13T12:17:37+00:00"
         },
         {
             "name": "giggsey/locale",
@@ -923,16 +923,16 @@
         },
         {
             "name": "phpseclib/phpseclib",
-            "version": "3.0.39",
+            "version": "3.0.41",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpseclib/phpseclib.git",
-                "reference": "211ebc399c6e73c225a018435fe5ae209d1d1485"
+                "reference": "621c73f7dcb310b61de34d1da4c4204e8ace6ceb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/211ebc399c6e73c225a018435fe5ae209d1d1485",
-                "reference": "211ebc399c6e73c225a018435fe5ae209d1d1485",
+                "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/621c73f7dcb310b61de34d1da4c4204e8ace6ceb",
+                "reference": "621c73f7dcb310b61de34d1da4c4204e8ace6ceb",
                 "shasum": ""
             },
             "require": {
@@ -1013,7 +1013,7 @@
             ],
             "support": {
                 "issues": "https://github.com/phpseclib/phpseclib/issues",
-                "source": "https://github.com/phpseclib/phpseclib/tree/3.0.39"
+                "source": "https://github.com/phpseclib/phpseclib/tree/3.0.41"
             },
             "funding": [
                 {
@@ -1029,7 +1029,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-06-24T06:27:33+00:00"
+            "time": "2024-08-12T00:13:54+00:00"
         },
         {
             "name": "psr/http-message",
@@ -1961,14 +1961,17 @@
     ],
     "packages-dev": [],
     "aliases": [],
-    "minimum-stability": "beta",
+    "minimum-stability": "stable",
     "stability-flags": {
         "james-heinrich/getid3": 10
     },
-    "prefer-stable": false,
+    "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=8.0"
+        "php": ">=8.0",
+        "ext-zlib": "*",
+        "ext-openssl": "*",
+        "ext-mbstring": "*"
     },
     "platform-dev": [],
     "plugin-api-version": "2.6.0"

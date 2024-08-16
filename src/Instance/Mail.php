@@ -1,17 +1,15 @@
 <?php
 
-namespace PHPWebfuse;
+namespace PHPWebfuse\Instance;
+
+use \PHPWebfuse\Utils;
+use \PHPWebfuse\File;
 
 /**
+ * @author Senestro
  */
-class Mail
-{
-    // PRIVATE VARIABLES
-
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
+class Mail {
+    // PRIVATE VARIABLE
 
     /**
      * @var string The default mail host
@@ -43,16 +41,15 @@ class Mail
      */
     private int $wordwrap = 100;
 
+    // PUBLIC VARIABLES
     // PUBLIC METHODS
 
     /**
-     * Construct new Mail instance
+     * Construct a new Mail instance
      * @param array $config The mail configuration data which are the host, username, mode (tls or ssl), port (tls: 587 and ssl:465), wordwrap
      */
-    public function __construct(array $config = array())
-    {
-        $this->methods = new \PHPWebfuse\Methods();
-        $this->overrideConfiguration($config);
+    public function __construct(array $config = array()) {
+        $this->overrideConfig($config);
     }
 
     /**
@@ -67,17 +64,16 @@ class Mail
      *
      * Return true on success, otherwise false or string representing error message
      */
-    public function sendMail(string $emailFrom, string $emailTo, string $title, string $messgae, array $attachments = array(), array $config = array()): bool|string
-    {
-        $this->overrideConfiguration($config);
+    public function sendMail(string $emailFrom, string $emailTo, string $title, string $messgae, array $attachments = array(), array $config = array()): bool|string {
+        $this->overrideConfig($config);
         $result = "";
-        if (class_exists("\PHPMailer\PHPMailer\PHPMailer")) {
-            if ($this->methods->isNotEmptyString($this->host) && $this->methods->isNotEmptyString($this->username) && $this->methods->isNotEmptyString($this->password)) {
-                $isLocalhost = $this->methods->isLocalhost();
+        if(class_exists("\PHPMailer\PHPMailer\PHPMailer")) {
+            if(Utils::isNotEmptyString($this->host) && Utils::isNotEmptyString($this->username) && Utils::isNotEmptyString($this->password)) {
+                $isLocalhost = Utils::isLocalhost();
                 $mailer = new \PHPMailer\PHPMailer\PHPMailer();
                 try {
-                    foreach ($attachments as $index => $attachment) {
-                        if ($this->methods->isNotFile($attachment)) {
+                    foreach($attachments as $index => $attachment) {
+                        if(File::isNotFile($attachment)) {
                             unset($attachments[$index]);
                         }
                     }
@@ -85,7 +81,7 @@ class Mail
                     $mailer->isSMTP();
                     $mailer->WordWrap = $this->wordwrap;
                     $mailer->Host = $this->host;
-                    if (!$isLocalhost) {
+                    if(!$isLocalhost) {
                         $mailer->SMTPAuth = true;
                         $mailer->SMTPAutoTLS = true;
                         $mailer->Username = $this->username;
@@ -93,13 +89,13 @@ class Mail
                         $mailer->SMTPSecure = $this->mode;
                     }
                     $mailer->Port = $this->port;
-                    if ($isLocalhost) {
+                    if($isLocalhost) {
                         $mailer->SMTPOptions = array('ssl' => array('verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true));
                     }
                     $mailer->setFrom($emailFrom, explode("@", $emailFrom)[0]);
                     $mailer->addAddress($emailTo, explode("@", $emailTo)[0]);
                     $mailer->isHTML(true);
-                    foreach ($attachments as $attachment) {
+                    foreach($attachments as $attachment) {
                         $mailer->addAttachment($attachment);
                     }
                     $mailer->Subject = $title;
@@ -108,7 +104,7 @@ class Mail
                     $mailer->send();
                     $mailer->clearAllRecipients();
                     $result = true;
-                } catch (\Throwable $e) {
+                } catch(\Throwable $e) {
                     $result = "Unable to mail message to " . $emailTo . " [" . $mailer->ErrorInfo . "]";
                 }
             } else {
@@ -126,24 +122,23 @@ class Mail
      * Override configuration
      * @param array $config
      */
-    private function overrideConfiguration(array $config = array())
-    {
-        if (isset($config['host']) && $this->methods->isNotEmptyString($config['host'])) {
+    private function overrideConfig(array $config = array()) {
+        if(isset($config['host']) && Utils::isNotEmptyString($config['host'])) {
             $this->host = $config['host'];
         }
-        if (isset($config['username']) && $this->methods->isNotEmptyString($config['username'])) {
+        if(isset($config['username']) && Utils::isNotEmptyString($config['username'])) {
             $this->username = $config['username'];
         }
-        if (isset($config['password']) && $this->methods->isNumeric($config['password'])) {
+        if(isset($config['password']) && Utils::isNumeric($config['password'])) {
             $this->password = (int) $config['password'];
         }
-        if (isset($config['mode']) && $this->methods->isNotEmptyString($config['mode'])) {
+        if(isset($config['mode']) && Utils::isNotEmptyString($config['mode'])) {
             $this->mode = $config['mode'];
         }
-        if (isset($config['port']) && $this->methods->isNumeric($config['port'])) {
+        if(isset($config['port']) && Utils::isNumeric($config['port'])) {
             $this->port = (int) $config['port'];
         }
-        if (isset($config['wordwrap']) && $this->methods->isInt($config['wordwrap'])) {
+        if(isset($config['wordwrap']) && Utils::isInt($config['wordwrap'])) {
             $this->wordwrap = $config['wordwrap'];
         }
     }

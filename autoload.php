@@ -38,45 +38,29 @@ if(is_dir($vendorDir) && is_readable($vendorDir)) {
     require_once $vendorDir . 'autoload.php';
 }
 
-// The PHPWebfuse class error constant
-if(!\defined("THROW_PHPWEBFUSE_CLASS_ERROR")) {
-    \define("THROW_PHPWEBFUSE_CLASS_ERROR", \true);
-}
-
-// The PHPWebfuse exception class
-if(!\class_exists("\PHPWEBFUSE_EXCEPTION")) {
-
-    class PHPWEBFUSE_EXCEPTION extends \Exception {
-        
-    }
-
-}
-
 // THE AUTOLOADER CALLBACK
 if(!function_exists("PHPWebfuseAutoloader")) {
 
     function PHPWebfuseAutoloader(string $classname) {
-        $throwException = false;
-        $srcDir = PHPWebfuse['directories']['src'];
-        $os = strtolower(PHPWebfuse['os']);
-        if(is_int(strpos($classname, "PHPWebfuse", 0)) && !class_exists($classname)) {
-            $classname = implode(DIRECTORY_SEPARATOR, array_filter(explode(DIRECTORY_SEPARATOR, str_replace("PHPWebfuse", "", $classname))));
-            $absolutePath = $srcDir . $classname . ".php";
-            if($os == "unix" || $os == "linux" || $os == "unknown") {
-                $exploded = array_filter(explode(DIRECTORY_SEPARATOR, $absolutePath));
-                $absolutePath = DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $exploded);
+        $namespace = 'PHPWebfuse';
+        // Check if the class belongs to the PHPWebfuse namespace
+        if(strpos($classname, $namespace, 0) === 0) {
+            // Get the relative class path by removing the namespace
+            $relativeClass = str_replace("$namespace\\", '', $classname);
+            $relativePath = str_replace('\\', DIRECTORY_SEPARATOR, $relativeClass) . '.php';
+            // Get the "src" directory and the OS type
+            $srcDir = PHPWebfuse['directories']['src'];
+            $os = strtolower(PHPWebfuse['os']);
+            // Build the absolute class path
+            $classPath = $srcDir . DIRECTORY_SEPARATOR . $relativePath;
+            // If the OS is Unix, Linux, or unknown, ensure the path starts with a slash
+            if(in_array($os, ['unix', 'linux', 'unknown'])) {
+                $classPath = DIRECTORY_SEPARATOR . ltrim($classPath, DIRECTORY_SEPARATOR);
             }
-            if(is_file($absolutePath) && is_readable($absolutePath)) {
-                require_once $absolutePath;
-            } else {
-                if(\defined("THROW_PHPWEBFUSE_CLASS_ERROR") && THROW_PHPWEBFUSE_CLASS_ERROR === true) {
-                    throw new \PHPWEBFUSE_EXCEPTION("The PHPWebfuse class file isn't found [" . $absolutePath . "]");
-                } else {
-                    return;
-                }
+            // Check if the file exists and is readable, then require it
+            if(is_readable($classPath)) {
+                require_once $classPath;
             }
-        } else {
-            return;
         }
     }
 

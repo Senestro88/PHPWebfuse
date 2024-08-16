@@ -1,27 +1,17 @@
 <?php
 
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/PHPClass.php to edit this template
- */
+namespace PHPWebfuse\Instance;
 
-namespace PHPWebfuse;
+
+use \PHPWebfuse\Utils;
+use \PHPWebfuse\File;
 
 /**
+ * @author Senestro
  */
 class PharExtractor
 {
     // PRIVATE VARIABLES
-
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
-
-    /**
-     * @var \PHPWebfuse\Path
-     */
-    private \PHPWebfuse\Path $path;
 
     // PUBLIC VARIABLES
 
@@ -47,8 +37,6 @@ class PharExtractor
      */
     public function __construct()
     {
-        $this->methods = new \PHPWebfuse\Methods();
-        $this->path = new \PHPWebfuse\Path();
         $pharReadonly = ini_get('phar.readonly');
         if (is_string($pharReadonly) && (strtolower($pharReadonly) == "on" || $pharReadonly == "1" || $pharReadonly == 1)) {
             throw new \Exception('Extracting of Phar archives is disabled in php.ini. Please make sure that "phar.readonly" is set to "off".');
@@ -70,8 +58,8 @@ class PharExtractor
             if($this->isValidPharExtension($this->filename)) {
                 try {
                     $phar = new \Phar($this->filename, 0);
-                    if($this->methods->makeDir($this->directory)) {
-                        $this->directory = $this->path->insert_dir_separator($this->path->arrange_dir_separators($this->realPath($this->directory)));
+                    if(File::makeDir($this->directory)) {
+                        $this->directory = File::insert_dir_separator(File::arrange_dir_separators($this->realPath($this->directory)));
                         $this->decompressPhar($phar);
                         if($phar->extractTo($this->directory, null, true)) {
                             return true;
@@ -112,7 +100,7 @@ class PharExtractor
      */
     private function isValidPharExtension(string $filename): bool
     {
-        return $this->methods->endsWith(".phar", strtolower($filename));
+        return Utils::endsWith(".phar", strtolower($filename));
     }
 
     /**

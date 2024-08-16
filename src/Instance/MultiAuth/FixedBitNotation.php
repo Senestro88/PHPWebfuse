@@ -1,6 +1,6 @@
 <?php
 
-namespace PHPWebfuse\MultiAuth;
+namespace PHPWebfuse\Instance\MultiAuth;
 
 /**
  * FixedBitNotation.

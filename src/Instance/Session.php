@@ -1,17 +1,15 @@
 <?php
 
-namespace PHPWebfuse;
+namespace PHPWebfuse\Instance;
+
+use \PHPWebfuse\Utils;
 
 /**
+ * @author Senestro
  */
 class Session
 {
     // PRIVATE VARIABLES
-
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
 
     // PUBLIC VARIABLES
 
@@ -28,7 +26,6 @@ class Session
      */
     public function __construct(int $maxdays = 7)
     {
-        $this->methods = new \PHPWebfuse\Methods();
         $this->maxdays = $maxdays;
     }
 
@@ -38,7 +35,7 @@ class Session
      */
     public function getSessionDomain(): string
     {
-        return "." . $this->methods->getDomain(getenv('HTTP_HOST'));
+        return "." . Utils::getDomain(getenv('HTTP_HOST'));
     }
 
     /**
@@ -160,7 +157,7 @@ class Session
                 $this->stopSession();
                 $newId = session_create_id(substr(md5(time()), 0, 10));
                 if ($newId !== false && session_commit() === true && session_id($newId) !== false) {
-                    if ($this->methods->isTrue(session_start())) {
+                    if (Utils::isTrue(session_start())) {
                         $this->setSessionExpirationTime();
                         return true;
                     }
@@ -178,7 +175,7 @@ class Session
      */
     private function startTheSession(): bool
     {
-        if ($this->methods->isTrue(session_start())) {
+        if (Utils::isTrue(session_start())) {
             $this->revalidateSessionElapsedTime();
             return true;
         }

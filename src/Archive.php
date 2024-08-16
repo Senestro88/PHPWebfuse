@@ -2,32 +2,17 @@
 
 namespace PHPWebfuse;
 
+use \PHPWebfuse\Utils;
+use \PHPWebfuse\File;
+use \PHPWebfuse\FileInfo;
+
 /**
+ * @author Senestro
  */
-class Archive
-{
-    // PRIVATE VARIABLES
-
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
-
-    /**
-     * @var \PHPWebfuse\Path
-     */
-    private \PHPWebfuse\Path $path;
-
+class Archive {
+    // PRIVATE VARIABLE
+    // PUBLIC VARIABLES
     // PUBLIC METHODS
-
-    /**
-     * Construct new Archive instance
-     */
-    public function __construct()
-    {
-        $this->methods = new \PHPWebfuse\Methods();
-        $this->path = new \PHPWebfuse\Path();
-    }
 
     /**
      * Creates a .zip archive from PclZip library
@@ -36,43 +21,42 @@ class Archive
      * @param string $dirname The directory to save the archive
      * @return \PHPWebfuse\FileInfo | string Return string on failure which contains error message else \PHPWebfuse\FileInfo
      */
-    public function createPclzip(string $name, array $items, string $dirname): \PHPWebfuse\FileInfo|string
-    {
+    public static function createPclzip(string $name, array $items, string $dirname): array|string {
         $result = "";
         // Load the PclZip
-        $this->methods->loadPlugin("PclZip");
+        Utils::loadPlugin("PclZip");
         // Check if the PclZip class exist
-        if (class_exists("\PclZip")) {
+        if(class_exists("\PclZip")) {
             // Resolve dirname path
-            $dirname = $this->methods->resolvePath($dirname);
+            $dirname = \realpath($dirname);
             // Make sure dirname exists or created
-            if ($this->methods->isString($dirname) && $this->methods->makeDir($dirname)) {
-                $this->methods->unlimitedWorkflow();
+            if(Utils::isString($dirname) && File::makeDir($dirname)) {
+                Utils::unlimitedWorkflow();
                 // Filter the archive name
-                $name = $this->setName($name);
+                $name = self::setName($name);
                 // Arrange dirname
-                $dirname = $this->arrangePath($dirname);
+                $dirname = self::arrangePath($dirname);
                 // The archive absolute path
                 $archivename = $dirname . DIRECTORY_SEPARATOR . $name;
                 // Delete file if exist
-                if ($this->methods->isFile($archivename)) {
-                    $this->methods->deleteFile($archivename);
+                if(File::isFile($archivename)) {
+                    File::deleteFile($archivename);
                 }
                 // Init PclZip
                 $archive = new \PclZip($archivename);
                 // Loop items
-                foreach ($items as $index => $item) {
+                foreach($items as $index => $item) {
                     // Arrange the item path
-                    $item = $this->arrangePath($item);
-                    if ($this->methods->isFile($item) or $this->methods->isDir($item)) {
-                        $rmPath = $this->arrangePath($this->methods->getDirname($item));
-                        $archive->add($this->methods->resolvePath($item), PCLZIP_OPT_REMOVE_PATH, $rmPath);
+                    $item = self::arrangePath($item);
+                    if(File::isFile($item) or File::isDir($item)) {
+                        $rmPath = self::arrangePath(File::getDirname($item));
+                        $archive->add(\realpath($item), PCLZIP_OPT_REMOVE_PATH, $rmPath);
                     }
                 }
                 // Check if archive is created
-                if ($this->methods->isFile($archivename)) {
+                if(File::isFile($archivename)) {
                     clearstatcache(false, $archivename);
-                    $result = new \PHPWebfuse\FileInfo($archivename);
+                    $result = FileInfo::getInfo($archivename);
                 } else {
                     $result = "Failed to create the zip archive [" . $archivename . "]";
                 }
@@ -92,9 +76,8 @@ class Archive
      * @param string $dirname The directory to save the archive
      * @return \PHPWebfuse\FileInfo | string Return string on failure which contains error message else \PHPWebfuse\FileInfo
      */
-    public function createTgz(string $name, array $items, string $dirname): \PHPWebfuse\FileInfo|string
-    {
-        return $this->createTgzOrTar($name, $items, $dirname, true);
+    public static function createTgz(string $name, array $items, string $dirname): array|string {
+        return self::createTgzOrTar($name, $items, $dirname, true);
     }
 
     /**
@@ -104,9 +87,8 @@ class Archive
      * @param string $dirname The directory to save the archive
      * @return \PHPWebfuse\FileInfo | string Return string on failure which contains error message else \PHPWebfuse\FileInfo
      */
-    public function createTar(string $name, array $items, string $dirname): \PHPWebfuse\FileInfo|string
-    {
-        return $this->createTgzOrTar($name, $items, $dirname, false);
+    public static function createTar(string $name, array $items, string $dirname): array|string {
+        return self::createTgzOrTar($name, $items, $dirname, false);
     }
 
     /**
@@ -118,77 +100,76 @@ class Archive
      * @param ?string $comment The  archive comment, default to null
      * @return \PHPWebfuse\FileInfo | string Return string on failure which contains error message else \PHPWebfuse\FileInfo
      */
-    public function createZip(string $name, array $items, string $dirname, ?string $password = null, ?string $comment = null): \PHPWebfuse\FileInfo|string
-    {
+    public static function createZip(string $name, array $items, string $dirname, ?string $password = null, ?string $comment = null): array|string {
         $result = "";
         // Resolve dirname path
-        $dirname = $this->methods->resolvePath($dirname);
-        // Check if the ZipArchive class exist
-        if (class_exists("\ZipArchive")) {
+        $dirname = \realpath($dirname);
+        // Check if the \PhpZip\ZipFile class exist
+        if(class_exists("\PhpZip\ZipFile")) {
             // Make sure dirname exists or created
-            if ($this->methods->isString($dirname) && $this->methods->makeDir($dirname)) {
-                $this->methods->unlimitedWorkflow();
+            if(Utils::isString($dirname) && File::makeDir($dirname)) {
+                Utils::unlimitedWorkflow();
                 // Filter the archive name
-                $name = $this->setName($name, "zip");
+                $name = self::setName($name, "zip");
                 // Arrange dirname
-                $dirname = $this->arrangePath($dirname);
+                $dirname = self::arrangePath($dirname);
                 // The archive absolute path
                 $archivename = $dirname . DIRECTORY_SEPARATOR . $name;
                 // Delete file if exist
-                if ($this->methods->isFile($archivename)) {
-                    $this->methods->deleteFile($archivename);
+                if(File::isFile($archivename)) {
+                    File::deleteFile($archivename);
                 }
-                // Init ZipArchive
+                // Init \ZipArchive
                 $archive = new \ZipArchive();
                 // Check if the archive is opened
-                if ($this->methods->isTrue($archive->open($archivename, \ZipArchive::OVERWRITE | \ZipArchive::CREATE))) {
+                if(Utils::isTrue($archive->open($archivename, \ZipArchive::OVERWRITE | \ZipArchive::CREATE))) {
                     // Set the comment
-                    if ($this->methods->isString($comment) && $this->methods->isNotEmptyString($comment)) {
+                    if(Utils::isString($comment) && Utils::isNotEmptyString($comment)) {
                         $archive->setArchiveComment((string) $comment);
                     }
                     // Set the password
                     $withPassword = false;
-                    if ($this->methods->isString($password) && $this->methods->isNotEmptyString($password)) {
+                    if(Utils::isString($password) && Utils::isNotEmptyString($password)) {
                         $archive->setPassword((string) $password);
                         $withPassword = true;
                     }
                     // The entries
                     $entries = array();
                     // Loop the items
-                    foreach ($items as $index => $item) {
+                    foreach($items as $index => $item) {
                         // Arrange the item path
-                        $item = $this->arrangePath($item);
+                        $item = self::arrangePath($item);
                         // Add the file to zip
-                        if ($this->methods->isFile($item)) {
+                        if(File::isFile($item)) {
                             $entry = basename($item);
-                            if ($archive->addFile($item, $entry)) {
+                            if($archive->addFile($item, $entry)) {
                                 $entries[] = $entry;
                             }
-                        } elseif ($this->methods->isDir($item)) {
+                        } elseif(File::isDir($item)) {
                             // Recursively iterate the directory item
                             $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($item, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
-                            foreach ($iterator as $list) {
+                            foreach($iterator as $list) {
                                 // Arrange iterated list path
-                                $listPath = $this->arrangePath($list->getPathname());
+                                $listPath = self::arrangePath($list->getPathname());
                                 // Set entry for each iterated list
-                                $entry = $this->normalizePath(str_replace($item, basename($item) . DIRECTORY_SEPARATOR, $listPath));
+                                $entry = \str_replace("\\", "/", self::arrangePath(str_replace($item, basename($item) . \DIRECTORY_SEPARATOR, $listPath)));
                                 // When it's an empty directory or file
-                                if ($list->isDir() && $archive->addEmptyDir($entry)) {
+                                if($list->isDir() && $archive->addEmptyDir($entry)) {
                                     $entries[] = $entry;
-                                } elseif ($list->isFile() && $archive->addFile($listPath, $entry)) {
+                                } elseif($list->isFile() && $archive->addFile($listPath, $entry)) {
                                     $entries[] = $entry;
                                 }
                             }
                         }
                     }
                     // Loop added entries
-                    foreach ($entries as $entry) {
+                    foreach($entries as $entry) {
                         // Set the compression
-                        if ($archive->isCompressionMethodSupported(\ZipArchive::CM_BZIP2)) {
+                        if($archive->isCompressionMethodSupported(\ZipArchive::CM_BZIP2)) {
                             $archive->setCompressionName($entry, \ZipArchive::CM_BZIP2);
                         }
                         // If password has been set on the archive, set the password for all entries
-                        if ($this->methods->isTrue($withPassword) && $archive->isEncryptionMethodSupported(\ZipArchive::EM_AES_256)) {
+                        if(Utils::isTrue($withPassword) && $archive->isEncryptionMethodSupported(\ZipArchive::EM_AES_256)) {
                             $archive->setEncryptionName($entry, \ZipArchive::EM_AES_256);
                         }
                     }
@@ -196,11 +177,11 @@ class Archive
                     $status = $archive->getStatusString();
                     $close = $archive->close();
                     // Check if the archive was unable to close
-                    if ($this->methods->isFalse($close)) {
+                    if(Utils::isFalse($close)) {
                         $result = "Unable to close the zip archive: " . $archivename . " [" . $status . "]";
                     } else {
                         clearstatcache(false, $archivename);
-                        $result = new \PHPWebfuse\FileInfo($archivename);
+                        $result = FileInfo::getInfo($archivename);
                     }
                 } else {
                     $result = 'Unable to open the zip archive: ' . $archivename . '';
@@ -209,7 +190,7 @@ class Archive
                 $result = "Invalid save directory name [" . $dirname . "]";
             }
         } else {
-            $result = "The ZipArchive plugin isn't loaded";
+            $result = "The PhpZip\ZipFile isn't loaded";
         }
         return $result;
     }
@@ -222,11 +203,10 @@ class Archive
      * @param string $extension Add the extension at the end of the name
      * @return string Returns the new name
      */
-    private function setName(string $name, string $extension = "zip"): string
-    {
-        $name = $this->methods->isEmptyString($name) ? $this->methods->randUnique('key') : $anme;
-        $ext = $this->methods->getExtension($name);
-        $name = $this->methods->isNotEmptyString($ext) ? (strtolower($ext) == $extension ? $name : $name . '.' . $extension) : $name . '.' . $extension;
+    private static function setName(string $name, string $extension = "zip"): string {
+        $name = Utils::isEmptyString($name) ? Utils::randUnique('key') : $name;
+        $ext = File::getExtension($name);
+        $name = Utils::isNotEmptyString($ext) ? (strtolower($ext) == $extension ? $name : $name . '.' . $extension) : $name . '.' . $extension;
         return str_replace(array('\\', '/', ':', '*', '?', '<', '>', '|'), '_', $name);
     }
 
@@ -235,9 +215,8 @@ class Archive
      * @param string $path
      * @return string
      */
-    private function arrangePath(string $path): string
-    {
-        return $this->path->arrange_dir_separators($path);
+    private static function arrangePath(string $path): string {
+        return File::arrange_dir_separators($path);
     }
 
     /**
@@ -245,9 +224,8 @@ class Archive
      * @param string $path
      * @return string
      */
-    private function normalizePath(string $path): string
-    {
-        return $this->path->convert_dir_separators($path);
+    private static function normalizePath(string $path): string {
+        return File::convert_dir_separators($path);
     }
 
     /**
@@ -257,44 +235,43 @@ class Archive
      * @param string $dirname The directory to save the archive
      * @return \PHPWebfuse\FileInfo | string Return string on failure which contains error message else \PHPWebfuse\FileInfo
      */
-    private function createTgzOrTar(string $name, array $items, string $dirname, bool $compress = true): \PHPWebfuse\FileInfo|string
-    {
+    private static function createTgzOrTar(string $name, array $items, string $dirname, bool $compress = true): array|string {
         $result = "";
         // Load the ArchiveTar
-        $this->methods->loadPlugin("ArchiveTar");
+        Utils::loadPlugin("ArchiveTar");
         // Resolve dirname path
-        $dirname = $this->methods->resolvePath($dirname);
+        $dirname = \realpath($dirname);
         // Check if the ArchiveTar class exist
-        if (class_exists("\ArchiveTar")) {
+        if(class_exists("\ArchiveTar")) {
             // Make sure dirname exists or created
-            if ($this->methods->isString($dirname) && $this->methods->makeDir($dirname)) {
-                $this->methods->unlimitedWorkflow();
+            if(Utils::isString($dirname) && File::makeDir($dirname)) {
+                Utils::unlimitedWorkflow();
                 // Filter the archive name
-                $name = $this->setName($name, $compress ? "tgz" : "tar");
+                $name = self::setName($name, $compress ? "tgz" : "tar");
                 // Arrange dirname
-                $dirname = $this->arrangePath($dirname);
+                $dirname = self::arrangePath($dirname);
                 // The archive absolute path
                 $archivename = $dirname . DIRECTORY_SEPARATOR . $name;
                 // Delete file if exist
-                if ($this->methods->isFile($archivename)) {
-                    $this->methods->deleteFile($archivename);
+                if(File::isFile($archivename)) {
+                    File::deleteFile($archivename);
                 }
                 // Init ArchiveTar
                 $archive = new \ArchiveTar($archivename, $compress ? true : null);
                 $archive->_separator = ",";
                 // Loop items
-                foreach ($items as $index => $item) {
-                    $item = $this->arrangePath($item);
-                    if ($this->methods->isFile($item) or $this->methods->isDir($item)) {
+                foreach($items as $index => $item) {
+                    $item = self::arrangePath($item);
+                    if(File::isFile($item) || File::isDir($item)) {
                         $adddir = "";
-                        $rmdir = $this->arrangePath($this->methods->getDirname($item));
+                        $rmdir = self::arrangePath(File::getDirname($item));
                         $archive->addModify($item, $adddir, $rmdir);
                     }
                 }
                 // Check if archive is created
-                if ($this->methods->isFile($archivename)) {
+                if(File::isFile($archivename)) {
                     clearstatcache(false, $archivename);
-                    $result = new \PHPWebfuse\FileInfo($archivename);
+                    $result = FileInfo::getInfo($archivename);
                 } else {
                     $result = "Failed to create the empty archive [" . $archivename . "]";
                 }

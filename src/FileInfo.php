@@ -2,60 +2,44 @@
 
 namespace PHPWebfuse;
 
+use \PHPWebfuse\Utils;
+use \PHPWebfuse\File;
+
 /**
+ * @author Senestro
  */
-class FileInfo
-{
-    // PRIVATE VARIABLES
+class FileInfo {
 
-    /**
-     * @var \PHPWebfuse\Methods
-     */
-    private \PHPWebfuse\Methods $methods;
-
+    // PRIVATE VARIABLE
     // PUBLIC VARIABLES
-
-    /**
-     * @var string The file absolute path
-     */
-    public string $absolutePath = "";
-
-    /**
-     * @var string The file basename
-     */
-    public string $basename = "";
-
-    /**
-     * @var string The file directory name
-     */
-    public string $dirname = "";
-
-    /**
-     * @var array An array of the file size
-     */
-    public array $sizes = array();
-
     // PUBLIC METHODS
-
+    
     /**
-     * Construct new File information  instance
-     * @param string $absolutePath
+     * Prevent the constructor from being initialized
      */
-    public function __construct(string $absolutePath)
-    {
-        $this->methods = new \PHPWebfuse\Methods();
-        if ($this->methods->isFile($absolutePath)) {
-            clearstatcache(false, $absolutePath);
-            $this->absolutePath = $absolutePath;
-            $this->basename = basename($absolutePath);
-            $this->dirname = $this->methods->getDirname($absolutePath);
-            $size = $this->methods->getFIlesizeInBytes($absolutePath);
-            $this->sizes = array(
+    private function __construct() {
+        
+    }
+
+
+    public static function getInfo(string $file): array {
+        $info = array();
+        if(File::isFile($file)) {
+            $file = \realpath($file);
+            clearstatcache(false, $file);
+            $info['realPath'] = $file;
+            $info['basename'] = \basename($file);
+            $info['dirname'] = File::getDirname($file);
+            $size = File::getFIlesizeInBytes($file);
+            $info['sizes'] = array(
                 'bytes' => $size,
                 'kilobytes' => round($size / 1024, 1),
                 'megabytes' => round(($size / 1024) / 1024, 1),
                 'gigabytes' => round((($size / 1024) / 1024) / 1024, 1),
             );
         }
+        return $info;
     }
+
+    // PRIVATE METHODS
 }
