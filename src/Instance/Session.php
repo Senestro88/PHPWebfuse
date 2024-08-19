@@ -2,7 +2,7 @@
 
 namespace PHPWebfuse\Instance;
 
-use \PHPWebfuse\Utils;
+use PHPWebfuse\Utils;
 
 /**
  * @author Senestro
@@ -11,40 +11,45 @@ class Session
 {
     // PRIVATE VARIABLES
 
+    private string $samesite = "Lax";
+    private bool $httponly = true;
+    private string $path = "/";
+
     // PUBLIC VARIABLES
 
     /**
      * @var int The maximum days for the session to expire and reset
      */
-    public int $maxdays = 7;
+    public int $maxDays = 7;
 
     // PUBLIC METHODS
 
     /**
      * Construct new Session instance
-     * @param int $maxdays The maximum days for the session to expire and reset
+     * @param int $maxDays The maximum days for the session to expire and reset
      */
-    public function __construct(int $maxdays = 7)
+    public function __construct(int $maxDays = 7)
     {
-        $this->maxdays = $maxdays;
+        $this->maxDays = $maxDays;
     }
 
     /**
      * Get session domain
      * @return string
      */
-    public function getSessionDomain(): string
+    public function getDomain(): string
     {
         return "." . Utils::getDomain(getenv('HTTP_HOST'));
     }
 
     /**
-     * Get session path
-     * @return string
+     * Set the session path
+     * @param string $string
+     * @return void
      */
-    public function getSessionPath(): string
+    public function setPath(string $string): void
     {
-        return "/";
+        $this->path = $string;
     }
 
     /**
@@ -57,21 +62,23 @@ class Session
     }
 
     /**
-     * Set the session to HTTP only
-     * @return bool
+     * Set the httponly value
+     * @param bool $bool
+     * @return void
      */
-    public function setHttpOnly(): bool
+    public function setHttpOnly(bool $bool): void
     {
-        return true;
+        $this->httponly = $bool;
     }
 
     /**
-     *  Get the session samesite value
-     * @return string
+     * Set the samesite value
+     * @param string $string The value
+     * @return void
      */
-    public function getSessionSameSite(): string
+    public function setSameSite(string $string): void
     {
-        return "Lax";
+        $this->samesite = $string;
     }
 
     /**
@@ -81,24 +88,22 @@ class Session
     public function startSession(): bool
     {
         $status = @session_status();
-        switch ($status) {
+        switch($status) {
             case PHP_SESSION_DISABLED:
                 throw new \Exception("Sessions are disabled");
                 break;
             case PHP_SESSION_NONE:
-                if ($this->setSessionParameters()) {
-                    return $this->startTheSession();
+                if($this->setParameters()) {
+                    return $this->start();
                 }
                 break;
             case PHP_SESSION_ACTIVE:
-                if (!$this->isSessionValid()) {
-                    if ($this->stopSession() && $this->setSessionParameters()) {
-                        return $this->startTheSession();
-                    }
+                if(!$this->isValid() && $this->stopSession() && $this->setParameters()) {
+                    return $this->start();
                 }
-                return $this->startTheSession();
+                return $this->start();
         }
-        return $this->startTheSession();
+        return $this->start();
     }
 
     /**
@@ -107,8 +112,8 @@ class Session
      */
     public function stopSession(): bool
     {
-        if (isset($_SESSION)) {
-            foreach ($_SESSION as $key => $value) {
+        if(isset($_SESSION)) {
+            foreach($_SESSION as $key => $value) {
                 unset($_SESSION[$key]);
             }
         }
@@ -121,16 +126,16 @@ class Session
      * Check if session is valid
      * @return bool
      */
-    private function isSessionValid(): bool
+    private function isValid(): bool
     {
         $params = session_get_cookie_params();
         return (
             (int) $params['lifetime'] == 0 &&
-            (string) $params['path'] == $this->getSessionPath() &&
-            (string) $params['domain'] == $this->getSessionDomain() &&
-            (bool) $params['secure'] == $this->isSessionSecured() &&
-            (bool) $params['httponly'] == $this->isSessionOnHttpOnly() &&
-            (string) $params['samesite'] == $this->getSessionSameSite()
+            (string) $params['path'] == $this->path &&
+            (string) $params['domain'] == $this->getDomain() &&
+            (bool) $params['secure'] == $this->isInSecuredContext() &&
+            (bool) $params['httponly'] == $this->httponly &&
+            (string) $params['samesite'] == $this->samesite
         );
     }
 
@@ -138,9 +143,9 @@ class Session
      * Set the session expiration time
      * @return void
      */
-    private function setSessionExpirationTime(): void
+    private function setExpirationTime(): void
     {
-        $expirationDays = (int) $this->maxdays;
+        $expirationDays = (int) $this->maxDays;
         $_SESSION['session-expires'] = strtotime('+ ' . $expirationDays . ' ' . ($expirationDays > 1 ? "days" : "day"));
     }
 
@@ -148,23 +153,23 @@ class Session
      * revalidate if session has expired
      * @return bool
      */
-    private function revalidateSessionElapsedTime(): bool
+    private function revalidateElapsedTime(): bool
     {
-        if (isset($_SESSION['session-expires']) && !empty($_SESSION['session-expires'])) {
+        if(isset($_SESSION['session-expires']) && !empty($_SESSION['session-expires'])) {
             $sessionExpires = (int) $_SESSION['session-expires'];
-            if ($sessionExpires <= time()) {
+            if($sessionExpires <= time()) {
                 session_gc();
                 $this->stopSession();
                 $newId = session_create_id(substr(md5(time()), 0, 10));
-                if ($newId !== false && session_commit() === true && session_id($newId) !== false) {
-                    if (Utils::isTrue(session_start())) {
-                        $this->setSessionExpirationTime();
+                if($newId !== false && session_commit() === true && session_id($newId) !== false) {
+                    if(Utils::isTrue(session_start())) {
+                        $this->setExpirationTime();
                         return true;
                     }
                 }
             }
         } else {
-            $this->setSessionExpirationTime();
+            $this->setExpirationTime();
         }
         return false;
     }
@@ -173,10 +178,10 @@ class Session
      * Start the session
      * @return bool
      */
-    private function startTheSession(): bool
+    private function start(): bool
     {
-        if (Utils::isTrue(session_start())) {
-            $this->revalidateSessionElapsedTime();
+        if(Utils::isTrue(session_start())) {
+            $this->revalidateElapsedTime();
             return true;
         }
         return false;
@@ -186,15 +191,15 @@ class Session
      * Set the session parameters
      * @return bool
      */
-    private function setSessionParameters(): bool
+    private function setParameters(): bool
     {
         $lifetime = 0;
-        $path = $this->getSessionPath();
+        $path = $this->path;
         $domain = $this->getDomain();
-        $secure = $this->isSessionSecured();
-        $httponly = $this->isSessionOnHttpOnly();
-        $samesite = $this->getSessionSameSite();
-        if (PHP_VERSION_ID < 70300) {
+        $secure = $this->isInSecuredContext();
+        $httponly = $this->httponly;
+        $samesite = $this->samesite;
+        if(PHP_VERSION_ID < 70300) {
             return session_set_cookie_params($lifetime, $path, $domain, $secure, $httponly);
         } else {
             return session_set_cookie_params([

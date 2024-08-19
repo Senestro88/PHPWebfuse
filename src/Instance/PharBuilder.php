@@ -4,7 +4,7 @@ namespace PHPWebfuse\Instance;
 
 use \PHPWebfuse\Utils;
 use \PHPWebfuse\File;
-use \PHPWebfuse\FileInfo;
+use \PHPWebfuse\Path;
 
 
 /**
@@ -59,7 +59,7 @@ class PharBuilder
         } else {
             $realPath = $this->realPath($rootPath);
             if (is_string($realPath) && is_dir($rootPath) && is_readable($rootPath)) {
-                $this->rootPath = File::arrange_dir_separators($realPath);
+                $this->rootPath = Path::arrange_dir_separators($realPath);
             } else {
                 throw new \Exception('To creation a Phar archive, the root path must exists and readable.');
             }
@@ -73,7 +73,7 @@ class PharBuilder
      */
     public function addFile(string $file): void
     {
-        $entry = File::arrange_dir_separators($file);
+        $entry = Path::arrange_dir_separators($file);
         $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . $entry);
         if (is_string($realPath) && is_file($realPath) && is_readable($realPath)) {
             $this->files[$entry] = $realPath;
@@ -106,7 +106,7 @@ class PharBuilder
      */
     public function addDirectory(string $directory, string $excludePattern = ""): void
     {
-        $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . File::arrange_dir_separators($directory));
+        $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . Path::arrange_dir_separators($directory));
         if (is_string($realPath) && is_dir($realPath)) {
             $iterator = new \RecursiveDirectoryIterator($realPath, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::UNIX_PATHS | \FilesystemIterator::CURRENT_AS_SELF);
             if (!empty($excludePattern)) {
@@ -146,7 +146,7 @@ class PharBuilder
      */
     public function setInterface(string $file, string $sapi = 'cli'): void
     {
-        $entry = File::arrange_dir_separators($file);
+        $entry = Path::arrange_dir_separators($file);
         $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . $entry);
         if (is_string($realPath) && is_file($realPath) && is_readable($realPath)) {
             $sapi = strtolower($sapi);
@@ -169,7 +169,7 @@ class PharBuilder
      */
     public function overrideInterfaces(string $file): void
     {
-        $entry = File::arrange_dir_separators($file);
+        $entry = Path::arrange_dir_separators($file);
         $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . $entry);
         if (is_string($realPath) && is_file($realPath) && is_readable($realPath)) {
             if(in_array($entry, array_keys($this->files))) {
@@ -242,7 +242,7 @@ class PharBuilder
             @chmod($this->output, 0770);
             unset($phar);
             if(is_file($this->output)) {
-                return FileInfo::getInfo($this->output);
+                return File::getInfo($this->output);
             }
         }
         return false;

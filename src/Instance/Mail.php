@@ -49,7 +49,7 @@ class Mail {
      * @param array $config The mail configuration data which are the host, username, mode (tls or ssl), port (tls: 587 and ssl:465), wordwrap
      */
     public function __construct(array $config = array()) {
-        $this->overrideConfig($config);
+        $this->setConfig($config);
     }
 
     /**
@@ -64,8 +64,7 @@ class Mail {
      *
      * Return true on success, otherwise false or string representing error message
      */
-    public function sendMail(string $emailFrom, string $emailTo, string $title, string $messgae, array $attachments = array(), array $config = array()): bool|string {
-        $this->overrideConfig($config);
+    public function sendMail(string $emailFrom, string $emailTo, string $title, string $messgae, array $attachments = array()): bool|string {
         $result = "";
         if(class_exists("\PHPMailer\PHPMailer\PHPMailer")) {
             if(Utils::isNotEmptyString($this->host) && Utils::isNotEmptyString($this->username) && Utils::isNotEmptyString($this->password)) {
@@ -122,7 +121,7 @@ class Mail {
      * Override configuration
      * @param array $config
      */
-    private function overrideConfig(array $config = array()) {
+    private function setConfig(array $config = array()) {
         if(isset($config['host']) && Utils::isNotEmptyString($config['host'])) {
             $this->host = $config['host'];
         }

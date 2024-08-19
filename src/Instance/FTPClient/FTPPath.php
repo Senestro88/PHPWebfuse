@@ -32,11 +32,11 @@ class FTPPath {
      * */
     public function convert_dir_separators(string $path): string
     {
-        return str_ireplace(array("\\", "//"), $this->RPS, $path);
+        return str_ireplace(array("\\", "/"), $this->RPS, $path);
     }
 
     /**
-     * Delete directory separator from the right after converting
+     * Delete directory separator from the right side after converting it
      * @param string $path
      * @return string
      * */
@@ -47,7 +47,7 @@ class FTPPath {
 
     
     /**
-     * Delete directory separator from the left after converting
+     * Delete directory separator from the left side after converting it
      * @param string $path
      * @return string
      * */
@@ -57,9 +57,9 @@ class FTPPath {
     }
 
     /**
-     * Arrange directory separator from multiple separators like "//" or "\\" to the remote PHP OS directory separator
+     * Arrange directory separator by replacing multiple separators joined together (\\ or //) to single separator
      * @param string $path
-     * @param bool $closeEdges - Defaults to false
+     * @param bool $closeEdges Close the edged with a separator. Defaults to false
      * @return string
      * */
     public function arrange_dir_separators(string $path, bool $closeEdges = false): string
@@ -70,7 +70,7 @@ class FTPPath {
     }
 
     /**
-     * Insert directory separator to the beginning or end
+     * Insert directory separator to the beginning or end of the directory path
      * @param string $path
      * @param bool $toEnd - Defaults to true
      * @return string

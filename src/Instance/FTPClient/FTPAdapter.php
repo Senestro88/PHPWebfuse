@@ -34,7 +34,7 @@ class FTPAdapter
      * Forward the method call to FTP functions
      * @param string $name
      * @param array $arguments
-     * @throws FTPException
+     * @throws \Exception
      */
     public function __call(string $name, array $arguments = array())
     {

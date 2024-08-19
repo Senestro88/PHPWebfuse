@@ -4,7 +4,7 @@ namespace PHPWebfuse;
 
 use \PHPWebfuse\Utils;
 use \PHPWebfuse\File;
-use \PHPWebfuse\FileInfo;
+use \PHPWebfuse\Path;
 
 /**
  * @author Senestro
@@ -13,13 +13,20 @@ class Archive {
     // PRIVATE VARIABLE
     // PUBLIC VARIABLES
     // PUBLIC METHODS
+    
+    /**
+     * Prevent the constructor from being initialized
+     */
+    private function __construct() {
+        
+    }
 
     /**
      * Creates a .zip archive from PclZip library
      * @param string $name The name of the archive. It generate a random name when it's an empty string provided
      * @param array $items The items can be a combination of files and directories
      * @param string $dirname The directory to save the archive
-     * @return \PHPWebfuse\FileInfo | string Return string on failure which contains error message else \PHPWebfuse\FileInfo
+     * @return \PHPWebfuse\File | string Return string on failure which contains error message else \PHPWebfuse\File
      */
     public static function createPclzip(string $name, array $items, string $dirname): array|string {
         $result = "";
@@ -30,7 +37,7 @@ class Archive {
             // Resolve dirname path
             $dirname = \realpath($dirname);
             // Make sure dirname exists or created
-            if(Utils::isString($dirname) && File::makeDir($dirname)) {
+            if(Utils::isString($dirname) && File::createDir($dirname)) {
                 Utils::unlimitedWorkflow();
                 // Filter the archive name
                 $name = self::setName($name);
@@ -56,7 +63,7 @@ class Archive {
                 // Check if archive is created
                 if(File::isFile($archivename)) {
                     clearstatcache(false, $archivename);
-                    $result = FileInfo::getInfo($archivename);
+                    $result = File::getInfo($archivename);
                 } else {
                     $result = "Failed to create the zip archive [" . $archivename . "]";
                 }
@@ -74,7 +81,7 @@ class Archive {
      * @param string $name The name of the archive. It generate a random name when it's an empty string provided
      * @param array $items The items can be a combination of files and directories
      * @param string $dirname The directory to save the archive
-     * @return \PHPWebfuse\FileInfo | string Return string on failure which contains error message else \PHPWebfuse\FileInfo
+     * @return \PHPWebfuse\File | string Return string on failure which contains error message else \PHPWebfuse\File
      */
     public static function createTgz(string $name, array $items, string $dirname): array|string {
         return self::createTgzOrTar($name, $items, $dirname, true);
@@ -85,7 +92,7 @@ class Archive {
      * @param string $name The name of the archive. It generate a random name when it's an empty string provided
      * @param array $items The items can be a combination of files and directories
      * @param string $dirname The directory to save the archive
-     * @return \PHPWebfuse\FileInfo | string Return string on failure which contains error message else \PHPWebfuse\FileInfo
+     * @return \PHPWebfuse\File | string Return string on failure which contains error message else \PHPWebfuse\File
      */
     public static function createTar(string $name, array $items, string $dirname): array|string {
         return self::createTgzOrTar($name, $items, $dirname, false);
@@ -98,7 +105,7 @@ class Archive {
      * @param string $dirname The directory to save the archive
      * @param ?string $password The archive password, default to null
      * @param ?string $comment The  archive comment, default to null
-     * @return \PHPWebfuse\FileInfo | string Return string on failure which contains error message else \PHPWebfuse\FileInfo
+     * @return \PHPWebfuse\File | string Return string on failure which contains error message else \PHPWebfuse\File
      */
     public static function createZip(string $name, array $items, string $dirname, ?string $password = null, ?string $comment = null): array|string {
         $result = "";
@@ -107,7 +114,7 @@ class Archive {
         // Check if the \PhpZip\ZipFile class exist
         if(class_exists("\PhpZip\ZipFile")) {
             // Make sure dirname exists or created
-            if(Utils::isString($dirname) && File::makeDir($dirname)) {
+            if(Utils::isString($dirname) && File::createDir($dirname)) {
                 Utils::unlimitedWorkflow();
                 // Filter the archive name
                 $name = self::setName($name, "zip");
@@ -181,7 +188,7 @@ class Archive {
                         $result = "Unable to close the zip archive: " . $archivename . " [" . $status . "]";
                     } else {
                         clearstatcache(false, $archivename);
-                        $result = FileInfo::getInfo($archivename);
+                        $result = File::getInfo($archivename);
                     }
                 } else {
                     $result = 'Unable to open the zip archive: ' . $archivename . '';
@@ -216,7 +223,7 @@ class Archive {
      * @return string
      */
     private static function arrangePath(string $path): string {
-        return File::arrange_dir_separators($path);
+        return Path::arrange_dir_separators($path);
     }
 
     /**
@@ -225,7 +232,7 @@ class Archive {
      * @return string
      */
     private static function normalizePath(string $path): string {
-        return File::convert_dir_separators($path);
+        return Path::convert_dir_separators($path);
     }
 
     /**
@@ -233,7 +240,7 @@ class Archive {
      * @param string $name The name of the archive. It generate a random name when it's an empty string provided
      * @param array $items The items can be a combination of files and directories
      * @param string $dirname The directory to save the archive
-     * @return \PHPWebfuse\FileInfo | string Return string on failure which contains error message else \PHPWebfuse\FileInfo
+     * @return \PHPWebfuse\File | string Return string on failure which contains error message else \PHPWebfuse\File
      */
     private static function createTgzOrTar(string $name, array $items, string $dirname, bool $compress = true): array|string {
         $result = "";
@@ -244,7 +251,7 @@ class Archive {
         // Check if the ArchiveTar class exist
         if(class_exists("\ArchiveTar")) {
             // Make sure dirname exists or created
-            if(Utils::isString($dirname) && File::makeDir($dirname)) {
+            if(Utils::isString($dirname) && File::createDir($dirname)) {
                 Utils::unlimitedWorkflow();
                 // Filter the archive name
                 $name = self::setName($name, $compress ? "tgz" : "tar");
@@ -271,7 +278,7 @@ class Archive {
                 // Check if archive is created
                 if(File::isFile($archivename)) {
                     clearstatcache(false, $archivename);
-                    $result = FileInfo::getInfo($archivename);
+                    $result = File::getInfo($archivename);
                 } else {
                     $result = "Failed to create the empty archive [" . $archivename . "]";
                 }

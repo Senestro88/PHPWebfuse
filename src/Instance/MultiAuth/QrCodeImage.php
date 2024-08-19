@@ -4,6 +4,7 @@ namespace PHPWebfuse\Instance\MultiAuth;
 
 use \PHPWebfuse\Utils;
 use \PHPWebfuse\File;
+use \PHPWebfuse\Path;
 
 class QrCodeImage {
 
@@ -42,8 +43,8 @@ class QrCodeImage {
         if(!defined('QR_MODE_NUL')) {
             Utils::loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
         }
-        $tempPathname = File::insert_dir_separator(File::arrange_dir_separators(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
-        if(File::makeDir($tempPathname) && class_exists('\QRcode')) {
+        $tempPathname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
+        if(File::createDir($tempPathname) && class_exists('\QRcode')) {
             $absolutePath = $tempPathname . '' . Utils::randUnique("key") . '.png';
             \QRcode::png($content, $absolutePath, QR_ECLEVEL_Q, 20, 2);
             if(File::isFile($absolutePath)) {
@@ -89,8 +90,8 @@ class QrCodeImage {
         if(!defined('QR_MODE_NUL')) {
             Utils::loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
         }
-        $tempPathname = File::insert_dir_separator(File::arrange_dir_separators(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
-        if(File::makeDir($tempPathname) && class_exists('\QRcode')) {
+        $tempPathname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWebfuse['directories']['data'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
+        if(File::createDir($tempPathname) && class_exists('\QRcode')) {
             $absolutePath = $tempPathname . '' . Utils::randUnique("key") . '.png';
             \QRcode::png($content, $absolutePath, QR_ECLEVEL_Q, 4, 2);
             if(File::isFile($absolutePath)) {

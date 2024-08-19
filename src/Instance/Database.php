@@ -3,6 +3,7 @@
 namespace PHPWebfuse\Instance;
 
 use \PHPWebfuse\Utils;
+use \PHPWebfuse\Path;
 
 /**
  * @author Senestro
@@ -661,18 +662,18 @@ class Database
         $messages = [];
         $savePathname = self::isNull($savePathname) ? dirname(__DIR__) : $savePathname;
         if (File::isNotDir($savePathname)) {
-            File::makeDir($savePathname);
+            File::createDir($savePathname);
         }
         $savePathname = Utils::makeDir($savePathname);
-        $savePathname = File::insert_dir_separator($savePathname);
+        $savePathname = Path::insert_dir_separator($savePathname);
         // Iterate through each database and back it up
         foreach ($databases as $database) {
             $database = $this->sanitizeIdentifier($database);
             $backupContent = $this->createDatabaseExportContent($database);
             // If backup content is generated, save it to file
             if (Utils::isString($backupContent)) {
-                File::makeDir($savePathname);
-                $absolutePath = File::convert_dir_separators($savePathname) . "database-backup-[" . $database . "].sql";
+                File::createDir($savePathname);
+                $absolutePath = Path::convert_dir_separators($savePathname) . "database-backup-[" . $database . "].sql";
                 // Save the backup content to a file
                 if (File::saveContentToFile($absolutePath, $backupContent)) {
                     $messages[$database] = $absolutePath;

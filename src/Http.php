@@ -55,7 +55,7 @@ class Http
                 self::$message = "Can't initialize Curl handle";
             } else {
                 $_headers = [];
-                if (self::isArray($headers)) {
+                if (Utils::isArray($headers)) {
                     foreach ($headers as $key => $value) {
                         $_headers[] = $key . ": " . $value;
                     }

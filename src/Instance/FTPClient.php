@@ -4,6 +4,7 @@ namespace PHPWebfuse\Instance;
 
 use \PHPWebfuse\Utils;
 use \PHPWebfuse\File;
+use \PHPWebfuse\Path;
 
 /**
  * @author Senestro
@@ -61,12 +62,12 @@ class FTPClient
     private ?\FTP\Connection $connection;
 
     /**
-     * @var \PHPWebfuse\FTPClient\FTPAdapter
+     * @var \PHPWebfuse\Instance\FTPClient\FTPAdapter
      */
     private ?\PHPWebfuse\Instance\FTPClient\FTPAdapter $adapter;
 
     /**
-     * @var \PHPWebfuse\FTPClient\FTPPath
+     * @var \PHPWebfuse\Instance\FTPClient\FTPPath
      */
     private \PHPWebfuse\Instance\FTPClient\FTPPath $FtpPath;
 
@@ -153,9 +154,9 @@ class FTPClient
     /**
      * To enable passive mode
      * @param bool $enable
-     * @return type
+     * @return bool
      */
-    public function enablePassiveMode(bool $enable = true)
+    public function enablePassiveMode(bool $enable = true):bool
     {
         return $this->isValid() && $this->loggedIn ? $this->adapter->pasv($enable) : false;
     }
@@ -560,7 +561,7 @@ class FTPClient
      * An alias of rename
      * @param string $from
      * @param string $to
-     * @return type
+     * @return bool
      */
     public function move(string $from, string $to): bool
     {
@@ -741,7 +742,7 @@ class FTPClient
     public function downloadFile(string $remotefile, string $localdir, ?string $localname = null, int $mode = FTP_BINARY, int $offset = 0): bool
     {
         // Check if the current instance is valid, the remote file is not a directory, and the local directory can be created
-        if ($this->isValid() && $this->loggedIn && $this->isFile($remotefile) && File::makeDir($localdir)) {
+        if ($this->isValid() && $this->loggedIn && $this->isFile($remotefile) && File::createDir($localdir)) {
             // Determine the destination path on the local machine
             $destination = $localdir . DIRECTORY_SEPARATOR . (
                 // Use the provided local name if it's non-null and non-empty, otherwise use the basename of the remote file
@@ -765,12 +766,12 @@ class FTPClient
     public function downloadDir(string $remotedir, string $localdir): bool
     {
         // Check if the current instance is valid, the remote directory exists, and the local directory can be created or created
-        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir) && File::makeDir($localdir)) {
+        if ($this->isValid() && $this->loggedIn && $this->isDir($remotedir) && File::createDir($localdir)) {
             // Arrange the local directory path and append a directory separator
             $localdir = $this->arrangeLPath(Utils::resolvePath($localdir));
             // Create fisrt level directory on local filesystem
             $localdir = $this->arrangeLPath($localdir . DIRECTORY_SEPARATOR . basename($remotedir));
-            File::makeDir($localdir);
+            File::createDir($localdir);
             return $this->downloadDirContents($remotedir, $localdir);
         }
         // Return false if any of the checks fail
@@ -835,9 +836,9 @@ class FTPClient
 
     /**
      * Get the FTP adapter
-     * @return \PHPWebfuse\FTPClient\FTPAdapter|null
+     * @return \PHPWebfuse\Instance\FTPClient\FTPAdapter|null
      */
-    public function getAdapter(): ?\PHPWebfuse\FTPClient\FTPAdapter
+    public function getAdapter(): ?\PHPWebfuse\Instance\FTPClient\FTPAdapter
     {
         return $this->adapter;
     }
@@ -909,7 +910,7 @@ class FTPClient
 
     /**
      * Set the FTP adapter
-     * @param \PHPWebfuse\FTPClient\FTPAdapter $adapter
+     * @param \PHPWebfuse\Instance\FTPClient\FTPAdapter $adapter
      */
     private function setAdapter(\PHPWebfuse\Instance\FTPClient\FTPAdapter $adapter)
     {
@@ -951,7 +952,7 @@ class FTPClient
      */
     private function arrangeLPath(string $path, bool $closeEdges = false): string
     {
-        return File::arrange_dir_separators($path, $closeEdges);
+        return Path::arrange_dir_separators($path, $closeEdges);
     }
 
     /**
@@ -1038,7 +1039,7 @@ class FTPClient
                         $localPath = $this->arrangeLPath($localdir . DIRECTORY_SEPARATOR . basename($file));
                         if ($this->isDir($file)) {
                             // Create directory on local filesystem
-                            File::makeDir($localPath);
+                            File::createDir($localPath);
                             // Recursive part
                             if ($this->downloadDirContents($file, $localPath)) {
                                 $downloaded++;

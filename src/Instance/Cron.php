@@ -7,58 +7,44 @@ use \PHPWebfuse\Utils;
 /**
  * @author Senestro
  */
-class Tasker {
+class Cron {
     // PRIVATE VARIABLES
-
-    /**
-     * @var array The tasks is an array containing arrays of background tasks to create
-     *      1: Each array must contain
-     *          "path" - The absolute filename
-     *      2: On Windows environment, each array must contain:
-     *          "winTime" - 00:00
-     *          "winExecution"- daily
-     *          "winTaskname"
-     *      3: On Linux/Unix, each array must contain:
-     *          "unixTime" - 0 0,12 * * * ((0:00) and noon (12:00) every day)
-     */
-    private array $tasks = array();
-
-    /**
-     * @var array The created tasks are stored here
-     */
-    private array $createdTasks = array();
-
+    
     /**
      * @var string The php executable absolute path
      */
-    private string $phpExecutable = "";
+    private string $executable = "";
 
     // PUBLIC METHODS
 
     /**
-     * Construct new Tasker instance
-     * @param array $tasks
+     * Construct new Cron instance
+     * @param string|null $executable
      */
-    public function __construct(array $tasks = array()) {
-        $this->tasks = $tasks;
-        $this->setPhpExecutable();
+    public function __construct(?string $executable=null) {
+        if(Utils::isNonNull($executable) && \is_executable($executable)){
+            $this->executable = \realpath($executable);
+        } else {
+            $this->executable = $this->getPhpExecutable();
+        }
     }
 
     /**
      * Create tasks
-     * @param array $tasks
+     * @param array $crons
      * @return array
      */
-    public function createTasks(array $tasks = array()): array {
-        $this->tasks = $tasks;
+    public function create(array $crons = array()): array {
         $this->setPhpExecutable();
-        if (Utils::isNotEmptyString($this->phpExecutable)) {
-            $commands = $this->formatTasksCommands();
+        if (Utils::isNotEmptyString($this->executable) && !empty($crons)) {
+            $commands = $this->cronsCommand();
+            $created = array();
             foreach ($commands as $path => $command) {
-                $this->createdTasks[$path] = Utils::executeCommandUsingPopen($command);
+                $created[$path] = Utils::executeCommandUsingPopen($command);
             }
+            return $created;
         }
-        return $this->createdTasks;
+        return array();
     }
 
     // PRIVATE METHODS
@@ -80,24 +66,14 @@ class Tasker {
     }
 
     /**
-     * Set the php executable
-     * @return void
-     */
-    private function setPhpExecutable(): void {
-        $executable = $this->getPhpExecutable();
-        if (Utils::isString($executable) && Utils::isNotEmptyString($executable)) {
-            $this->phpExecutable = $executable;
-        }
-    }
-
-    /**
-     * Format tasks
+     * Format the crons
+     * @param array $crons
      * @return array
      */
-    private function formatTasks(): array {
+    private function format(array $crons = array()): array {
         $os = strtolower(Utils::getOS());
         $results = array();
-        foreach ($this->tasks as $data) {
+        foreach ($crons as $data) {
             $path = isset($data['path']) ? (string) $data['path'] : "";
             if (Utils::isFile($path)) {
                 if ($os == "windows") {
@@ -115,15 +91,16 @@ class Tasker {
     }
 
     /**
-     * Format the task with and option to redirect the task command to "> /dev/null 2>&1"
-     * @param type $redirect
+     * Format the crons with and option to redirect the crons command to "> /dev/null 2>&1" (Silent the cron ouput)
+     * @param array $crons The Crons
+     * @param type $silent Wether to silent the crons output
      * @return array
      */
-    private function formatTasksCommands($redirect = false): array {
+    private function cronsCommand(array $crons = array(), $silent = true): array {
         $os = strtolower(Utils::getOS());
         $commands = array();
-        if (Utils::isNotEmptyString($this->phpExecutable) && function_exists("exec")) {
-            $crons = $this->formatTasks();
+        if (Utils::isNotEmptyString($this->executable) && function_exists("exec")) {
+            $crons = $this->format($crons);
             foreach ($crons as $index => $data) {
                 $path = $data['path'];
                 $time = $data['time'];
@@ -134,7 +111,7 @@ class Tasker {
                     $resultcode = 0;
                     @exec("schtasks /query /tn " . $taskName . "", $result, $resultcode);
                     if (isset($result) && empty($result)) {
-                        $commands[$path] = "schtasks /create /tn " . $taskName . " /tr \"" . $this->phpExecutable . " " . $path . "\" /sc " . $schedule . " /st " . $time . "";
+                        $commands[$path] = "schtasks /create /tn " . $taskName . " /tr \"" . $this->executable . " " . $path . "\" /sc " . $schedule . " /st " . $time . "";
                     }
                 } else {
                     $result = array();
@@ -142,9 +119,9 @@ class Tasker {
                     @exec('crontab -l', $result, $resultcode);
                     if (isset($result) && empty($result)) {
                         $result = array_flip($result);
-                        if (!isset($result[$time . " " . $this->phpExecutable . " " . $path])) {
-                            $arg = $redirect === true ? " > /dev/null 2>&1" : "";
-                            $commands[$path] = "echo -e  \"`crontab -l`\n" . $time . " " . $this->phpExecutable . " " . $path . "" . $arg . "\" | crontab -";
+                        if (!isset($result[$time . " " . $this->executable . " " . $path])) {
+                            $arg = $silent === true ? " > /dev/null 2>&1" : "";
+                            $commands[$path] = "echo -e  \"`crontab -l`\n" . $time . " " . $this->executable . " " . $path . "" . $arg . "\" | crontab -";
                         }
                     }
                 }
