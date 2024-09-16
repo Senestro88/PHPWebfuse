@@ -1,0 +1,26 @@
+{
+  "libphonenumber": {
+    "1": "\\libphonenumber\\PhoneNumberUtil",
+    "2": "\\libphonenumber\\PhoneNumberFormat",
+    "3": "\\libphonenumber\\NumberParseException"
+  },
+  "JamesHeinrich": {
+    "1": "\\JamesHeinrich\\GetID3\\GetID3",
+    "2": "\\JamesHeinrich\\GetID3\\WriteTags"
+  },
+  "Detection": {
+    "1": "\\Detection\\MobileDetect"
+  },
+  "PHPMailer": {
+    "1": "\\PHPMailer\\PHPMailer\\PHPMailer"
+  },
+  "SleekDB": {
+    "1": "\\SleekDB\\Store"
+  },
+  "Symfony": {
+    "1": "\\Symfony\\Component\\Process\\PhpExecutableFinder"
+  },
+  "PhpZip": {
+    "1": "\\PhpZip\\ZipFile"
+  }
+}
