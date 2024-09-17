@@ -564,7 +564,7 @@ class FTPClient
         if($this->isValid() && $this->isFile($file)) {
             $size = $this->bridge->size($this->arrangeRDS($file));
             if($size != -1) {
-                return $format ? $this->methods->formatSize((int) $size) : $size;
+                return $format ? Utils::formatSize((int) $size) : $size;
             }
         }
         return 0;
@@ -649,7 +649,7 @@ class FTPClient
     /**
      * Creates an FTP file if it's doesn't exist
      * @param string $file
-     * @param type $content
+     * @param string $content
      * @param int $mode
      * @return bool
      */

@@ -149,7 +149,7 @@ class Captcha
      */
     private static function getDirectories(): array
     {
-        $captchaDirname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['directories']['data'] . DIRECTORY_SEPARATOR . "captcha"));
+        $captchaDirname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['DATA'] . DIRECTORY_SEPARATOR . "captcha"));
         File::createDir($captchaDirname);
         $directories = array("backgrounds" => $captchaDirname . "backgrounds" . DIRECTORY_SEPARATOR, "fonts" => $captchaDirname . "fonts" . DIRECTORY_SEPARATOR, "namespaces" => $captchaDirname . "namespaces" . DIRECTORY_SEPARATOR, "temp" => $captchaDirname . "temp" . DIRECTORY_SEPARATOR);
         foreach ($directories as $dirname) {

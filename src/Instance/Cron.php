@@ -2,6 +2,7 @@
 
 namespace PHPWebfuse\Instance;
 
+use PHPWebfuse\File;
 use \PHPWebfuse\Utils;
 
 /**
@@ -14,7 +15,7 @@ class Cron
     /**
      * @var string The php executable absolute path
      */
-    private string $executable = "";
+    private static string $executable = "";
 
     // PUBLIC METHODS
 
@@ -25,9 +26,9 @@ class Cron
     public function __construct(?string $executable = null)
     {
         if(Utils::isNonNull($executable) && \is_executable($executable)) {
-            $this->executable = \realpath($executable);
+            self::$executable = \realpath($executable);
         } else {
-            $this->executable = $this->getPhpExecutable();
+            self::$executable = $this->getPhpExecutable();
         }
     }
 
@@ -38,11 +39,9 @@ class Cron
      */
     public function create(array $crons = array()): array
     {
-        $this->setPhpExecutable();
-        if (Utils::isNotEmptyString($this->executable) && !empty($crons)) {
-            $commands = $this->cronsCommand();
+        if (Utils::isNotEmptyString(self::$executable) && !empty($crons)) {
             $created = array();
-            foreach ($commands as $path => $command) {
+            foreach ($this->commands($crons) as $path => $command) {
                 $created[$path] = Utils::executeCommandUsingPopen($command);
             }
             return $created;
@@ -80,7 +79,7 @@ class Cron
         $results = array();
         foreach ($crons as $data) {
             $path = isset($data['path']) ? (string) $data['path'] : "";
-            if (Utils::isFile($path)) {
+            if (File::isFile($path)) {
                 if ($os == "windows") {
                     $winTaskname = isset($data['winTaskname']) ? (string) $data['winTaskname'] : basename($path);
                     $winTime = isset($data['winTime']) ? (string) $data['winTime'] : "00:00";
@@ -101,11 +100,11 @@ class Cron
      * @param type $silent Wether to silent the crons output
      * @return array
      */
-    private function cronsCommand(array $crons = array(), $silent = true): array
+    private function commands(array $crons = array(), $silent = true): array
     {
         $os = strtolower(Utils::getOS());
         $commands = array();
-        if (Utils::isNotEmptyString($this->executable) && function_exists("exec")) {
+        if (Utils::isNotEmptyString(self::$executable) && function_exists("exec")) {
             $crons = $this->format($crons);
             foreach ($crons as $index => $data) {
                 $path = $data['path'];
@@ -117,7 +116,7 @@ class Cron
                     $resultcode = 0;
                     @exec("schtasks /query /tn " . $taskName . "", $result, $resultcode);
                     if (isset($result) && empty($result)) {
-                        $commands[$path] = "schtasks /create /tn " . $taskName . " /tr \"" . $this->executable . " " . $path . "\" /sc " . $schedule . " /st " . $time . "";
+                        $commands[$path] = "schtasks /create /tn " . $taskName . " /tr \"" . self::$executable . " " . $path . "\" /sc " . $schedule . " /st " . $time . "";
                     }
                 } else {
                     $result = array();
@@ -125,9 +124,9 @@ class Cron
                     @exec('crontab -l', $result, $resultcode);
                     if (isset($result) && empty($result)) {
                         $result = array_flip($result);
-                        if (!isset($result[$time . " " . $this->executable . " " . $path])) {
+                        if (!isset($result[$time . " " . self::$executable . " " . $path])) {
                             $arg = $silent === true ? " > /dev/null 2>&1" : "";
-                            $commands[$path] = "echo -e  \"`crontab -l`\n" . $time . " " . $this->executable . " " . $path . "" . $arg . "\" | crontab -";
+                            $commands[$path] = "echo -e  \"`crontab -l`\n" . $time . " " . self::$executable . " " . $path . "" . $arg . "\" | crontab -";
                         }
                     }
                 }

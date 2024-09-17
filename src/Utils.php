@@ -1874,7 +1874,7 @@ class Utils
      */
     public static function loadPlugin(string $plugin): void
     {
-        $dirname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['directories']['plugins']));
+        $dirname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['PLUGINS']));
         $plugin = Path::arrange_dir_separators($plugin);
         $extension = File::getExtension($plugin);
         $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $plugin : $plugin . '.php';
@@ -1894,7 +1894,7 @@ class Utils
      */
     public static function loadLib(string $lib): void
     {
-        $dirname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['directories']['libraries']));
+        $dirname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['LIBRARIES']));
         $lib = Path::arrange_dir_separators($lib);
         $extension = File::getExtension($lib);
         $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $lib : $lib . '.php';
@@ -1936,7 +1936,7 @@ class Utils
                 return false;
             }
             $errstr = htmlspecialchars($errstr);
-            $defaultErrorDir = Path::insert_dir_separator(PHPWEBFUSE['directories']['root']);
+            $defaultErrorDir = Path::insert_dir_separator(PHPWEBFUSE['DIRECTORIES']['ROOT']);
             $errorDir = $errorDir ?? $defaultErrorDir;
             $errorDir = is_dir($errorDir) && is_readable($errorDir) ? Path::insert_dir_separator($errorDir) : $defaultErrorDir;
             $defaultErrorName = '$error-messages.log';
@@ -1957,7 +1957,7 @@ class Utils
     public static function registerExceptionHandler(?string $exceptionDir = null, ?string $exceptionName = null): void
     {
         set_exception_handler(function (\Throwable $ex) use ($exceptionDir, $exceptionName) {
-            $defaultExceptionDir = Path::insert_dir_separator(PHPWEBFUSE['directories']['root']);
+            $defaultExceptionDir = Path::insert_dir_separator(PHPWEBFUSE['DIRECTORIES']['ROOT']);
             $exceptionDir = $exceptionDir ?? $defaultExceptionDir;
             $exceptionDir = is_dir($exceptionDir) && is_readable($exceptionDir) ? Path::insert_dir_separator($exceptionDir) : $defaultExceptionDir;
             $defaultExceptionName = '$exception-messages.log';
@@ -2334,7 +2334,7 @@ class Utils
                 if(isset($options['unique_file_identifier'])) {
                     $data['unique_file_identifier'] = array('ownerid' => "email", 'data' => md5(time()));
                 }
-                $tempPathname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['directories']['data'] . DIRECTORY_SEPARATOR . 'getid3' . DIRECTORY_SEPARATOR . 'temp'));
+                $tempPathname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['DATA'] . DIRECTORY_SEPARATOR . 'getid3' . DIRECTORY_SEPARATOR . 'temp'));
                 if(File::createFile($tempPathname)) {
                     $random = self::generateRandomFilename("png");
                     $_covername = $tempPathname . '' . $random;
@@ -2360,7 +2360,7 @@ class Utils
      */
     public static function cleanPHPWebfuseTempFiles(): void
     {
-        $paths = File::searchFile(PHPWEBFUSE['directories']['root'], array("temp"));
+        $paths = File::searchFile(PHPWEBFUSE['DIRECTORIES']['ROOT'], array("temp"));
         foreach($paths as $index => $path) {
             if(File::isFile($path)) {
                 File::emptyFileectory($path);
