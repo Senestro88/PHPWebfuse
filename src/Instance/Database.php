@@ -9,8 +9,7 @@ use \PHPWebfuse\Path;
 /**
  * @author Senestro
  */
-class Database
-{
+class Database {
     // PRIVATE VARIABLES
 
     /**
@@ -49,11 +48,10 @@ class Database
      * @param string|null $password
      * @param bool $reset True to force reset the connection
      */
-    public function __construct(?string $host = null, ?string $user = null, ?string $password = null, bool $reset = false)
-    {
+    public function __construct(?string $host = null, ?string $user = null, ?string $password = null, bool $reset = false) {
         if (!in_array('mysqli', get_declared_classes())) {
             $this->message = "The mysqli class doesn't exist or wasn't found.";
-        } else if(Utils::isNotEmptyString($host) && Utils::isNotEmptyString($user) && Utils::isNotEmptyString($password)) {
+        } else if (Utils::isNotEmptyString($host) && Utils::isNotEmptyString($user) && Utils::isNotEmptyString($password)) {
             if (Utils::isNull(self::$connection) || Utils::isTrue($reset)) {
                 $this->init($host, $user, $password, $reset);
             }
@@ -63,8 +61,7 @@ class Database
     /**
      * Close the database connection and reset the connection variable to default (null)
      */
-    public function __destruct()
-    {
+    public function __destruct() {
         if (Utils::isNonNull(self::$connection)) {
             @self::$connection->close();
             self::$connection = null;
@@ -79,8 +76,7 @@ class Database
      * @param bool $reset Force reset the connection
      * @return bool
      */
-    public function connect(string $host, string $user, string $password, bool $reset = false): bool
-    {
+    public function connect(string $host, string $user, string $password, bool $reset = false): bool {
         return $this->init($host, $user, $password, $reset);
     }
 
@@ -88,16 +84,15 @@ class Database
      * Get the connection instance
      * @return \mysqli|null
      */
-    public function connection(): \mysqli | null
-    {
+    public function connection(): \mysqli | null {
         return self::$connection;
     }
 
-    public function lastInsertID(): int|string
-    {
+    public function lastInsertID(): int|string {
         if (Utils::isNonNull(self::$connection)) {
             return self::$connection->insert_id;
-        }return "";
+        }
+        return "";
     }
 
     /**
@@ -105,77 +100,77 @@ class Database
      * @param string $database
      * @return bool
      */
-    public function selectDb(string $database): bool
-    {
+    public function selectDb(string $database): bool {
         if (Utils::isNonNull(self::$connection)) {
             return @self::$connection->select_db($database);
-        }return false;
+        }
+        return false;
     }
 
     /**
      * Get the last error
      * @return string
      */
-    public function lastError(): string
-    {
+    public function lastError(): string {
         if (Utils::isNonNull(self::$connection)) {
             return self::$connection->error;
-        }return "";
+        }
+        return "";
     }
 
     /**
      * Get the connection host info
      * @return string
      */
-    public function hostInfo(): string
-    {
+    public function hostInfo(): string {
         if (Utils::isNonNull(self::$connection)) {
             return self::$connection->host_info;
-        }return "";
+        }
+        return "";
     }
 
     /**
      * Get the connection server info
      * @return string
      */
-    public function serverInfo(): string
-    {
+    public function serverInfo(): string {
         if (Utils::isNonNull(self::$connection)) {
             return self::$connection->server_info;
-        }return "";
+        }
+        return "";
     }
 
     /**
      * Get the connection server info
      * @return string
      */
-    public function serverVersion(): string
-    {
+    public function serverVersion(): string {
         if (Utils::isNonNull(self::$connection)) {
             return self::$connection->server_version;
-        }return "";
+        }
+        return "";
     }
 
     /**
      * Get the last query info
      * @return string
      */
-    public function lastQueryInfo(): string
-    {
+    public function lastQueryInfo(): string {
         if (Utils::isNonNull(self::$connection)) {
             return self::$connection->info;
-        }return "";
+        }
+        return "";
     }
 
     /**
      * Get the connection protocol version
      * @return int|string
      */
-    public function protocolVersion(): int|string
-    {
+    public function protocolVersion(): int|string {
         if (Utils::isNonNull(self::$connection)) {
             return self::$connection->protocol_version;
-        }return "";
+        }
+        return "";
     }
 
     /**
@@ -183,11 +178,47 @@ class Database
      * @param string $string
      * @return string
      */
-    public function escape(string $string): string
-    {
+    public function escape(string $string): string {
         if (Utils::isNonNull(self::$connection)) {
             return self::$connection->real_escape_string($string);
-        }return $string;
+        }
+        return $string;
+    }
+
+    /**
+     * Run a query
+     * @param string $query The query string
+     * @return mixed
+     */
+    public function query(string $query): mixed {
+        if (Utils::isNonNull(self::$connection)) {
+            return self::$connection->query($query);
+        }
+        return \null;
+    }
+
+    /**
+     * Prepare a query
+     * @param string $query The query string
+     * @return mixed
+     */
+    public function prepareQuery(string $query): mixed {
+        if (Utils::isNonNull(self::$connection)) {
+            return self::$connection->prepare($query);
+        }
+        return \null;
+    }
+
+    /**
+     * Multi query
+     * @param string $query The query string
+     * @return mixed
+     */
+    public function multiQuery(string $query): mixed {
+        if (Utils::isNonNull(self::$connection)) {
+            return self::$connection->multi_query($query);
+        }
+        return \null;
     }
 
     /**
@@ -197,8 +228,7 @@ class Database
      * @param string $collate Default to 'latin1_general_ci'
      * @return bool
      */
-    public function createDatabase(string $name, string $character = "latin1", string $collate = " latin1_general_ci"): bool
-    {
+    public function createDatabase(string $name, string $character = "latin1", string $collate = " latin1_general_ci"): bool {
         if (Utils::isNonNull(self::$connection)) {
             return self::$connection->query("CREATE DATABASE IF NOT EXISTS `" . strtolower($name) . "` DEFAULT CHARACTER SET " . $character . " COLLATE " . $collate . ";");
         }
@@ -210,10 +240,22 @@ class Database
      * @param string $name The database name
      * @return bool
      */
-    public function deleteDatabase(string $name): bool
-    {
+    public function deleteDatabase(string $name): bool {
         if (Utils::isNonNull(self::$connection)) {
             return self::$connection->query("DROP DATABASE IF EXISTS `" . strtolower($name) . "`");
+        }
+        return false;
+    }
+
+    /**
+     * Check if a database exist
+     * @param string $database The database name
+     * @return bool
+     */
+    public function doesDatabaseExist(string $database): bool {
+        if (Utils::isNonNull(self::$connection)) {
+            $result = self::$connection->query("SHOW DATABASES LIKE `" . strtolower($database) . "`");
+            return $result && $result->num_rows > 0;
         }
         return false;
     }
@@ -223,8 +265,7 @@ class Database
      * @param array $databases The database's
      * @return array
      */
-    public function optimiseDatabases(array $databases): array
-    {
+    public function optimiseDatabases(array $databases): array {
         $result = array();
         if (Utils::isNonNull(self::$connection)) {
             foreach ($databases as $database) {
@@ -257,8 +298,7 @@ class Database
      * @param string $table The database table name
      * @return bool
      */
-    public function deleteDatabaseTable(string $database, string $table): bool
-    {
+    public function deleteDatabaseTable(string $database, string $table): bool {
         if (Utils::isNonNull(self::$connection) && $this->doesDatabaseTableExist($database, $table)) {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
@@ -273,8 +313,7 @@ class Database
      * @param string $table The database table name
      * @return bool
      */
-    public function doesDatabaseTableExist(string $database, string $table): bool
-    {
+    public function doesDatabaseTableExist(string $database, string $table): bool {
         if (Utils::isNonNull(self::$connection)) {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
@@ -296,8 +335,7 @@ class Database
      * @param string $table The database table name
      * @return bool
      */
-    public function truncateDatabaseTable(string $database, string $table): bool
-    {
+    public function truncateDatabaseTable(string $database, string $table): bool {
         if (Utils::isNonNull(self::$connection) && $this->doesDatabaseTableExist($database, $table)) {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
@@ -316,8 +354,7 @@ class Database
      *
      * Example: insertToDatabaseTable("main_db", "users_table", array('id'=>1, 'timestamp'=>123456789));
      */
-    public function insertToDatabaseTable(string $database, string $table, array $data = array(), bool $preprare = true): bool
-    {
+    public function insertToDatabaseTable(string $database, string $table, array $data = array(), bool $preprare = true): bool {
         if (Utils::isNonNull(self::$connection) && $this->doesDatabaseTableExist($database, $table)) {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
@@ -364,8 +401,7 @@ class Database
      * Example: createDatabaseTable("main_db", "users_table", array("id" => "bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT ''", "timestamp" => "bigint(10) UNSIGNED NOT NULL DEFAULT '0' COMMENT ''", "PRIMARY KEY" => "(id)"), "users_table_comment");
      * @return bool
      */
-    public function createDatabaseTable(string $database, string $table, array $columns = array(), string $comment = '', string $engine = "MyISAM", string $character = "latin1", string $collate = "latin1_general_ci", bool $autoincrement = true): bool
-    {
+    public function createDatabaseTable(string $database, string $table, array $columns = array(), string $comment = '', string $engine = "MyISAM", string $character = "latin1", string $collate = "latin1_general_ci", bool $autoincrement = true): bool {
         if (Utils::isNonNull(self::$connection) && Utils::isFalse($this->doesDatabaseTableExist($database, $table))) {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
@@ -393,8 +429,7 @@ class Database
      * @param array $databases The database's
      * @return array
      */
-    public function arrangeDatabaseTables(array $databases): array
-    {
+    public function arrangeDatabaseTables(array $databases): array {
         $messages = array();
         if (Utils::isNonNull(self::$connection)) {
             foreach ($databases as $database) {
@@ -414,7 +449,6 @@ class Database
                                     $columnsdata[] = $ft;
                                 }
                             } catch (\Exception $e) {
-
                             }
                             foreach ($columnsdata as $index => $data) {
                                 $field = $data['Field'];
@@ -458,8 +492,7 @@ class Database
      * @param string $table The database table name
      * @return array
      */
-    public function getTableColumns(string $database, string $table): array
-    {
+    public function getTableColumns(string $database, string $table): array {
         $result = array();
         if (Utils::isNonNull(self::$connection)) {
             $database = $this->sanitizeIdentifier($database);
@@ -471,7 +504,6 @@ class Database
                         $result[] = $ft;
                     }
                 } catch (\Exception $e) {
-
                 }
             }
         }
@@ -489,8 +521,7 @@ class Database
      *
      * Example: getTableRowsWhereClause("main_db", "users_table", "country" "Nigeria", "state");
      */
-    public function getTableRowsWhereClause(string $database, string $table, string $column, mixed $columnvalue, string $orderBy = "id"): array
-    {
+    public function getTableRowsWhereClause(string $database, string $table, string $column, mixed $columnvalue, string $orderBy = "id"): array {
         $result = array();
         if (Utils::isNonNull(self::$connection)) {
             $database = $this->sanitizeIdentifier($database);
@@ -509,8 +540,7 @@ class Database
      * @param string $orderBy The order by
      * @return array
      */
-    public function getTableRows(string $database, string $table, string $orderBy = "id"): array
-    {
+    public function getTableRows(string $database, string $table, string $orderBy = "id"): array {
         $result = array();
         if (Utils::isNonNull(self::$connection)) {
             $database = $this->sanitizeIdentifier($database);
@@ -532,8 +562,7 @@ class Database
      *
      * Example: getTableRowsIndexValue("main_db", "users_table", "country", "Nigeria", "id");
      */
-    public function getTableRowsIndexValue(string $database, string $table, string $column, mixed $columnvalue, mixed $index): string
-    {
+    public function getTableRowsIndexValue(string $database, string $table, string $column, mixed $columnvalue, mixed $index): string {
         $value = "";
         if (Utils::isNonNull(self::$connection)) {
             $database = $this->sanitizeIdentifier($database);
@@ -555,8 +584,7 @@ class Database
      * @param string $statement
      * @return array
      */
-    public function executeAndFetchAssociationFromSelectStatement(string $statement): array
-    {
+    public function executeAndFetchAssociationFromSelectStatement(string $statement): array {
         $result = array();
         if (Utils::isNonNull(self::$connection)) {
             if (Utils::startsWith("SELECT", strtoupper($statement))) {
@@ -580,8 +608,7 @@ class Database
      * @param string $database The database name
      * @return array
      */
-    public function getDatabaseTables(string $database): array
-    {
+    public function getDatabaseTables(string $database): array {
         $result = array();
         if (Utils::isNonNull(self::$connection)) {
             $database = $this->sanitizeIdentifier($database);
@@ -601,8 +628,7 @@ class Database
      * @param string $table The database table name
      * @return string
      */
-    public function getTableExportStructureData(string $database, string $table): string
-    {
+    public function getTableExportStructureData(string $database, string $table): string {
         $structure = '';
         if (Utils::isNonNull(self::$connection)) {
             $database = $this->sanitizeIdentifier($database);
@@ -625,8 +651,7 @@ class Database
      * @param string $table The database table name
      * @return string
      */
-    public function getTableExportInsertData(string $database, string $table): string
-    {
+    public function getTableExportInsertData(string $database, string $table): string {
         $data = '';
         if (Utils::isNonNull(self::$connection)) {
             $database = $this->sanitizeIdentifier($database);
@@ -660,8 +685,7 @@ class Database
      * @param string|null $savePathname Where to save the exported database's
      * @return array
      */
-    public function exportDatabases(array $databases, ?string $savePathname = null): array
-    {
+    public function exportDatabases(array $databases, ?string $savePathname = null): array {
         $messages = [];
         $savePathname = Utils::isNull($savePathname) ? dirname(__DIR__) : $savePathname;
         if (File::isNotDir($savePathname)) {
@@ -700,8 +724,7 @@ class Database
      * @param bool $reset If to force reset the connection
      * @return bool
      */
-    private function init(string $host, string $user, string $password, bool $reset = false): bool
-    {
+    private function init(string $host, string $user, string $password, bool $reset = false): bool {
         if (Utils::isNull(self::$connection) || Utils::isTrue($reset)) {
             try {
                 mysqli_report(MYSQLI_REPORT_STRICT);
@@ -729,8 +752,7 @@ class Database
      * @param string $identifier
      * @return string
      */
-    private function sanitizeIdentifier(string $identifier): string
-    {
+    private function sanitizeIdentifier(string $identifier): string {
         return $this->escape(str_replace([' ', '/', '\\', '-'], '', $identifier));
     }
 
@@ -740,8 +762,7 @@ class Database
      * @param int $fieldCount
      * @return string
      */
-    private function escapeExportRowData(array $row, int $fieldCount): string
-    {
+    private function escapeExportRowData(array $row, int $fieldCount): string {
         for ($i = 0; $i < $fieldCount; $i++) {
             $row[$i] = str_replace("'", "''", preg_replace("/\n/", "\\n", $row[$i]));
             $row[$i] = isset($row[$i]) ? (is_numeric($row[$i]) ? $row[$i] : "'$row[$i]'") : "''";
@@ -754,8 +775,7 @@ class Database
      * @param string $database The database name
      * @return string|null
      */
-    private function createDatabaseExportContent(string $database): ?string
-    {
+    private function createDatabaseExportContent(string $database): ?string {
         $tables = $this->getDatabaseTables($database);
         if (empty($tables)) {
             return null;
@@ -773,8 +793,7 @@ class Database
      * @param string $content
      * @return string
      */
-    private function wrapDatabaseExportContent(string $content): string
-    {
+    private function wrapDatabaseExportContent(string $content): string {
         $header = "-- ---------------------------------------------------------\n";
         $header .= "-- SQL Dump\n";
         $header .= "-- Host Connection Info: " . $this->hostInfo() . "\n";
