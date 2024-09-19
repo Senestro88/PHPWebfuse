@@ -29,7 +29,7 @@ class QrCodeImage
             throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidAccountName($accountName);
         }
         if($secret === "") {
-            throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidSecret();
+            throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidKey();
         }
         $label = $accountName;
         $content = 'otpauth://totp/%s?secret=%s';
@@ -77,7 +77,7 @@ class QrCodeImage
             throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidAccountName($accountName);
         }
         if($secret === "") {
-            throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidSecret();
+            throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidKey();
         }
         $label = $accountName;
         $content = 'otpauth://totp/%s?secret=%s';

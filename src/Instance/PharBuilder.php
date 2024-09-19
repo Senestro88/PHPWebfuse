@@ -354,7 +354,7 @@ class PharBuilder
     {
         $halts = array("__HALT_COMPILER()", "__HALT_COMPILER();", "__HALT_COMPILER(); ?>", "__HALT_COMPILER();?>", "__HALT_COMPILER();\n?>");
         foreach ($halts as $value) {
-            if($this->methods->endsWith($value, $content)) {
+            if(Utils::endsWith($value, $content)) {
                 return true;
             }
         }

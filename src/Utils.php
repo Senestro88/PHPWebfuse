@@ -8,54 +8,53 @@ use PHPWebfuse\Path;
 /**
  * @author Senestro
  */
-class Utils
-{
+class Utils {
     // PRIVATE VARIABLES
     // PRIVATE CONSTANTS
     // PUBLIC CONSTANT VARIABLES
 
     /**
-     * @var const The default character considered invalid
+     * @var array The default character considered invalid
      */
     public const INVALID_CHARS = array("\\", "/", ":", ";", " ", "*", "?", "\"", "<", ">", "|", ",", "'");
 
     /**
-     * @var const Files permission
+     * @var int Files permission
      */
     public const FILE_PERMISSION = 0644;
 
     /**
-     * @var const Directories permission
+     * @var int Directories permission
      */
     public const DIRECTORY_PERMISSION = 0755;
 
     /**
-     * @var const Default image width for conversion
+     * @var int Default image width for conversion
      */
     public const IMAGE_WIDTH = 450;
 
     /**
-     * @var const Default image height for conversion
+     * @var int Default image height for conversion
      */
     public const IMAGE_HEIGHT = 400;
 
     /**
-     * @var const Default user agent
+     * @var string Default user agent
      */
     public const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36";
 
     /**
-     * @var const Default timezone
+     * @var string Default timezone
      */
     public const TIMEZONE = "Africa/Lagos";
 
     /**
-     * @var const Default GMT
+     * @var string Default GMT
      */
     public const GMT = "+01:00";
 
     /**
-     * @var cosnt Default errors stylesheet
+     * @var array Default errors stylesheet
      */
     public const ERRORS_CSS = array(
         'exception' => "width: 100%; padding: 5px; height: auto; position: relative; display: block; text-align: left; word-break: break-word; overflow-wrap: break-word; color: #d22c3c; background: transparent; font-size: 90%; margin: 5px auto; border: none; border-bottom: 2px dashed red; font-weight: normal;",
@@ -63,17 +62,17 @@ class Utils
     );
 
     /**
-     * @var const Common localhost addresses
+     * @var array Common localhost addresses
      */
     public const LOCALHOST_DEFAULT_ADDRESSES = array('localhost', '127.0.0.1', '::1', '');
 
     /**
-     * @var const Excluded private IP address ranges
+     * @var array Excluded private IP address ranges
      */
     public const PRIVATE_IP_ADDRESS_RANGES = array('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '169.254.0.0/16', '127.0.0.0/8');
 
     /**
-     * @var const Wether to check for Ip in private Ip ranges
+     * @var bool Wether to check for Ip in private Ip ranges
      */
     public const CHECK_IP_ADDRESS_IN_RANGE = false;
 
@@ -82,23 +81,20 @@ class Utils
     /**
      * Prevent the constructor from being initialized
      */
-    private function __construct()
-    {
-
+    private function __construct() {
     }
 
     /**
      * Get the operating system
      * @return string
      */
-    public static function getOS(): string
-    {
+    public static function getOS(): string {
         $os = strtolower(PHP_OS);
-        if(substr($os, 0, 3) === "win") {
+        if (substr($os, 0, 3) === "win") {
             return "Windows";
-        } elseif(substr($os, 0, 4) == "unix") {
+        } elseif (substr($os, 0, 4) == "unix") {
             return "Unix";
-        } elseif(substr($os, 0, 5) == "linux") {
+        } elseif (substr($os, 0, 5) == "linux") {
             return "Linux";
         }
         return "Unknown";
@@ -109,8 +105,7 @@ class Utils
      * @param mixed $resource
      * @return bool
      */
-    public static function isResourceStream(mixed $resource): bool
-    {
+    public static function isResourceStream(mixed $resource): bool {
         return self::isResource($resource) && @get_resource_type($resource) == "stream";
     }
 
@@ -120,8 +115,7 @@ class Utils
      * @param mixed $resource
      * @return bool
      */
-    public static function isResourceCurl(mixed $resource): bool
-    {
+    public static function isResourceCurl(mixed $resource): bool {
         return self::isResource($resource) && @get_resource_type($resource) == "curl";
     }
 
@@ -130,8 +124,7 @@ class Utils
      *
      * @return void
      */
-    public static function unlimitedWorkflow(): void
-    {
+    public static function unlimitedWorkflow(): void {
         @ini_set("memory_limit", "-1");
         @ini_set("max_execution_time", "0");
         @set_time_limit(0);
@@ -149,8 +142,7 @@ class Utils
      * @param string $samesite
      * @return bool
      */
-    public static function createCookie(string $name, string $value, int $days, string $path, string $domain, bool $secure, bool $httponly, string $samesite): bool
-    {
+    public static function createCookie(string $name, string $value, int $days, string $path, string $domain, bool $secure, bool $httponly, string $samesite): bool {
         $expires = strtotime('+' . $days . ' days');
         return @setcookie($name, $value, array('expires' => $expires, 'path' => $path, 'domain' => $domain, 'secure' => $secure, 'httponly' => $httponly, 'samesite' => ucfirst($samesite)));
     }
@@ -166,16 +158,14 @@ class Utils
      * @param string $samesite
      * @return bool
      */
-    public static function deleteCookie(string $name, string $path, string $domain, bool $secure, bool $httponly, string $samesite): bool
-    {
-        if(isset($_COOKIE[$name])) {
+    public static function deleteCookie(string $name, string $path, string $domain, bool $secure, bool $httponly, string $samesite): bool {
+        if (isset($_COOKIE[$name])) {
             $expires = strtotime('2010');
             $setcookie = @setcookie($name, "", array('expires' => $expires, 'path' => $path, 'domain' => $domain, 'secure' => $secure, 'httponly' => $httponly, 'samesite' => ucfirst($samesite)));
-            if(self::isTrue($setcookie)) {
+            if (self::isTrue($setcookie)) {
                 try {
                     unset($_COOKIE['' . $name . '']);
-                } catch(\Throwable $e) {
-
+                } catch (\Throwable $e) {
                 }
                 return true;
             }
@@ -188,28 +178,27 @@ class Utils
      * @param string $path The path to the file or directory
      * @return string
      */
-    public static function getReadablePermission(string $path): string
-    {
+    public static function getReadablePermission(string $path): string {
         // Convert numeric mode to symbolic representation
         $info = '';
-        if(self::isExists($path)) {
+        if (self::isExists($path)) {
             // Get the file permissions as a numeric mode
             $perms = fileperms($path);
             // Determine file type
             $fileType = $perms & 0xF000;
-            if($fileType === 0xC000) {
+            if ($fileType === 0xC000) {
                 $info = 's'; // Socket
-            } elseif($fileType === 0xA000) {
+            } elseif ($fileType === 0xA000) {
                 $info = 'l'; // Symbolic link
-            } elseif($fileType === 0x8000) {
+            } elseif ($fileType === 0x8000) {
                 $info = 'r'; // Regular
-            } elseif($fileType === 0x6000) {
+            } elseif ($fileType === 0x6000) {
                 $info = 'b'; // Block special
-            } elseif($fileType === 0x4000) {
+            } elseif ($fileType === 0x4000) {
                 $info = 'd'; // Fileectory
-            } elseif($fileType === 0x2000) {
+            } elseif ($fileType === 0x2000) {
                 $info = 'c'; // Character special
-            } elseif($fileType === 0x1000) {
+            } elseif ($fileType === 0x1000) {
                 $info = 'p'; // FIFO pipe
             } else {
                 $info = 'u'; // Unknown
@@ -229,9 +218,8 @@ class Utils
      * @param string $path The path to the file or directory
      * @return string
      */
-    public static function getPermission(string $path): string
-    {
-        if(self::isExists($path) && self::isInt(@fileperms(self::resolvePath($path)))) {
+    public static function getPermission(string $path): string {
+        if (self::isExists($path) && self::isInt(@fileperms(self::resolvePath($path)))) {
             return substr(sprintf('%o', @fileperms(self::resolvePath($path))), -4);
         }
         return "";
@@ -243,8 +231,7 @@ class Utils
      * @param string $path
      * @return string
      */
-    public static function getFilename(string $path): string
-    {
+    public static function getFilename(string $path): string {
         return isset(pathinfo($path)['dirname']) ? pathinfo($path)['dirname'] : $path;
     }
 
@@ -253,8 +240,7 @@ class Utils
      * @param string $file
      * @return int|false
      */
-    public static function getOwner(string $file): int|false
-    {
+    public static function getOwner(string $file): int|false {
         return @fileowner($file);
     }
 
@@ -263,8 +249,7 @@ class Utils
      * @param string $file
      * @return int|false
      */
-    public static function getGroup(string $file): int|false
-    {
+    public static function getGroup(string $file): int|false {
         return @filegroup($file);
     }
 
@@ -273,8 +258,7 @@ class Utils
      * @param string $file
      * @return int|false
      */
-    public static function getInode(string $file): int|false
-    {
+    public static function getInode(string $file): int|false {
         return @fileinode($file);
     }
 
@@ -283,8 +267,7 @@ class Utils
      * @param string $file
      * @return string|false
      */
-    public static function getSymLinkTarget(string $file): string|false
-    {
+    public static function getSymLinkTarget(string $file): string|false {
         return @readlink($file);
     }
 
@@ -293,8 +276,7 @@ class Utils
      * @param string $file
      * @return string|false
      */
-    public static function getRealPath(string $file): string|false
-    {
+    public static function getRealPath(string $file): string|false {
         return @self::resolvePath($file);
     }
 
@@ -303,8 +285,7 @@ class Utils
      * @param string $file
      * @return mixed
      */
-    public static function getOwnerName(string $file): mixed
-    {
+    public static function getOwnerName(string $file): mixed {
         return function_exists("posix_getpwuid") ? @posix_getpwuid(self::getOwner($file))['name'] : self::getOwner($file);
     }
 
@@ -313,8 +294,7 @@ class Utils
      * @param string $file
      * @return mixed
      */
-    public static function getGroupName(string $file): mixed
-    {
+    public static function getGroupName(string $file): mixed {
         return function_exists("posix_getpwuid") ? @posix_getgrgid(self::getGroup($file))['name'] : self::getGroup($file);
     }
 
@@ -324,9 +304,8 @@ class Utils
      * @param string|int $group
      * @return bool
      */
-    public static function changeGroup(string $file, string|int $group): bool
-    {
-        if(File::isFile($file)) {
+    public static function changeGroup(string $file, string|int $group): bool {
+        if (File::isFile($file)) {
             return @chgrp($file, $group);
         }
         return false;
@@ -338,9 +317,8 @@ class Utils
      * @param string|int $owner
      * @return bool
      */
-    public static function changeOwner(string $file, string|int $owner = ''): bool
-    {
-        if(File::isFile($file)) {
+    public static function changeOwner(string $file, string|int $owner = ''): bool {
+        if (File::isFile($file)) {
             return @chown($file, $owner);
         }
         return false;
@@ -352,10 +330,9 @@ class Utils
      * @param string $pattern
      * @return bool
      */
-    public static function matchFilename(string $filename, string $pattern): bool
-    {
+    public static function matchFilename(string $filename, string $pattern): bool {
         $inverted = false;
-        if($pattern[0] == '!') {
+        if ($pattern[0] == '!') {
             $pattern = substr($pattern, 1);
             $inverted = true;
         }
@@ -368,10 +345,9 @@ class Utils
      * @param bool $toLowercase
      * @return string
      */
-    public static function convertExtension(string $path, bool $toLowercase = true): string
-    {
+    public static function convertExtension(string $path, bool $toLowercase = true): string {
         $extension = File::getExtension($path);
-        if(self::isNotEmptyString($extension)) {
+        if (self::isNotEmptyString($extension)) {
             return File::removeExtension($path) . "." . ($toLowercase ? strtolower($extension) : strtoupper($extension));
         }
         return $path;
@@ -382,8 +358,7 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function safeEncode(string $string): string
-    {
+    public static function safeEncode(string $string): string {
         return rtrim(strtr(base64_encode($string), '+/', '-_'), '=');
     }
 
@@ -392,8 +367,7 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function safeDecode(string $string): string
-    {
+    public static function safeDecode(string $string): string {
         return @base64_decode(str_pad(strtr($string, '-_', '+/'), (strlen($string) % 4), '=', STR_PAD_RIGHT));
     }
 
@@ -402,8 +376,7 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function clean(string $string): string
-    {
+    public static function clean(string $string): string {
         return strip_tags(htmlspecialchars($string));
     }
 
@@ -413,8 +386,7 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function replaceInvalidChars(string $string): string
-    {
+    public static function replaceInvalidChars(string $string): string {
         return isset($string) ? str_ireplace(self::INVALID_CHARS, array('-'), $string) : false;
     }
 
@@ -423,8 +395,7 @@ class Utils
      * @param string|null $string
      * @return string
      */
-    public static function removeSpecialChars(?string $string = null): string
-    {
+    public static function removeSpecialChars(?string $string = null): string {
         return isset($string) ? preg_replace('/[^A-Za-z0-9]/', '', $string) : false;
     }
 
@@ -432,8 +403,7 @@ class Utils
      * Get the protocol (http or https)
      * @return string
      */
-    public static function protocol(): string
-    {
+    public static function protocol(): string {
         return getenv("HTTPS") !== null && getenv("HTTPS") === 'on' ? "https" : "http";
     }
 
@@ -441,8 +411,7 @@ class Utils
      * Get the server protocol (HTTP/1.1)
      * @return string
      */
-    public static function serverProtocol(): string
-    {
+    public static function serverProtocol(): string {
         return getenv("SERVER_PROTOCOL");
     }
 
@@ -452,8 +421,7 @@ class Utils
      * @return stringGet the host (localhost)
      * @return string
      */
-    public static function host(): string
-    {
+    public static function host(): string {
         return getenv('HTTP_HOST');
     }
 
@@ -461,8 +429,7 @@ class Utils
      * Get the http referer
      * @return string
      */
-    public static function referer(): string
-    {
+    public static function referer(): string {
         return getenv("HTTP_REFERER");
     }
 
@@ -470,8 +437,7 @@ class Utils
      * Get the server name (localhost)
      * @return string
      */
-    public static function serverName(): string
-    {
+    public static function serverName(): string {
         return getenv("SERVER_NAME");
     }
 
@@ -479,8 +445,7 @@ class Utils
      * Get the php self value (/index.php)
      * @return string
      */
-    public static function self(): string
-    {
+    public static function self(): string {
         return getenv("PHP_SELF");
     }
 
@@ -488,8 +453,7 @@ class Utils
      * Get the script filename (C:/xampp/htdocs/index.php)
      * @return string
      */
-    public static function scriptFilename(): string
-    {
+    public static function scriptFilename(): string {
         return getenv("SCRIPT_FILENAME");
     }
 
@@ -497,8 +461,7 @@ class Utils
      * Get the script filename (/index.php)
      * @return string
      */
-    public static function scriptName(): string
-    {
+    public static function scriptName(): string {
         return getenv("SCRIPT_NAME");
     }
 
@@ -506,8 +469,7 @@ class Utils
      * Get the unix timestamp
      * @return int
      */
-    public static function unixTimestamp(): int
-    {
+    public static function unixTimestamp(): int {
         return time();
     }
 
@@ -515,8 +477,7 @@ class Utils
      * Get the current url
      * @return string
      */
-    public static function currentUrl(): string
-    {
+    public static function currentUrl(): string {
         return self::protocol() . "://" . self::host();
     }
 
@@ -524,8 +485,7 @@ class Utils
      * Get the complete current url with referer
      * @return string
      */
-    public static function completeCurrentUrl(): string
-    {
+    public static function completeCurrentUrl(): string {
         return self::currentUrl() . Path::left_delete_dir_separator(self::requestURI());
     }
 
@@ -533,8 +493,7 @@ class Utils
      * Get the http user agent (Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36)
      * @return string
      */
-    public static function userAgent(): string
-    {
+    public static function userAgent(): string {
         return getenv("HTTP_USER_AGENT");
     }
 
@@ -542,8 +501,7 @@ class Utils
      * Check if ssl is active
      * @return bool
      */
-    public static function sslActive(): bool
-    {
+    public static function sslActive(): bool {
         return (getenv('HTTPS') == 'on' || getenv('HTTPS') == '1' || getenv('SERVER_PORT') == '443');
     }
 
@@ -553,8 +511,7 @@ class Utils
      * @param string $value
      * @return bool
      */
-    public static function createSession(string $name, string $value): bool
-    {
+    public static function createSession(string $name, string $value): bool {
         @session_start();
         $_SESSION[$name] = $value;
         return isset($_SESSION[$name]);
@@ -565,8 +522,7 @@ class Utils
      * @param string $name
      * @return bool
      */
-    public static function deleteSession(string $name): bool
-    {
+    public static function deleteSession(string $name): bool {
         @session_start();
         unset($_SESSION[$name]);
         return !isset($_SESSION[$name]);
@@ -577,22 +533,20 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isFunction(mixed $arg): bool
-    {
-        return ($arg instanceof Closure) && is_callable($arg);
+    public static function isFunction(mixed $arg): bool {
+        return ($arg instanceof \Closure) && is_callable($arg);
     }
 
     /**
      * Get the request url
      * @return string
      */
-    public static function requestURI(): string
-    {
-        if(getenv('REQUEST_URI') !== null) {
+    public static function requestURI(): string {
+        if (getenv('REQUEST_URI') !== null) {
             return getenv('REQUEST_URI');
-        } elseif(getenv('SCRIPT_NAME') !== null) {
+        } elseif (getenv('SCRIPT_NAME') !== null) {
             return getenv('SCRIPT_NAME') . (empty(getenv('QUERY_STRING')) ? '' : '?' . getenv('QUERY_STRING'));
-        } elseif(getenv('PHP_SELF') !== null) {
+        } elseif (getenv('PHP_SELF') !== null) {
             return getenv('PHP_SELF') . (empty(getenv('QUERY_STRING')) ? '' : '?' . getenv('QUERY_STRING'));
         }
         return '';
@@ -603,8 +557,7 @@ class Utils
      * @param array $array
      * @return string
      */
-    public static function arrayToJson(array $array): string
-    {
+    public static function arrayToJson(array $array): string {
         return json_encode($array, JSON_FORCE_OBJECT);
     }
 
@@ -613,8 +566,7 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function stringToJson(string $string): string
-    {
+    public static function stringToJson(string $string): string {
         return json_encode($string, JSON_FORCE_OBJECT);
     }
 
@@ -623,8 +575,7 @@ class Utils
      * @param string $json
      * @return array
      */
-    public static function jsonToArray(string $json): array
-    {
+    public static function jsonToArray(string $json): array {
         return json_decode($json, JSON_OBJECT_AS_ARRAY) ?? [];
     }
 
@@ -634,8 +585,7 @@ class Utils
      * @param string $separator The character to use as the separator
      * @return string
      */
-    public static function arrayToString(array $array, string $separator = ", "): string
-    {
+    public static function arrayToString(array $array, string $separator = ", "): string {
         return self::isArray($array) ? implode($separator, $array) : "";
     }
 
@@ -644,8 +594,7 @@ class Utils
      * @param string $data
      * @return string
      */
-    public static function base64_encode_no_padding(string $data): string
-    {
+    public static function base64_encode_no_padding(string $data): string {
         $encoded = base64_encode($data);
         return rtrim($encoded, '=');
     }
@@ -655,11 +604,10 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function base64_decode_no_padding(string $string): string
-    {
+    public static function base64_decode_no_padding(string $string): string {
         // Add padding back if necessary
         $length = strlen($string) % 4;
-        if($length > 0) {
+        if ($length > 0) {
             $string .= str_repeat('=', 4 - $length);
         }
         return base64_decode($string);
@@ -670,8 +618,7 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function base64_encode_crlf(string $string): string
-    {
+    public static function base64_encode_crlf(string $string): string {
         $encoded = base64_encode($string);
         return str_replace("\n", "\r\n", $encoded);
     }
@@ -681,8 +628,7 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function base64_decode_crlf(string $string): string
-    {
+    public static function base64_decode_crlf(string $string): string {
         $string = str_replace("\r\n", "\n", $string);
         return base64_decode($string);
     }
@@ -692,8 +638,7 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function base64_encode_url_safe(string $string): string
-    {
+    public static function base64_encode_url_safe(string $string): string {
         $encoded = strtr(base64_encode($string), '+/', '-_');
         return rtrim($encoded, '=');
     }
@@ -703,8 +648,7 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function base64_decode_url_safe(string $string): string
-    {
+    public static function base64_decode_url_safe(string $string): string {
         $string = strtr($string, '-_', '+/');
         return base64_decode($string);
     }
@@ -714,8 +658,7 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function base64_encode_no_wrap(string $string): string
-    {
+    public static function base64_encode_no_wrap(string $string): string {
         $encoded = base64_encode($string);
         return str_replace("\n", '', $encoded);
     }
@@ -725,8 +668,7 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function base64_decode_no_wrap(string $string): string
-    {
+    public static function base64_decode_no_wrap(string $string): string {
         $string = str_replace("\n", '', $string);
         return base64_decode($string);
     }
@@ -737,19 +679,18 @@ class Utils
      * @param bool $recursive
      * @return bool
      */
-    public static function setPermissions(string $path, bool $recursive = false): bool
-    {
-        if(File::isFile($path)) {
+    public static function setPermissions(string $path, bool $recursive = false): bool {
+        if (File::isFile($path)) {
             $path = self::resolvePath($path);
             return @chmod($path, self::FILE_PERMISSION);
-        } elseif(File::isFile($path)) {
-            if(self::isTrue($recursive)) {
+        } elseif (File::isFile($path)) {
+            if (self::isTrue($recursive)) {
                 $i = new \RecursiveIteratorIterator(new \RecursiveFileectoryIterator($path, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
-                foreach($i as $list) {
+                foreach ($i as $list) {
                     $list = self::resolvePath($list->getRealPath());
-                    if(File::isFile($list)) {
+                    if (File::isFile($list)) {
                         @chmod($list, self::FILE_PERMISSION);
-                    } elseif(File::isFile($list)) {
+                    } elseif (File::isFile($list)) {
                         @chmod($list, self::DIRECTORY_PERMISSION);
                     }
                 }
@@ -764,11 +705,10 @@ class Utils
      * @param string $path
      * @return bool
      */
-    public static function delete(string $path): bool
-    {
-        if(\is_file($path)) {
+    public static function delete(string $path): bool {
+        if (\is_file($path)) {
             return File::deleteFile($path);
-        } elseif(\is_dir($path)) {
+        } elseif (\is_dir($path)) {
             return File::deleteFile($path);
         }
         return false;
@@ -780,21 +720,20 @@ class Utils
      * @param type $reset Wether to reset
      * @return void
      */
-    public static function setMBInternalEncoding($reset = false): void
-    {
-        if(self::isFalse(function_exists('mb_internal_encoding'))) {
+    public static function setMBInternalEncoding($reset = false): void {
+        if (self::isFalse(function_exists('mb_internal_encoding'))) {
             return;
         }
         static $encodings = [];
         $overloaded = (bool) ((int) ini_get('mbstring.func_overload') & 2);
-        if(!$overloaded) {
+        if (!$overloaded) {
             return;
         }
-        if(!$reset) {
+        if (!$reset) {
             $encoding = mb_internal_encoding();
             array_push($encodings, $encoding);
             mb_internal_encoding('ISO-8859-1');
-        } elseif($reset && $encodings) {
+        } elseif ($reset && $encodings) {
             $encoding = array_pop($encodings);
             mb_internal_encoding($encoding);
         }
@@ -804,9 +743,8 @@ class Utils
      * Check if headers are sent to browser
      * @return bool
      */
-    public static function headersSent(): bool
-    {
-        if(headers_sent() === true) {
+    public static function headersSent(): bool {
+        if (headers_sent() === true) {
             return true;
         }
         return false;
@@ -817,9 +755,8 @@ class Utils
      * @param string $which If value is not 'key' an id will be generated, else random characters
      * @return string
      */
-    public static function randUnique(string $which = "key"): string
-    {
-        if(strtolower($which) == 'key') {
+    public static function randUnique(string $which = "key"): string {
+        if (strtolower($which) == 'key') {
             return hash_hmac('sha256', bin2hex(random_bytes(16)), '');
         }
         return str_shuffle(mt_rand(100000, 999999) . self::unixTimestamp());
@@ -830,10 +767,9 @@ class Utils
      * @param string $key
      * @return string
      */
-    public static function getHeader(string $key): string
-    {
+    public static function getHeader(string $key): string {
         $heades = getallheaders();
-        if(isset($heades[$key])) {
+        if (isset($heades[$key])) {
             return (string) $heades[$key];
         }
         return "";
@@ -843,8 +779,7 @@ class Utils
      * Get the authorization header
      * @return string
      */
-    public static function getAuthorizationHeader(): string
-    {
+    public static function getAuthorizationHeader(): string {
         return self::getHeader("Authorization");
     }
 
@@ -854,8 +789,7 @@ class Utils
      * @return string
      * @throws \Exception
      */
-    public static function parseJSON(string $string): string
-    {
+    public static function parseJSON(string $string): string {
         $parsed = @json_decode($string ?: '{}');
         $errors = array(
             JSON_ERROR_DEPTH => 'Maximum stack depth exceeded',
@@ -868,7 +802,7 @@ class Utils
             JSON_ERROR_INVALID_PROPERTY_NAME => 'A property name that cannot be encoded was given',
             JSON_ERROR_UTF16 => 'Malformed UTF-16 characters, possibly incorrectly encoded',
         );
-        if(isset($errors[json_last_error()])) {
+        if (isset($errors[json_last_error()])) {
             throw new \Exception($errors[json_last_error()]);
         }
         return $parsed;
@@ -882,12 +816,11 @@ class Utils
      * @param int $height
      * @return array
      */
-    public static function scaleIDemention(int $originalWidth, int $originalHeight, int $width, int $height): array
-    {
-        if($originalWidth > $width && ($originalWidth / $width) > ($originalHeight / $height)) {
+    public static function scaleIDemention(int $originalWidth, int $originalHeight, int $width, int $height): array {
+        if ($originalWidth > $width && ($originalWidth / $width) > ($originalHeight / $height)) {
             $width = $originalWidth * ($width / $originalWidth);
             $height = $originalHeight * ($height / $originalWidth);
-        } elseif($originalHeight > $height) {
+        } elseif ($originalHeight > $height) {
             $width = $originalWidth * ($height / $originalHeight);
             $height = $originalHeight * ($height / $originalHeight);
         } else {
@@ -906,17 +839,16 @@ class Utils
      * @param string $file If empty, the source will be used
      * @return bool
      */
-    public static function convertImage(string $source, string $extension = "webp", bool $useWandH = false, bool $scaleIDemention = false, string $file = ""): bool
-    {
+    public static function convertImage(string $source, string $extension = "webp", bool $useWandH = false, bool $scaleIDemention = false, string $file = ""): bool {
         $validExtensions = array("webp", "png", "jpg", "gif");
-        if(in_array($extension, $validExtensions)) {
+        if (in_array($extension, $validExtensions)) {
             $sourceData = @getimagesize($source);
-            if(self::isNotFalse($sourceData)) {
+            if (self::isNotFalse($sourceData)) {
                 $width = $sourceData[0];
                 $height = $sourceData[1];
                 $mime = $sourceData['mime'];
                 $image = false;
-                switch($mime) {
+                switch ($mime) {
                     case 'image/jpeg':
                     case 'image/jpg':
                         $image = @imagecreatefromjpeg($source);
@@ -933,18 +865,18 @@ class Utils
                     default:
                         $image = false;
                 }
-                if(self::isNotFalse($image)) {
+                if (self::isNotFalse($image)) {
                     $imageWidth = $useWandH ? $width : self::IMAGE_WIDTH;
                     $imageHeight = $useWandH ? $height : self::IMAGE_HEIGHT;
-                    if($scaleIDemention) {
+                    if ($scaleIDemention) {
                         list($imageWidth, $imageHeight) = self::scaleIDemention($width, $height, $imageWidth, $imageHeight);
                     }
                     $color = @imagecreatetruecolor($imageWidth, $imageHeight);
-                    if(self::isNotFalse($color)) {
+                    if (self::isNotFalse($color)) {
                         @imagecopyresampled($color, $image, 0, 0, 0, 0, $imageWidth, $imageHeight, $width, $height);
                         $outputPath = self::isNotEmptyString($file) ? $file : $source;
                         $saved = false;
-                        switch($extension) {
+                        switch ($extension) {
                             case "webp":
                                 $saved = @imagewebp($color, $outputPath, 100);
                                 break;
@@ -971,8 +903,7 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function hashString(string $string): string
-    {
+    public static function hashString(string $string): string {
         return password_hash($string, PASSWORD_BCRYPT, array('cost' => 12));
     }
 
@@ -982,8 +913,7 @@ class Utils
      * @param string $hash
      * @return bool
      */
-    public static function hashVerified(string $string, string $hash): bool
-    {
+    public static function hashVerified(string $string, string $hash): bool {
         return password_verify($string, $hash);
     }
 
@@ -992,8 +922,7 @@ class Utils
      * @param string $hash
      * @return bool
      */
-    public static function hashNeedsRehash(string $hash): bool
-    {
+    public static function hashNeedsRehash(string $hash): bool {
         return password_needs_rehash($hash, PASSWORD_BCRYPT, array('cost' => 12));
     }
 
@@ -1003,8 +932,7 @@ class Utils
      * @param string $string The string to search within.
      * @return bool True if $substring is found in $string, false otherwise.
      */
-    public static function containText(string $substring, string $string): bool
-    {
+    public static function containText(string $substring, string $string): bool {
         return strpos($string, $substring) !== false;
     }
 
@@ -1014,8 +942,7 @@ class Utils
      * @param string $string The string to check.
      * @return bool True if $string starts with $start, false otherwise.
      */
-    public static function startsWith(string $substring, string $string): bool
-    {
+    public static function startsWith(string $substring, string $string): bool {
         $substring = trim($substring);
         return strncmp($string, $substring, strlen($substring)) === 0;
     }
@@ -1026,8 +953,7 @@ class Utils
      * @param string $string The string to check.
      * @return bool True if $string ends with $end, false otherwise.
      */
-    public static function endsWith(string $substring, string $string): bool
-    {
+    public static function endsWith(string $substring, string $string): bool {
         $substring = trim($substring);
         return strrpos($string, $substring) === (strlen($string) - strlen($substring));
     }
@@ -1038,9 +964,8 @@ class Utils
      * @param int $precision
      * @return string
      */
-    public static function formatSize(int $bytes, int $precision = 2): string
-    {
-        if($bytes > 0) {
+    public static function formatSize(int $bytes, int $precision = 2): string {
+        if ($bytes > 0) {
             $base = log($bytes, 1024);
             $suffixes = array('B', 'KB', 'MB', 'GB', 'TB');
             return round(pow(1024, ($base - floor($base))), $precision) . ' ' . $suffixes[floor($base)];
@@ -1053,9 +978,8 @@ class Utils
      * @param string $email
      * @return string
      */
-    public static function hideEmailWithStarts(string $email): string
-    {
-        if(filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    public static function hideEmailWithStarts(string $email): string {
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $explodedEmail = explode("@", $email);
             $name = implode("@", array_slice($explodedEmail, 0, count($explodedEmail) - 1));
             $len = floor(strlen($name) / 2);
@@ -1069,12 +993,11 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function randomizeString(string $string): string
-    {
-        if(empty($string)) {
+    public static function randomizeString(string $string): string {
+        if (empty($string)) {
             $string = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         }
-        for($i = 1; $i <= 10; $i++) {
+        for ($i = 1; $i <= 10; $i++) {
             $string = str_shuffle(strrev($string));
         }
         return $string;
@@ -1085,9 +1008,8 @@ class Utils
      * @param string $file
      * @return bool
      */
-    public static function downloadFile(string $file): bool
-    {
-        if(File::isFile($file) && self::headersSent() !== true) {
+    public static function downloadFile(string $file): bool {
+        if (File::isFile($file) && self::headersSent() !== true) {
             header('Content-Description: File Transfer');
             header('Content-Type: application/octet-stream');
             header('Content-Disposition: attachment; filename=' . basename($file));
@@ -1097,7 +1019,7 @@ class Utils
             header('Pragma: public');
             header('Content-Length: ' . File::getFIlesizeInBytes($file));
             flush();
-            readfile($a);
+            readfile($file);
             return true;
         }
         return false;
@@ -1107,8 +1029,7 @@ class Utils
      * Generate a unique id
      * @return int
      */
-    public static function generateUniqueId(): int
-    {
+    public static function generateUniqueId(): int {
         $uId = str_shuffle(mt_rand(100000, 999999) . self::unixTimestamp());
         return substr($uId, 0, 10);
     }
@@ -1119,11 +1040,10 @@ class Utils
      * @param string $method
      * @return mixed
      */
-    public static function createStreamContext(string $context = "http", string $method = "HEAD"): mixed
-    {
+    public static function createStreamContext(string $context = "http", string $method = "HEAD"): mixed {
         $options = array();
-        if($context == "http" or $context == "curl") {
-            if($context == "http") {
+        if ($context == "http" or $context == "curl") {
+            if ($context == "http") {
                 $options['http'] = array('user_agent ' => self::USER_AGENT, 'method' => $method, 'max_redirects' => 0, 'ignore_errors' => true, 'timeout' => 3, 'follow_location' => 0);
             } else {
                 $options['curl'] = array('user_agent ' => self::USER_AGENT, 'method' => $method, 'max_redirects' => 0, 'curl_verify_ssl_host' => false, "curl_verify_ssl_peer" => false);
@@ -1138,36 +1058,60 @@ class Utils
      * @param string $remoteFilename
      * @return bool
      */
-    public static function remoteFileExist(string $remoteFilename): bool
-    {
+    public static function remoteFileExist(string $remoteFilename): bool {
         try {
             $getFile = @file_get_contents($remoteFilename, false, self::createStreamContext(), 0, 5);
-            if(self::isNotFalse($getFile)) {
+            if (self::isNotFalse($getFile)) {
                 return true;
             }
-        } catch(\Throwable $e) {
-
+        } catch (\Throwable $e) {
         }
         return false;
     }
 
     /**
-     * Get the domain name from a subdomain
-     * @param string $host
+     * Get the host name from a url
+     * @param string $url
+     * @param bool $includeProtocol
      * @return string
      */
-    public static function getDomain(string $host): string
-    {
-        $domain = strtolower(trim($host));
-        $count = substr_count($domain, '.');
-        if($count === 2) {
-            if(strlen(explode('.', $domain)[1]) > 3) {
-                $domain = explode('.', $domain, 2)[1];
-            }
-        } elseif($count > 2) {
-            $domain = self::getDomain(explode('.', $domain, 2)[1]);
-        }
-        return $domain;
+    public static function getHostFromUrl(string $url, bool $includeProtocol = true): string {
+        $parsedUrl = parse_url($url);
+        $scheme  = $includeProtocol ? (\is_array($parsedUrl) ? (isset($parsedUrl['scheme']) ? (string) $parsedUrl['scheme'] : "http") : "") : "";
+        $host = \is_array($parsedUrl) ? (isset($parsedUrl['host']) ? (string) $parsedUrl['host'] : "") : "";
+        return $scheme . (!empty($scheme) ? "://" : "") . $host;
+    }
+
+    /**
+     * Get the path name from a url
+     * @param string $url
+     * @return string
+     */
+    public static function getPathFromUrl(string $url): string {
+        $parsedUrl = parse_url($url);
+        $path  = \is_array($parsedUrl) ? (isset($parsedUrl['path']) ? (string) $parsedUrl['path'] : "") : "";
+        return $path;
+    }
+
+    /**
+     * Get the query string name from a url
+     * @param string $url
+     * @return string
+     */
+    public static function getQueryStringFromUrl(string $url): string {
+        $parsedUrl = parse_url($url);
+        $query  = \is_array($parsedUrl) ? (isset($parsedUrl['query']) ? (string) $parsedUrl['query'] : "") : "";
+        return $query;
+    }
+
+    /**
+     * Build a query param from a query string
+     * @param string $queryString
+     * @return array
+     */
+    public static function buildQueryParamFromQueryString(string $string): array {
+        parse_str(parse_url($string, PHP_URL_QUERY), $param);
+        return $param;
     }
 
     /**
@@ -1175,8 +1119,7 @@ class Utils
      * @param string $string
      * @return bool
      */
-    public static function isEmptyString(string $string): bool
-    {
+    public static function isEmptyString(string $string): bool {
         return self::isString($string) && self::isEmpty($string);
     }
 
@@ -1185,8 +1128,7 @@ class Utils
      * @param string $string
      * @return bool
      */
-    public static function isNotEmptyString(string $string): bool
-    {
+    public static function isNotEmptyString(string $string): bool {
         return self::isString($string) && self::isNotEmpty($string);
     }
 
@@ -1195,8 +1137,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isString(mixed $arg): bool
-    {
+    public static function isString(mixed $arg): bool {
         return is_string($arg);
     }
 
@@ -1205,8 +1146,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isNotString(mixed $arg): bool
-    {
+    public static function isNotString(mixed $arg): bool {
         return !is_string($arg);
     }
 
@@ -1215,8 +1155,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isEmpty(mixed $arg): bool
-    {
+    public static function isEmpty(mixed $arg): bool {
         return @empty($arg);
     }
 
@@ -1225,8 +1164,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isNotEmpty(mixed $arg): bool
-    {
+    public static function isNotEmpty(mixed $arg): bool {
         return !self::isEmpty($arg);
     }
 
@@ -1236,8 +1174,7 @@ class Utils
      * @param array $array
      * @return bool
      */
-    public static function inArray(mixed $value, array $array): bool
-    {
+    public static function inArray(mixed $value, array $array): bool {
         return @in_array($value, $array);
     }
 
@@ -1247,8 +1184,7 @@ class Utils
      * @param array $array
      * @return bool
      */
-    public static function isNotInArray(mixed $value, array $array): bool
-    {
+    public static function isNotInArray(mixed $value, array $array): bool {
         return !self::inArray($value, $array);
     }
 
@@ -1257,8 +1193,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isArray(mixed $arg): bool
-    {
+    public static function isArray(mixed $arg): bool {
         return is_array($arg);
     }
 
@@ -1267,8 +1202,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isNotArray(mixed $arg): bool
-    {
+    public static function isNotArray(mixed $arg): bool {
         return !self::isArray($arg);
     }
 
@@ -1277,8 +1211,7 @@ class Utils
      * @param array $array
      * @return bool
      */
-    public static function isEmptyArray(array $array): bool
-    {
+    public static function isEmptyArray(array $array): bool {
         return self::isArray($array) && self::isEmpty($array);
     }
 
@@ -1287,8 +1220,7 @@ class Utils
      * @param array $array
      * @return bool
      */
-    public static function isNotEmptyArray(array $array): bool
-    {
+    public static function isNotEmptyArray(array $array): bool {
         return !self::isEmptyArray($array);
     }
 
@@ -1297,8 +1229,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isBool(mixed $arg): bool
-    {
+    public static function isBool(mixed $arg): bool {
         return @is_bool($arg);
     }
 
@@ -1307,8 +1238,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isNotBool(mixed $arg): bool
-    {
+    public static function isNotBool(mixed $arg): bool {
         return !self::isBool($arg);
     }
 
@@ -1317,8 +1247,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isInt(mixed $arg): bool
-    {
+    public static function isInt(mixed $arg): bool {
         return @is_int($arg);
     }
 
@@ -1327,8 +1256,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isNotInt(mixed $arg): bool
-    {
+    public static function isNotInt(mixed $arg): bool {
         return !self::isInt($arg);
     }
 
@@ -1337,8 +1265,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isNull(mixed $arg): bool
-    {
+    public static function isNull(mixed $arg): bool {
         return @is_null($arg);
     }
 
@@ -1347,8 +1274,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isNonNull(mixed $arg): bool
-    {
+    public static function isNonNull(mixed $arg): bool {
         return !self::isNull($arg);
     }
 
@@ -1357,8 +1283,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isTrue(mixed $arg): bool
-    {
+    public static function isTrue(mixed $arg): bool {
         return $arg === true;
     }
 
@@ -1367,8 +1292,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isNotTrue(mixed $arg): bool
-    {
+    public static function isNotTrue(mixed $arg): bool {
         return !self::isTrue($arg);
     }
 
@@ -1377,8 +1301,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isFalse(mixed $arg): bool
-    {
+    public static function isFalse(mixed $arg): bool {
         return $arg === false;
     }
 
@@ -1387,8 +1310,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isNotFalse(mixed $arg): bool
-    {
+    public static function isNotFalse(mixed $arg): bool {
         return !self::isFalse($arg);
     }
 
@@ -1397,8 +1319,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isFloat(mixed $arg): bool
-    {
+    public static function isFloat(mixed $arg): bool {
         return @is_float($arg);
     }
 
@@ -1407,8 +1328,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isNotFloat(mixed $arg): bool
-    {
+    public static function isNotFloat(mixed $arg): bool {
         return !self::isFloat($arg);
     }
 
@@ -1417,8 +1337,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isNumeric(mixed $arg): bool
-    {
+    public static function isNumeric(mixed $arg): bool {
         return @is_numeric($arg);
     }
 
@@ -1427,8 +1346,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isNotNumeric(mixed $arg): bool
-    {
+    public static function isNotNumeric(mixed $arg): bool {
         return !self::isNumeric($arg);
     }
 
@@ -1437,8 +1355,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isResource(mixed $arg): bool
-    {
+    public static function isResource(mixed $arg): bool {
         return @is_resource($arg);
     }
 
@@ -1447,8 +1364,7 @@ class Utils
      * @param mixed $arg
      * @return bool
      */
-    public static function isNotResource(mixed $arg): bool
-    {
+    public static function isNotResource(mixed $arg): bool {
         return !self::isResource($arg);
     }
 
@@ -1457,8 +1373,7 @@ class Utils
      * @param string $file
      * @return int|false
      */
-    public static function getSize(string $file): int|false
-    {
+    public static function getSize(string $file): int|false {
         return @filesize($file);
     }
 
@@ -1467,8 +1382,7 @@ class Utils
      * @param string $file
      * @return int|false
      */
-    public static function getMtime(string $file): int|false
-    {
+    public static function getMtime(string $file): int|false {
         return @filemtime($file);
     }
 
@@ -1477,8 +1391,7 @@ class Utils
      * @param string $file
      * @return string|false
      */
-    public static function getMime(string $file): string|false
-    {
+    public static function getMime(string $file): string|false {
         return @mime_content_type($file);
     }
 
@@ -1487,8 +1400,7 @@ class Utils
      * @param string $file
      * @return bool
      */
-    public static function isExists(string $file): bool
-    {
+    public static function isExists(string $file): bool {
         return @file_exists($file);
     }
 
@@ -1497,8 +1409,7 @@ class Utils
      * @param string $file
      * @return bool
      */
-    public static function isReadable(string $file): bool
-    {
+    public static function isReadable(string $file): bool {
         return @is_readable($file);
     }
 
@@ -1507,8 +1418,7 @@ class Utils
      * @param string $file
      * @return bool
      */
-    public static function isExecutable(string $file): bool
-    {
+    public static function isExecutable(string $file): bool {
         return @is_executable($file);
     }
 
@@ -1517,8 +1427,7 @@ class Utils
      * @param string $file
      * @return bool
      */
-    public static function isWritable(string $file): bool
-    {
+    public static function isWritable(string $file): bool {
         return @is_writable($file);
     }
 
@@ -1527,21 +1436,20 @@ class Utils
      * @param string $extension
      * @return bool
      */
-    public static function loadExtension(string $extension): bool
-    {
-        if(extension_loaded($extension)) {
+    public static function loadExtension(string $extension): bool {
+        if (extension_loaded($extension)) {
             return true;
         }
-        if(function_exists('dl') === false || ini_get('enable_dl') != 1) {
+        if (function_exists('dl') === false || ini_get('enable_dl') != 1) {
             return false;
         }
-        if(strtolower(substr(PHP_OS, 0, 3)) === "win") {
+        if (strtolower(substr(PHP_OS, 0, 3)) === "win") {
             $suffix = ".dll";
-        } elseif(PHP_OS == 'HP-UX') {
+        } elseif (PHP_OS == 'HP-UX') {
             $suffix = ".sl";
-        } elseif(PHP_OS == 'AIX') {
+        } elseif (PHP_OS == 'AIX') {
             $suffix = ".a";
-        } elseif(PHP_OS == 'OSX') {
+        } elseif (PHP_OS == 'OSX') {
             $suffix = ".bundle";
         } else {
             $suffix = '.so';
@@ -1553,8 +1461,7 @@ class Utils
      * Clear the browser cache
      * @return bool
      */
-    public static function clearCache(): bool
-    {
+    public static function clearCache(): bool {
         try {
             @header("Expires: Tue, 01 Jan 2000 00:00:00 GMT");
             @header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
@@ -1562,8 +1469,7 @@ class Utils
             @header("Cache-Control: post-check=0, pre-check=0", false);
             @header("Pragma: no-cache");
             return true;
-        } catch(\Throwable $e) {
-
+        } catch (\Throwable $e) {
         }
         return false;
     }
@@ -1573,9 +1479,8 @@ class Utils
      * @param float $num
      * @return float|string
      */
-    public static function formatInt(float $num): float|string
-    {
-        if($num > 0 && self::inArray("NumberFormatter", get_declared_classes())) {
+    public static function formatInt(float $num): float|string {
+        if ($num > 0 && self::inArray("NumberFormatter", get_declared_classes())) {
             $formater = new \NumberFormatter('en_US', \NumberFormatter::PADDING_POSITION);
             return $formater->format($num);
         }
@@ -1588,8 +1493,7 @@ class Utils
      * @param mixed $value
      * @return string
      */
-    public static function replaceUrlParamValue(string $param, mixed $value): string
-    {
+    public static function replaceUrlParamValue(string $param, mixed $value): string {
         $currentUrl = self::completeCurrentUrl();
         $parts = parse_url($currentUrl);
         $scheme = $parts['scheme'];
@@ -1607,8 +1511,7 @@ class Utils
      * @param string $string
      * @return string
      */
-    public static function reverseString(string $string): string
-    {
+    public static function reverseString(string $string): string {
         return strrev($string);
     }
 
@@ -1618,8 +1521,7 @@ class Utils
      * @param string|null $encoding
      * @return string
      */
-    public static function mb_reverseString(string $string, ?string $encoding = null): string
-    {
+    public static function mb_reverseString(string $string, ?string $encoding = null): string {
         $chars = mb_str_split($string, 1, $encoding ?: mb_internal_encoding());
         return implode('', array_reverse($chars));
     }
@@ -1629,8 +1531,7 @@ class Utils
      * @param string $string
      * @return string|array|null
      */
-    public static function onlyDigits(string $string): string|array|null
-    {
+    public static function onlyDigits(string $string): string|array|null {
         return self::isString($string) ? @preg_replace('/[^0-9]/', '', $string) : null;
     }
 
@@ -1639,8 +1540,7 @@ class Utils
      * @param string $string
      * @return string|array|null
      */
-    public static function onlyString(string $string): string|array|null
-    {
+    public static function onlyString(string $string): string|array|null {
         return self::isString($string) ? @preg_replace('/[0-9]/', '', $string) : null;
     }
 
@@ -1648,8 +1548,7 @@ class Utils
      * The current path url
      * @return string
      */
-    public static function currentPathURL(): string
-    {
+    public static function currentPathURL(): string {
         $ccUrl = self::completeCurrentUrl();
         $parse = parse_url($ccUrl);
         $scheme = $parse['scheme'];
@@ -1664,8 +1563,7 @@ class Utils
      * @param string $encoding
      * @return string
      */
-    public static function xssafe(string $string, string $encoding = 'UTF-8'): string
-    {
+    public static function xssafe(string $string, string $encoding = 'UTF-8'): string {
         return htmlspecialchars($string, ENT_QUOTES | ENT_HTML401, $encoding);
     }
 
@@ -1676,8 +1574,7 @@ class Utils
      * @param string $append The text to prepend to the filename
      * @return string|false
      */
-    public static function createTemporaryFilename(string $extension, string $prepend = "", string $append = ""): string|false
-    {
+    public static function createTemporaryFilename(string $extension, string $prepend = "", string $append = ""): string|false {
         $extension = self::isNotEmptyString($extension) ? $extension : 'tmp';
         $prepend = self::isNotEmptyString($prepend) ? $prepend . '_' : '';
         $append = self::isNotEmptyString($append) ? '_' . $append : '';
@@ -1693,8 +1590,7 @@ class Utils
      * @param string $append The text to prepend to the filename
      * @return string|false
      */
-    public static function generateRandomFilename(string $extension, string $prepend = "", string $append = ""): string|false
-    {
+    public static function generateRandomFilename(string $extension, string $prepend = "", string $append = ""): string|false {
         $extension = self::isNotEmptyString($extension) ? $extension : 'tmp';
         $prepend = self::isNotEmptyString($prepend) ? $prepend . '_' : '';
         $append = self::isNotEmptyString($append) ? '_' . $append : '';
@@ -1706,10 +1602,9 @@ class Utils
      * @param string $command
      * @return array|string
      */
-    public static function executeCommand(string $command): array|string
-    {
+    public static function executeCommand(string $command): array|string {
         $output = "";
-        if(self::isNotEmptyString($command)) {
+        if (self::isNotEmptyString($command)) {
             $command = escapeshellcmd($command);
             $output = self::executeCommandUsingExec($command);
         }
@@ -1721,14 +1616,13 @@ class Utils
      * @param string $command
      * @return string
      */
-    public static function executeCommandUsingPopen(string $command): string
-    {
+    public static function executeCommandUsingPopen(string $command): string {
         $output = "";
-        if(self::isNotEmptyString($command) && function_exists('popen')) {
+        if (self::isNotEmptyString($command) && function_exists('popen')) {
             $handle = @popen($command, 'r');
-            if(self::isResource($handle)) {
+            if (self::isResource($handle)) {
                 $content = @stream_get_contents($handle);
-                if(self::isString($content)) {
+                if (self::isString($content)) {
                     $output = $content;
                 }
                 @pclose($handle);
@@ -1742,23 +1636,22 @@ class Utils
      * @param string $command
      * @return string
      */
-    public static function executeCommandUsingProcopen(string $command): string
-    {
+    public static function executeCommandUsingProcopen(string $command): string {
         $output = "";
-        if(self::isNotEmptyString($command) && function_exists('proc_open')) {
+        if (self::isNotEmptyString($command) && function_exists('proc_open')) {
             $errorFilename = self::createTemporaryFilename("proc", "execute_command_error_output");
             $descriptorspec = array(0 => array("pipe", "r"), 1 => array("pipe", "w"), 2 => array("file", $errorFilename, "a"));
             $process = @proc_open($command, $descriptorspec, $pipes);
-            if(is_resource($process)) {
+            if (is_resource($process)) {
                 // Writeable handle connected to child stdin
-                if(isset($pipes[0])) {
+                if (isset($pipes[0])) {
                     @fclose($pipes[0]);
                 }
                 // Readable handle connected to child stdout
-                if(isset($pipes[1])) {
+                if (isset($pipes[1])) {
                     $content = @stream_get_contents($pipes[1]);
                     fclose($pipes[1]);
-                    if(self::isString($content)) {
+                    if (self::isString($content)) {
                         $output = $content;
                     }
                 }
@@ -1773,14 +1666,13 @@ class Utils
      * @param string $command
      * @return array
      */
-    public static function executeCommandUsingExec(string $command): array
-    {
+    public static function executeCommandUsingExec(string $command): array {
         $output = array();
-        if(self::isNotEmptyString($command) && function_exists('exec')) {
+        if (self::isNotEmptyString($command) && function_exists('exec')) {
             $content = array();
             $resultcode = 0;
             @exec($command, $content, $resultcode);
-            if(self::isArray($content)) {
+            if (self::isArray($content)) {
                 $output = array_values($content);
             }
         }
@@ -1792,12 +1684,11 @@ class Utils
      * @param string $command
      * @return string
      */
-    public static function executeCommandUsingShellexec(string $command): string
-    {
+    public static function executeCommandUsingShellexec(string $command): string {
         $output = "";
-        if(self::isNotEmptyString($command) && function_exists('shell_exec')) {
+        if (self::isNotEmptyString($command) && function_exists('shell_exec')) {
             $content = shell_exec($command);
-            if(self::isString($content)) {
+            if (self::isString($content)) {
                 $output = $content;
             }
         }
@@ -1809,13 +1700,12 @@ class Utils
      * @param string $command
      * @return string
      */
-    public static function executeCommandUsingSystem(string $command): string
-    {
+    public static function executeCommandUsingSystem(string $command): string {
         $output = "";
-        if(self::isNotEmptyString($command) && function_exists('system')) {
+        if (self::isNotEmptyString($command) && function_exists('system')) {
             $resultcode = 0;
             $content = system($command, $resultcode);
-            if(self::isString($content)) {
+            if (self::isString($content)) {
                 $output = $content;
             }
         }
@@ -1827,15 +1717,14 @@ class Utils
      * @param string $command
      * @return string
      */
-    public static function executeCommandUsingPassthru(string $command): string
-    {
+    public static function executeCommandUsingPassthru(string $command): string {
         $output = "";
-        if(self::isNotEmptyString($command) && function_exists('passthru')) {
+        if (self::isNotEmptyString($command) && function_exists('passthru')) {
             $resultcode = 0;
             ob_start();
             passthru($command, $resultcode);
             $content = ob_get_contents();
-            if(self::isString($content)) {
+            if (self::isString($content)) {
                 $output = $content;
             }
             // Use this instead of ob_flush()
@@ -1848,8 +1737,7 @@ class Utils
      * Get the current directory
      * @return string
      */
-    public static function getCwd(): string
-    {
+    public static function getCwd(): string {
         return @getcwd();
     }
 
@@ -1858,9 +1746,8 @@ class Utils
      * @param string $dirname
      * @return bool
      */
-    public static function chFile(string $dirname): bool
-    {
-        if(File::isFile($dirname)) {
+    public static function chFile(string $dirname): bool {
+        if (File::isFile($dirname)) {
             @chdir($dirname);
         }
         return self::getCwd() === $dirname;
@@ -1872,14 +1759,13 @@ class Utils
      * @return void
      * @throws \Exception
      */
-    public static function loadPlugin(string $plugin): void
-    {
+    public static function loadPlugin(string $plugin): void {
         $dirname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['PLUGINS']));
         $plugin = Path::arrange_dir_separators($plugin);
         $extension = File::getExtension($plugin);
         $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $plugin : $plugin . '.php';
         $plugin = $dirname . '' . $name;
-        if(File::isFile($plugin)) {
+        if (File::isFile($plugin)) {
             require_once $plugin;
         } else {
             throw new \Exception("The plugin \"" . $plugin . "\" doesn't exist.");
@@ -1892,14 +1778,13 @@ class Utils
      * @return void
      * @throws \Exception
      */
-    public static function loadLib(string $lib): void
-    {
+    public static function loadLib(string $lib): void {
         $dirname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['LIBRARIES']));
         $lib = Path::arrange_dir_separators($lib);
         $extension = File::getExtension($lib);
         $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $lib : $lib . '.php';
         $lib = $dirname . '' . $name;
-        if(File::isFile($lib)) {
+        if (File::isFile($lib)) {
             require_once $lib;
         } else {
             throw new \Exception("The lib \"" . $lib . "\" doesn't exist.");
@@ -1912,9 +1797,8 @@ class Utils
      * @return void
      * @throws \Exception
      */
-    public static function directTo(string $url): void
-    {
-        if(!headers_sent()) {
+    public static function directTo(string $url): void {
+        if (!headers_sent()) {
             @header("location: " . $url);
             exit;
         } else {
@@ -1923,13 +1807,12 @@ class Utils
     }
 
     /**
- * Registers an error handler to log errors and display them on the screen.
- *
- * @param string|null $errorDir The directory where error messages should be logged.
- * @param string|null $errorName The name of the error log file.
- */
-    public static function registerErrorHandler(?string $errorDir = null, ?string $errorName = null): void
-    {
+     * Registers an error handler to log errors and display them on the screen.
+     *
+     * @param string|null $errorDir The directory where error messages should be logged.
+     * @param string|null $errorName The name of the error log file.
+     */
+    public static function registerErrorHandler(?string $errorDir = null, ?string $errorName = null): void {
         set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline) use ($errorDir, $errorName) {
             if (!(error_reporting() & $errno)) {
                 // This error code is not included in error_reporting, so let it fall through to the standard PHP error handler
@@ -1954,8 +1837,7 @@ class Utils
      * @param string|null $exceptionDir The directory where exception messages should be logged.
      * @param string|null $exceptionName The name of the exception log file.
      */
-    public static function registerExceptionHandler(?string $exceptionDir = null, ?string $exceptionName = null): void
-    {
+    public static function registerExceptionHandler(?string $exceptionDir = null, ?string $exceptionName = null): void {
         set_exception_handler(function (\Throwable $ex) use ($exceptionDir, $exceptionName) {
             $defaultExceptionDir = Path::insert_dir_separator(PHPWEBFUSE['DIRECTORIES']['ROOT']);
             $exceptionDir = $exceptionDir ?? $defaultExceptionDir;
@@ -1973,8 +1855,7 @@ class Utils
      * Check if running on a localhost web server
      * @return bool
      */
-    public static function isLocalhost(): bool
-    {
+    public static function isLocalhost(): bool {
         return self::inArray(self::getIPAddress(), (array) self::LOCALHOST_DEFAULT_ADDRESSES);
     }
 
@@ -1983,12 +1864,11 @@ class Utils
      * @param string $ip
      * @return bool
      */
-    public static function validateIPAddress(string $ip): bool
-    {
-        if(filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-            if(self::isTrue(self::CHECK_IP_ADDRESS_IN_RANGE)) {
-                foreach(self::PRIVATE_IP_ADDRESS_RANGES as $range) {
-                    if(self::isIPInPrivateRange($ip, $range)) {
+    public static function validateIPAddress(string $ip): bool {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            if (self::isTrue(self::CHECK_IP_ADDRESS_IN_RANGE)) {
+                foreach (self::PRIVATE_IP_ADDRESS_RANGES as $range) {
+                    if (self::isIPInPrivateRange($ip, $range)) {
                         return false;
                     }
                 }
@@ -2002,20 +1882,19 @@ class Utils
      * Get the IP address
      * @return string
      */
-    public static function getIPAddress(): string
-    {
+    public static function getIPAddress(): string {
         $headersToCheck = array('HTTP_X_REAL_IP', 'HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_FORWARDED_FOR', 'HTTP_FORWARDED', 'HTTP_X_FORWARDED_HOST', 'REMOTE_ADDR');
-        foreach($headersToCheck as $header) {
+        foreach ($headersToCheck as $header) {
             $determinedHeader = getenv($header);
-            if(self::isNotEmpty($determinedHeader)) {
-                if($header == "HTTP_X_FORWARDED_FOR") {
+            if (self::isNotEmpty($determinedHeader)) {
+                if ($header == "HTTP_X_FORWARDED_FOR") {
                     $ipAddresses = explode(',', $determinedHeader);
-                    foreach($ipAddresses as $realIp) {
-                        if(self::validateIPAddress((string) $realIp)) {
+                    foreach ($ipAddresses as $realIp) {
+                        if (self::validateIPAddress((string) $realIp)) {
                             return $realIp;
                         }
                     }
-                } elseif(self::validateIPAddress((string) $determinedHeader)) {
+                } elseif (self::validateIPAddress((string) $determinedHeader)) {
                     return $determinedHeader;
                 }
             }
@@ -2029,9 +1908,8 @@ class Utils
      * @param string $range
      * @return bool
      */
-    public static function isIPInPrivateRange(string $ip, string $range): bool
-    {
-        if(self::isFalse(strpos($range, '/'))) {
+    public static function isIPInPrivateRange(string $ip, string $range): bool {
+        if (self::isFalse(strpos($range, '/'))) {
             $range .= '/32';
         }
         list($subnet, $mask) = explode('/', $range);
@@ -2046,8 +1924,7 @@ class Utils
      * Get the temporary directory
      * @return string
      */
-    public static function getTmpFile(): string
-    {
+    public static function getTmpFile(): string {
         return @sys_get_temp_dir();
     }
 
@@ -2055,8 +1932,7 @@ class Utils
      * Get the upload directory
      * @return string
      */
-    public static function getUploadFile(): string
-    {
+    public static function getUploadFile(): string {
         return @ini_get('upload_tmp_dir');
     }
 
@@ -2064,8 +1940,7 @@ class Utils
      * Get the default directory
      * @return string
      */
-    public static function getCurrentFileFile(): string
-    {
+    public static function getCurrentFileFile(): string {
         return @dirname(__FILE__);
     }
 
@@ -2074,9 +1949,8 @@ class Utils
      * @param string $file
      * @return int
      */
-    public static function accessTime(string $file): int
-    {
-        if(File::isFile($file)) {
+    public static function accessTime(string $file): int {
+        if (File::isFile($file)) {
             return @fileatime($file);
         }
         return 0;
@@ -2087,9 +1961,8 @@ class Utils
      * @param string $file
      * @return int
      */
-    public static function modificationTime(string $file): int
-    {
-        if(File::isFile($file)) {
+    public static function modificationTime(string $file): int {
+        if (File::isFile($file)) {
             return @filemtime($file);
         }
         return 0;
@@ -2100,9 +1973,8 @@ class Utils
      * @param string $file
      * @return int
      */
-    public static function changeTime(string $file): int
-    {
-        if(File::isFile($file)) {
+    public static function changeTime(string $file): int {
+        if (File::isFile($file)) {
             return @filectime($file);
         }
         return 0;
@@ -2113,9 +1985,8 @@ class Utils
      * @param string|int $unix
      * @return string
      */
-    public static function readableUnix(string|int $unix): string
-    {
-        if(self::isNumeric($unix)) {
+    public static function readableUnix(string|int $unix): string {
+        if (self::isNumeric($unix)) {
             return @date("l, F jS, Y g:i:s A", $unix);
         }
         return "";
@@ -2127,9 +1998,8 @@ class Utils
      * @param string $link
      * @return bool
      */
-    public static function createHardLink(string $target, string $link): bool
-    {
-        if(self::isExists($target)) {
+    public static function createHardLink(string $target, string $link): bool {
+        if (self::isExists($target)) {
             return @link($target, $link);
         }
         return false;
@@ -2141,9 +2011,8 @@ class Utils
      * @param string $link
      * @return bool
      */
-    public static function createSymLink(string $target, string $link): bool
-    {
-        if(self::isExists($target)) {
+    public static function createSymLink(string $target, string $link): bool {
+        if (self::isExists($target)) {
             return @symlink($target, $link);
         }
         return false;
@@ -2154,10 +2023,9 @@ class Utils
      * @param int $unix
      * @return int
      */
-    public static function calculateRemainingDaysFromUnix(int $unix)
-    {
+    public static function calculateRemainingDaysFromUnix(int $unix) {
         $days = 0;
-        if($unix > time()) {
+        if ($unix > time()) {
             $devided = (($unix - time()) / 86400);
             return round($devided, 0);
         }
@@ -2169,10 +2037,9 @@ class Utils
      * @param int $unix
      * @return int
      */
-    public static function calculateElapsedDaysFromUnix(int $unix)
-    {
+    public static function calculateElapsedDaysFromUnix(int $unix) {
         $days = 0;
-        if(time() > $unix) {
+        if (time() > $unix) {
             $devided = ((time() - $unix) / 86400);
             return round($devided, 0);
         }
@@ -2184,17 +2051,16 @@ class Utils
      * @param string $file
      * @return string
      */
-    public static function convertImageToBase64(string $file): string
-    {
+    public static function convertImageToBase64(string $file): string {
         $base64Image = "";
         // Supported image extensions
         $extensions = array('gif', 'jpg', 'jpeg', 'png');
         // Check if the file exists and is readable
-        if(File::isFile($file) && self::isReadable($file)) {
+        if (File::isFile($file) && self::isReadable($file)) {
             // Get the file extension
             $extension = strtolower(File::getExtension($file));
             // Check if the file extension is supported
-            if(self::isNotEmptyString($extension) && self::inArray($extension, $extensions)) {
+            if (self::isNotEmptyString($extension) && self::inArray($extension, $extensions)) {
                 // Get the image content and encode the image content to base64
                 $base64Encode = base64_encode(File::getFileContent($file));
                 // Add the appropriate data URI prefix
@@ -2210,23 +2076,22 @@ class Utils
      * @param string $shortcode
      * @return bool|string
      */
-    public static function validateMobileNumber(int|string $number, string $shortcode = "ng"): bool|string
-    {
+    public static function validateMobileNumber(int|string $number, string $shortcode = "ng"): bool|string {
         self::loadPlugin("CountriesList");
         $classesExists = class_exists("\libphonenumber\PhoneNumberUtil") && class_exists("\libphonenumber\PhoneNumberFormat") && class_exists("\libphonenumber\NumberParseException");
-        if(class_exists("\CountriesList") && $classesExists && self::isNumeric($number)) {
+        if (class_exists("\CountriesList") && $classesExists && self::isNumeric($number)) {
             $countriesList = new \CountriesList();
             $shortcodes = $countriesList->getCountriesShortCode();
-            if(isset($shortcodes[strtoupper($shortcode)])) {
+            if (isset($shortcodes[strtoupper($shortcode)])) {
                 try {
                     $shortcode = strtoupper($shortcode);
                     $util = \libphonenumber\PhoneNumberUtil::getInstance();
                     $parse = $util->parseAndKeepRawInput($number, $shortcode);
                     $isValid = $util->isValidNumber($parse);
-                    if(self::isTrue($isValid)) {
+                    if (self::isTrue($isValid)) {
                         return trim($util->format($parse, \libphonenumber\PhoneNumberFormat::E164));
                     }
-                } catch(\libphonenumber\NumberParseException $e) {
+                } catch (\libphonenumber\NumberParseException $e) {
                     return $e->getMessage();
                 }
             }
@@ -2241,9 +2106,8 @@ class Utils
      * @param array $options
      * @return \SleekDB\Store|bool
      */
-    public static function sleekDatabase(string $database, string $path, array $options = array()): \SleekDB\Store|bool
-    {
-        if(self::isNotEmptyString($database) && File::createFile($path) && class_exists("\SleekDB\Store")) {
+    public static function sleekDatabase(string $database, string $path, array $options = array()): \SleekDB\Store|bool {
+        if (self::isNotEmptyString($database) && File::createFile($path) && class_exists("\SleekDB\Store")) {
             $options = self::isEmptyArray($options) ? array('auto_cache' => false, 'timeout' => false, 'primary_key' => 'id', 'folder_permissions' => 0777) : $options;
             return new \SleekDB\Store($database, self::resolvePath($path), $options);
         }
@@ -2255,29 +2119,27 @@ class Utils
      * @param string $file
      * @return string
      */
-    public static function getAudioDuration(string $file): string
-    {
+    public static function getAudioDuration(string $file): string {
         $duration = "00:00:00";
-        if(File::isFile($file)) {
+        if (File::isFile($file)) {
             try {
                 $rand = rand(0, 1);
-                if($rand == 0) {
-                    if(class_exists("\JamesHeinrich\GetID3\GetID3")) {
+                if ($rand == 0) {
+                    if (class_exists("\JamesHeinrich\GetID3\GetID3")) {
                         $getID3 = new \JamesHeinrich\GetID3\GetID3();
                         $analyze = @$getID3->analyze(self::resolvePath($file));
-                        if(isset($analyze['playtime_seconds'])) {
+                        if (isset($analyze['playtime_seconds'])) {
                             $duration = gmdate("H:i:s", (int) $analyze['playtime_seconds']);
                         }
                     }
                 } else {
-                    if(!in_array("\Mp3Info", get_declared_classes())) {
+                    if (!in_array("\Mp3Info", get_declared_classes())) {
                         self::loadLib("Mp3Info" . DIRECTORY_SEPARATOR . "Mp3Info");
                     }
                     $info = new \Mp3Info(self::resolvePath($file));
                     $duration = gmdate("H:i:s", (int) $info->duration);
                 }
-            } catch(\Throwable $e) {
-
+            } catch (\Throwable $e) {
             }
         }
         return $duration;
@@ -2290,13 +2152,12 @@ class Utils
      * @param array $options
      * @return bool
      */
-    public static function setAudioMetaTags(string $audioname, string $covername, array $options = array()): bool
-    {
-        if(File::isFile($audioname) && File::isFile($covername)) {
+    public static function setAudioMetaTags(string $audioname, string $covername, array $options = array()): bool {
+        if (File::isFile($audioname) && File::isFile($covername)) {
             $audioname = self::resolvePath($audioname);
             $covername = self::resolvePath($covername);
             $classesExists = class_exists("\JamesHeinrich\GetID3\GetID3") && class_exists("\JamesHeinrich\GetID3\WriteTags");
-            if(self::isTrue($classesExists) && self::isNotEmptyArray($options)) {
+            if (self::isTrue($classesExists) && self::isNotEmptyArray($options)) {
                 $getID3 = new \JamesHeinrich\GetID3\GetID3();
                 $writer = new \JamesHeinrich\GetID3\WriteTags();
                 $encoding = 'UTF-8';
@@ -2307,38 +2168,38 @@ class Utils
                 $writer->tag_encoding = $encoding;
                 $writer->remove_other_tags = true;
                 $data = array();
-                if(isset($options['title'])) {
+                if (isset($options['title'])) {
                     $data['title'] = array($options['title']);
                 }
-                if(isset($options['artist'])) {
+                if (isset($options['artist'])) {
                     $data['artist'] = array($options['artist']);
                 }
-                if(isset($options['album'])) {
+                if (isset($options['album'])) {
                     $data['album'] = array($options['album']);
                 }
-                if(isset($options['year'])) {
+                if (isset($options['year'])) {
                     $data['year'] = array($options['year']);
                 }
-                if(isset($options['genre'])) {
+                if (isset($options['genre'])) {
                     $data['genre'] = array($options['genre']);
                 }
-                if(isset($options['comment'])) {
+                if (isset($options['comment'])) {
                     $data['comment'] = array($options['comment']);
                 }
-                if(isset($options['track_number'])) {
+                if (isset($options['track_number'])) {
                     $data['track_number'] = array($options['track_number']);
                 }
-                if(isset($options['popularimeter'])) {
+                if (isset($options['popularimeter'])) {
                     $data['popularimeter'] = array('email' => "email", 'rating' => 128, 'data' => 0);
                 }
-                if(isset($options['unique_file_identifier'])) {
+                if (isset($options['unique_file_identifier'])) {
                     $data['unique_file_identifier'] = array('ownerid' => "email", 'data' => md5(time()));
                 }
                 $tempPathname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['DATA'] . DIRECTORY_SEPARATOR . 'getid3' . DIRECTORY_SEPARATOR . 'temp'));
-                if(File::createFile($tempPathname)) {
+                if (File::createFile($tempPathname)) {
                     $random = self::generateRandomFilename("png");
                     $_covername = $tempPathname . '' . $random;
-                    if(self::convertImage($covername, "png", false, true, $_covername)) {
+                    if (self::convertImage($covername, "png", false, true, $_covername)) {
                         $covername = $_covername;
                     }
                     $data['attached_picture'][0]['data'] = File::getFileContent($covername);
@@ -2358,12 +2219,11 @@ class Utils
      * Clean PHPWebfuse temporary files
      * @return void
      */
-    public static function cleanPHPWebfuseTempFiles(): void
-    {
-        $paths = File::searchFile(PHPWEBFUSE['DIRECTORIES']['ROOT'], array("temp"));
-        foreach($paths as $index => $path) {
-            if(File::isFile($path)) {
-                File::emptyFileectory($path);
+    public static function cleanPHPWebfuseTempFiles(): void {
+        $paths = File::searchDir(PHPWEBFUSE['DIRECTORIES']['ROOT'], array("temp"));
+        foreach ($paths as $index => $path) {
+            if (File::isFile($path)) {
+                File::emptyDirectory($path);
             }
         }
     }
@@ -2372,9 +2232,8 @@ class Utils
      * Initialize MobileDetect class
      * @return false|\MobileDetect
      */
-    public static function intMobileDetect(): false|\MobileDetect
-    {
-        if(!class_exists("\MobileDetect")) {
+    public static function intMobileDetect(): false|\MobileDetect {
+        if (!class_exists("\MobileDetect")) {
             self::loadPlugin("MobileDetect");
         }
         return class_exists("\Detection\MobileDetect") ? new \MobileDetect() : false;
@@ -2384,11 +2243,10 @@ class Utils
      * Get the browser name
      * @return string
      */
-    public static function getBrowser(): string
-    {
+    public static function getBrowser(): string {
         $browser = "";
         $md = self::intMobileDetect();
-        if(self::isNotFalse($md)) {
+        if (self::isNotFalse($md)) {
             $browser = $md->getBrowser();
         }
         return $browser;
@@ -2398,11 +2256,10 @@ class Utils
      * Ge the device name
      * @return string
      */
-    public static function getDevice(): string
-    {
+    public static function getDevice(): string {
         $devices = "";
         $md = self::intMobileDetect();
-        if(self::isNotFalse($md)) {
+        if (self::isNotFalse($md)) {
             $devices = $md->getDevice();
         }
         return $devices;
@@ -2412,11 +2269,10 @@ class Utils
      * Get the device operating system
      * @return string
      */
-    public static function getDeviceOsName(): string
-    {
+    public static function getDeviceOsName(): string {
         $os = "";
         $md = self::intMobileDetect();
-        if(self::isNotFalse($md)) {
+        if (self::isNotFalse($md)) {
             $os = $md->getDeviceOsName();
         }
         return $os;
@@ -2426,11 +2282,10 @@ class Utils
      * Get the device brand
      * @return string
      */
-    public static function getDeviceBrand(): string
-    {
+    public static function getDeviceBrand(): string {
         $brand = "";
         $md = self::intMobileDetect();
-        if(self::isNotFalse($md)) {
+        if (self::isNotFalse($md)) {
             $brand = $md->getDeviceBrand();
         }
         return $brand;
@@ -2440,11 +2295,10 @@ class Utils
      * Get ip address information
      * @return array
      */
-    public static function getIPInfo(): array
-    {
+    public static function getIPInfo(): array {
         $info = array();
         $md = self::intMobileDetect();
-        if(self::isNotFalse($md)) {
+        if (self::isNotFalse($md)) {
             $info = $md->getIPInfo();
         }
         return $info;
@@ -2454,15 +2308,13 @@ class Utils
      * Check if you are connected to internet
      * @return bool
      */
-    public static function isConnectedToInternet()
-    {
+    public static function isConnectedToInternet() {
         $socket = false;
         try {
             $socket = @fsockopen("www.google.com", 443, $errno, $errstr, 30);
-        } catch(\Throwable $e) {
-
+        } catch (\Throwable $e) {
         }
-        if($socket !== false) {
+        if ($socket !== false) {
             @fclose($socket);
             return true;
         }
@@ -2474,8 +2326,7 @@ class Utils
      * @param string $path
      * @return string
      */
-    public static function resolvePath(string $path): string
-    {
+    public static function resolvePath(string $path): string {
         $file = realpath($path);
         return self::isBool($file) ? $path : $file;
     }
@@ -2485,8 +2336,7 @@ class Utils
      * @param string $message
      * @return type
      */
-    public static function debugTrace(string $message)
-    {
+    public static function debugTrace(string $message) {
         $trace = array_shift(debug_backtrace());
         return die($trace["file"] . ": Line " . $trace["line"] . ": " . $message);
     }
@@ -2497,18 +2347,16 @@ class Utils
      * @param string $token
      * @return bool|array
      */
-    public static function validatedGRecaptcha(string $serverkey, string $token): bool|array
-    {
-        if(self::isNotEmptyString($serverkey) && self::isNotEmptyString($token) && self::isNumeric($token)) {
+    public static function validatedGRecaptcha(string $serverkey, string $token): bool|array {
+        if (self::isNotEmptyString($serverkey) && self::isNotEmptyString($token) && self::isNumeric($token)) {
             try {
                 $data = array("secret" => $serverkey, 'response' => $token, 'remoteip' => self::getIPAddress());
                 $options = array('http' => array('header' => "Content-Type: application/x-www-form-urlencoded\r\n", 'method' => "POST", 'content' => http_build_query($data)));
                 $serverresponse = @file_get_contents("https://google.com/recaptcha/api/siteverify", false, stream_context_create($options));
-                if(self::isNotFalse($serverresponse)) {
+                if (self::isNotFalse($serverresponse)) {
                     return self::jsonToArray($serverresponse);
                 }
-            } catch(\Throwable $e) {
-
+            } catch (\Throwable $e) {
             }
         }
         return false;
@@ -2520,17 +2368,16 @@ class Utils
      * @param string $filename
      * @return string|bool
      */
-    public static function generateQrCode(string $content, string $filename): string|bool
-    {
+    public static function generateQrCode(string $content, string $filename): string|bool {
         $result = false;
-        if(!defined('QR_MODE_NUL')) {
+        if (!defined('QR_MODE_NUL')) {
             self::loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
         }
-        if(class_exists("\QRcode")) {
+        if (class_exists("\QRcode")) {
             $extension = File::getExtension($filename);
             $filename = self::isNotEmptyString($extension) ? (strtolower($extension) !== "png" ? $filename . ".png" : $filename) : $filename . ".png";
             \QRcode::png($content, $filename, QR_ECLEVEL_Q, 20, 2);
-            if(File::isFile($filename)) {
+            if (File::isFile($filename)) {
                 clearstatcache(false, $filename);
                 $result = self::resolvePath($filename);
             }
@@ -2542,8 +2389,7 @@ class Utils
      * Get the current script file
      * @return string
      */
-    public static function getScriptFile(): string
-    {
+    public static function getScriptFile(): string {
         return @getenv('SCRIPT_FILENAME');
     }
 
@@ -2551,8 +2397,7 @@ class Utils
      * Get the current script name
      * @return string
      */
-    public static function getScriptName(): string
-    {
+    public static function getScriptName(): string {
         return @getenv('SCRIPT_NAME');
     }
 
@@ -2560,8 +2405,7 @@ class Utils
      * Get the current script path
      * @return string
      */
-    public static function getScriptPath(): string
-    {
+    public static function getScriptPath(): string {
         return @dirname(self::getScriptFile());
     }
 
@@ -2569,8 +2413,7 @@ class Utils
      * Get the current script URL
      * @return string
      */
-    public static function getScriptUrl(): string
-    {
+    public static function getScriptUrl(): string {
         return self::protocol() . '://' . @getenv('HTTP_HOST') . self::getScriptName();
     }
 
@@ -2578,8 +2421,7 @@ class Utils
      * Get the current request URI
      * @return string
      */
-    public static function getRequestUri(): string
-    {
+    public static function getRequestUri(): string {
         return @getenv('REQUEST_URI');
     }
 
@@ -2587,8 +2429,7 @@ class Utils
      * Get the current request method
      * @return string
      */
-    public static function getRequestMethod(): string
-    {
+    public static function getRequestMethod(): string {
         return @getenv('REQUEST_METHOD');
     }
 
@@ -2596,8 +2437,7 @@ class Utils
      * Get the current request time
      * @return int
      */
-    public static function getRequestTime(): int
-    {
+    public static function getRequestTime(): int {
         return @getenv('REQUEST_TIME');
     }
 
@@ -2605,8 +2445,7 @@ class Utils
      * Get the current request time in seconds
      * @return float
      */
-    public static function getRequestTimeFloat(): float
-    {
+    public static function getRequestTimeFloat(): float {
         return @getenv('REQUEST_TIME_FLOAT');
     }
 
@@ -2614,8 +2453,7 @@ class Utils
      * Get the current query string
      * @return string
      */
-    public static function getQueryString(): string
-    {
+    public static function getQueryString(): string {
         return @getenv('QUERY_STRING');
     }
 
@@ -2623,8 +2461,7 @@ class Utils
      * Get the current HTTP accept
      * @return string
      */
-    public static function getHttpAccept(): string
-    {
+    public static function getHttpAccept(): string {
         return @getenv('HTTP_ACCEPT');
     }
 
@@ -2632,8 +2469,7 @@ class Utils
      * Get the current HTTP accept charset
      * @return string
      */
-    public static function getHttpAcceptCharset(): string
-    {
+    public static function getHttpAcceptCharset(): string {
         return @getenv('HTTP_ACCEPT_CHARSET');
     }
 
@@ -2641,8 +2477,7 @@ class Utils
      * Get the current HTTP accept encoding
      * @return string
      */
-    public static function getHttpAcceptEncoding(): string
-    {
+    public static function getHttpAcceptEncoding(): string {
         return @getenv('HTTP_ACCEPT_ENCODING');
     }
 
@@ -2650,8 +2485,7 @@ class Utils
      * Get the current HTTP accept language
      * @return string
      */
-    public static function getHttpAcceptLanguage(): string
-    {
+    public static function getHttpAcceptLanguage(): string {
         return @getenv('HTTP_ACCEPT_LANGUAGE');
     }
 
@@ -2659,8 +2493,7 @@ class Utils
      * Get the current HTTP connection
      * @return string
      */
-    public static function getHttpConnection(): string
-    {
+    public static function getHttpConnection(): string {
         return @getenv('HTTP_CONNECTION');
     }
 
@@ -2668,8 +2501,7 @@ class Utils
      * Get the current HTTP host
      * @return string
      */
-    public static function getHttpHost(): string
-    {
+    public static function getHttpHost(): string {
         return @getenv('HTTP_HOST');
     }
 
@@ -2677,8 +2509,7 @@ class Utils
      * Get the current HTTP referer
      * @return string
      */
-    public static function getHttpReferer(): string
-    {
+    public static function getHttpReferer(): string {
         return @getenv('HTTP_REFERER');
     }
 
@@ -2686,8 +2517,7 @@ class Utils
      * Get the current HTTP user agent
      * @return string
      */
-    public static function getHttpUserAgent(): string
-    {
+    public static function getHttpUserAgent(): string {
         return @getenv('HTTP_USER_AGENT');
     }
 
@@ -2695,8 +2525,7 @@ class Utils
      * Get the current HTTP X-Requested-With
      * @return string
      */
-    public static function getHttpXRequestedWith(): string
-    {
+    public static function getHttpXRequestedWith(): string {
         return @getenv('HTTP_X_REQUESTED_WITH');
     }
 
@@ -2704,8 +2533,7 @@ class Utils
      * Get the current HTTP X-Forwarded-For
      * @return string
      */
-    public static function getHttpXForwardedFor(): string
-    {
+    public static function getHttpXForwardedFor(): string {
         return @getenv('HTTP_X_FORWARDED_FOR');
     }
 
@@ -2713,8 +2541,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Host
      * @return string
      */
-    public static function getHttpXForwardedHost(): string
-    {
+    public static function getHttpXForwardedHost(): string {
         return @getenv('HTTP_X_FORWARDED_HOST');
     }
 
@@ -2722,8 +2549,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Proto
      * @return string
      */
-    public static function getHttpXForwardedProto(): string
-    {
+    public static function getHttpXForwardedProto(): string {
         return @getenv('HTTP_X_FORWARDED_PROTO');
     }
 
@@ -2731,8 +2557,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Port
      * @return string
      */
-    public static function getHttpXForwardedPort(): string
-    {
+    public static function getHttpXForwardedPort(): string {
         return @getenv('HTTP_X_FORWARDED_PORT');
     }
 
@@ -2740,8 +2565,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Server
      * @return string
      */
-    public static function getHttpXForwardedServer(): string
-    {
+    public static function getHttpXForwardedServer(): string {
         return @getenv('HTTP_X_FORWARDED_SERVER');
     }
 
@@ -2749,8 +2573,7 @@ class Utils
      * Get the current HTTP X-Forwarded-For-IP
      * @return string
      */
-    public static function getHttpXForwardedForIp(): string
-    {
+    public static function getHttpXForwardedForIp(): string {
         return @getenv('HTTP_X_FORWARDED_FOR_IP');
     }
 
@@ -2758,8 +2581,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Proto-IP
      * @return string
      */
-    public static function getHttpXForwardedProtoIp(): string
-    {
+    public static function getHttpXForwardedProtoIp(): string {
         return @getenv('HTTP_X_FORWARDED_PROTO_IP');
     }
 
@@ -2767,8 +2589,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Host-IP
      * @return string
      */
-    public static function getHttpXForwardedHostIp(): string
-    {
+    public static function getHttpXForwardedHostIp(): string {
         return @getenv('HTTP_X_FORWARDED_HOST_IP');
     }
 
@@ -2776,8 +2597,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Port-IP
      * @return string
      */
-    public static function getHttpXForwardedPortIp(): string
-    {
+    public static function getHttpXForwardedPortIp(): string {
         return @getenv('HTTP_X_FORWARDED_PORT_IP');
     }
 
@@ -2785,8 +2605,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Server-IP
      * @return string
      */
-    public static function getHttpXForwardedServerIp(): string
-    {
+    public static function getHttpXForwardedServerIp(): string {
         return @getenv('HTTP_X_FORWARDED_SERVER_IP');
     }
 
@@ -2794,8 +2613,7 @@ class Utils
      * Get the current HTTP X-Forwarded-For-Client-IP
      * @return string
      */
-    public static function getHttpXForwardedForClientIp(): string
-    {
+    public static function getHttpXForwardedForClientIp(): string {
         return @getenv('HTTP_X_FORWARDED_FOR_CLIENT_IP');
     }
 
@@ -2803,8 +2621,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Proto-Client-IP
      * @return string
      */
-    public static function getHttpXForwardedProtoClientIp(): string
-    {
+    public static function getHttpXForwardedProtoClientIp(): string {
         return @getenv('HTTP_X_FORWARDED_PROTO_CLIENT_IP');
     }
 
@@ -2812,8 +2629,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Host-Client-IP
      * @return string
      */
-    public static function getHttpXForwardedHostClientIp(): string
-    {
+    public static function getHttpXForwardedHostClientIp(): string {
         return @getenv('HTTP_X_FORWARDED_HOST_CLIENT_IP');
     }
 
@@ -2821,8 +2637,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Port-Client-IP
      * @return string
      */
-    public static function getHttpXForwardedPortClientIp(): string
-    {
+    public static function getHttpXForwardedPortClientIp(): string {
         return @getenv('HTTP_X_FORWARDED_PORT_CLIENT_IP');
     }
 
@@ -2830,8 +2645,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Server-Client-IP
      * @return string
      */
-    public static function getHttpXForwardedServerClientIp(): string
-    {
+    public static function getHttpXForwardedServerClientIp(): string {
         return @getenv('HTTP_X_FORWARDED_SERVER_CLIENT_IP');
     }
 
@@ -2839,8 +2653,7 @@ class Utils
      * Get the current HTTP X-Forwarded-For-Client
      * @return string
      */
-    public static function getHttpXForwardedForClient(): string
-    {
+    public static function getHttpXForwardedForClient(): string {
         return @getenv('HTTP_X_FORWARDED_FOR_CLIENT');
     }
 
@@ -2848,8 +2661,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Proto-Client
      * @return string
      */
-    public static function getHttpXForwardedProtoClient(): string
-    {
+    public static function getHttpXForwardedProtoClient(): string {
         return @getenv('HTTP_X_FORWARDED_PROTO_CLIENT');
     }
 
@@ -2857,8 +2669,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Host-Client
      * @return string
      */
-    public static function getHttpXForwardedHostClient(): string
-    {
+    public static function getHttpXForwardedHostClient(): string {
         return @getenv('HTTP_X_FORWARDED_HOST_CLIENT');
     }
 
@@ -2866,8 +2677,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Port-Client
      * @return string
      */
-    public static function getHttpXForwardedPortClient(): string
-    {
+    public static function getHttpXForwardedPortClient(): string {
         return @getenv('HTTP_X_FORWARDED_PORT_CLIENT');
     }
 
@@ -2875,8 +2685,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Server-Client
      * @return string
      */
-    public static function getHttpXForwardedServerClient(): string
-    {
+    public static function getHttpXForwardedServerClient(): string {
         return @getenv('HTTP_X_FORWARDED_SERVER_CLIENT');
     }
 
@@ -2884,8 +2693,7 @@ class Utils
      * Get the current HTTP X-Forwarded-For-Client-IP-Client
      * @return string
      */
-    public static function getHttpXForwardedForClientIpClient(): string
-    {
+    public static function getHttpXForwardedForClientIpClient(): string {
         return @getenv('HTTP_X_FORWARDED_FOR_CLIENT_IP_CLIENT');
     }
 
@@ -2893,8 +2701,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Proto-Client-IP-Client
      * @return string
      */
-    public static function getHttpXForwardedProtoClientIpClient(): string
-    {
+    public static function getHttpXForwardedProtoClientIpClient(): string {
         return @getenv('HTTP_X_FORWARDED_PROTO_CLIENT_IP_CLIENT');
     }
 
@@ -2902,8 +2709,7 @@ class Utils
      * Get the current HTTP X-Forwarded-Host-Client-IP-Client
      * @return string
      */
-    public static function getHttpXForwardedHostClientIpClient(): string
-    {
+    public static function getHttpXForwardedHostClientIpClient(): string {
         return @getenv('HTTP_X_FORWARDED_HOST_CLIENT_IP_CLIENT');
     }
 
@@ -2913,8 +2719,7 @@ class Utils
      * @param bool $overwrite Wether to overwrite existing .env variables
      * @return void
      */
-    public static function loadEnvVars(string $inPath, bool $overwrite = true): void
-    {
+    public static function loadEnvVars(string $inPath, bool $overwrite = true): void {
         $dotenv = $overwrite ? \Dotenv\Dotenv::createMutable($inPath) : \Dotenv\Dotenv::createImmutable($inPath);
         $dotenv->safeLoad();
     }
@@ -2926,8 +2731,7 @@ class Utils
      * @param \Throwable|null $previous
      * @return \PHPWebfuse\Instance\Exceptions\Exception
      */
-    public static function throwException(string $message, int $code = 0, ?\Throwable $previous = null): void
-    {
+    public static function throwException(string $message, int $code = 0, ?\Throwable $previous = null): void {
         throw new \PHPWebfuse\Instance\Exceptions\Exception($message, $code, $previous);
     }
 
@@ -2938,8 +2742,7 @@ class Utils
      * @param \Throwable|null $previous
      * @return \PHPWebfuse\Instance\Exceptions\IOException
      */
-    public static function throwIOException(string $message, int $code = 0, ?\Throwable $previous = null): void
-    {
+    public static function throwIOException(string $message, int $code = 0, ?\Throwable $previous = null): void {
         throw new \PHPWebfuse\Instance\Exceptions\IOException($message, $code, $previous);
     }
 
@@ -2950,8 +2753,7 @@ class Utils
      * @param \Throwable|null $previous
      * @return \PHPWebfuse\Instance\Exceptions\InvalidArgumentException
      */
-    public static function throwInvalidArgumentException(string $message, int $code = 0, ?\Throwable $previous = null): void
-    {
+    public static function throwInvalidArgumentException(string $message, int $code = 0, ?\Throwable $previous = null): void {
         throw new \PHPWebfuse\Instance\Exceptions\InvalidArgumentException($message, $code, $previous);
     }
 
@@ -2960,8 +2762,7 @@ class Utils
      * @param int $bytes
      * @return array
      */
-    public static function convertBytes(int $bytes): array
-    {
+    public static function convertBytes(int $bytes): array {
         $kb = $bytes / 1024;
         $mb = $bytes / (1024 * 1024);
         $gb = $bytes / (1024 * 1024 * 1024);
@@ -2977,13 +2778,12 @@ class Utils
      * @param array $lists
      * @return array
      */
-    public static function sortFilesFirst(array $lists): array
-    {
+    public static function sortFilesFirst(array $lists): array {
         usort($lists, function ($a, $b) use ($lists) {
-            if(is_file($a) && is_dir($b)) {
+            if (is_file($a) && is_dir($b)) {
                 // File comes first
                 return -1;
-            } elseif(is_dir($a) && is_file($b)) {
+            } elseif (is_dir($a) && is_file($b)) {
                 // Directory comes second
                 return 1;
             } else {
@@ -3001,22 +2801,21 @@ class Utils
      * @return bool|string Return true on success or false/string on failure
      * @throws \PHPWebfuse\Instance\Exceptions\Exception
      */
-    public static function extractPhar(string $filename, string $toDirectory): bool|string
-    {
+    public static function extractPhar(string $filename, string $toDirectory): bool|string {
         $pharReadonly = ini_get('phar.readonly');
-        if(is_string($pharReadonly) && (strtolower($pharReadonly) == "on" || $pharReadonly == "1" || $pharReadonly == 1)) {
+        if (is_string($pharReadonly) && (strtolower($pharReadonly) == "on" || $pharReadonly == "1" || $pharReadonly == 1)) {
             throw new \Exception('Extracting of Phar archives is disabled in php.ini. Please make sure that "phar.readonly" is set to "off".');
         } else {
-            if(is_file($filename) && is_readable($filename)) {
+            if (is_file($filename) && is_readable($filename)) {
                 $filename = \realpath($filename);
-                if(Utils::endsWith(".phar", strtolower($filename))) {
+                if (Utils::endsWith(".phar", strtolower($filename))) {
                     try {
                         $phar = new \Phar($filename, 0);
-                        if(File::createDir($toDirectory)) {
-                            if($phar->isCompressed()) {
+                        if (File::createDir($toDirectory)) {
+                            if ($phar->isCompressed()) {
                                 $phar->decompressFiles();
                             }
-                            if($phar->extractTo(\realpath($toDirectory), null, true)) {
+                            if ($phar->extractTo(\realpath($toDirectory), null, true)) {
                                 return true;
                             } else {
                                 return "Failed to extract the phar achive " . $filename . " to " . $toDirectory . "";
@@ -3024,7 +2823,7 @@ class Utils
                         } else {
                             return "Unable to create the extraction directory or check if it exists.";
                         }
-                    } catch(\Throwable $e) {
+                    } catch (\Throwable $e) {
                         return $e->getMessage();
                     }
                 } else {
@@ -3039,17 +2838,16 @@ class Utils
 
     // PRIVATE METHOD
 
-    private function errorHandler(int $errno, string $errstr, string $errfile, string $errline, array $errcontext)
-    {
+    private function errorHandler(int $errno, string $errstr, string $errfile, string $errline, array $errcontext) {
         $level = error_reporting();
-        if(!(error_reporting() & $errno)) {
+        if (!(error_reporting() & $errno)) {
             // This error code is not included in error_reporting, so let it fall
             // through to the standard PHP error handler
             return false;
         } else {
             // $errstr may need to be escaped:
             $errstr = htmlspecialchars($errstr);
-            switch($errno) {
+            switch ($errno) {
                 case E_USER_ERROR:
                     echo "<b>USER ERROR</b> [" . $errno . "] " . $errstr . "<br />\n";
                     echo " Fatal error on line " . $errline . " in file " . $errfile . "";

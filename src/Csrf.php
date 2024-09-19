@@ -55,7 +55,7 @@ class Csrf
     {
         if (Utils::isNotEmptyString($csrfKey) && Utils::isNotEmptyString($generatedToken)) {
             try {
-                $dec = Aes::decData($generatedToken, "aes-128-cbc", $csrfKey);
+                $dec = Aes::dec($generatedToken, "aes-128-cbc", $csrfKey);
                 if ($dec) {
                     $array = Utils::jsonToArray($dec);
                     $data = $array['data'] ?? '';

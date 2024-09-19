@@ -31,8 +31,8 @@ class Time
      */
     public static function organizeTime(?int $timestamp = null): string
     {
-        $currentDate = $this->getDate();
-        $targetDate = $this->getDate($timestamp);
+        $currentDate = self::getDate();
+        $targetDate = self::getDate($timestamp);
         if ($currentDate['mday'] === $targetDate['mday'] && $currentDate['mon'] === $targetDate['mon'] && $currentDate['year'] === $targetDate['year']) {
             return date("h:i A", $timestamp);
         } elseif (($currentDate['mday'] - 1) === $targetDate['mday'] && $currentDate['mon'] === $targetDate['mon'] && $currentDate['year'] === $targetDate['year']) {
@@ -68,9 +68,10 @@ class Time
     /**
      * Format a time unix timestamp into time ago to human readable
      * @param int $timestamp
+     * @param int $level
      * @return string
      */
-    public static function FormatTimeAgoVersion2(int $timestamp): string
+    public static function FormatTimeAgoVersion2(int $timestamp, int $level = 2): string
     {
         $date = new \DateTime();
         $date->setTimestamp($timestamp);

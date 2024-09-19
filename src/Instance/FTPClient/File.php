@@ -94,7 +94,7 @@ class File {
      * @return string
      */
     public function getName(): string {
-        return $this->methods->removeExtension($this->getBasename());
+        return File::removeExtension($this->getBasename());
     }
 
     /**
@@ -102,7 +102,7 @@ class File {
      * @return string
      */
     public function getEtension(): string {
-        return $this->methods->getExtension($this->getBasename());
+        return File::getEtension($this->getBasename());
     }
 
     /**
@@ -110,7 +110,7 @@ class File {
      * @return string
      */
     public function removeExtension(): string {
-        return $this->methods->removeExtension($this->getRealPath());
+        return File::removeExtension($this->getRealPath());
     }
 
     /**

@@ -284,15 +284,15 @@ class Archive
                         clearstatcache(false, $archivename);
                         $result = File::getInfo($archivename);
                     } else {
-                        $result = "Failed to create the " . $extension . " archive: " . $archivename;
+                        $result = "Failed to create the tar archive: " . $archivename;
                     }
                 } catch(\Exception $ex) {
                     // Delete file if exist
                     File::deleteFile($archivename);
-                    $result = "Failed to create the " . $extension . " archive, an error has occurred (" . $ex->getMessage() . ")";
+                    $result = "Failed to create the tar archive, an error has occurred (" . $ex->getMessage() . ")";
                 }
             } else {
-                $result = "Failed to create the " . $extension . " archive, invalid dirname: " . $dirname;
+                $result = "Failed to create the tar archive, invalid dirname: " . $dirname;
             }
         } else {
             $result = "The PharData isn't loaded";

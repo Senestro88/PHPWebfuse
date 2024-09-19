@@ -2,19 +2,21 @@
 
 namespace PHPWebfuse;
 
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use \PHPWebfuse\Utils;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * @author Senestro
  */
-class Http
-{
+class Http {
     // PRIVATE VARIABLE
 
     /**
-     * @var const The default request methods allowed
+     * @var array The default request methods allowed
      */
-    private const REQUEST_METHODS = array('GET', 'POST', 'HEAD');
+    private static $REQUEST_METHODS = array('GET', 'POST');
 
     // PUBLIC VARIABLES
 
@@ -29,87 +31,71 @@ class Http
     /**
      * Prevent the constructor from being initialized
      */
-    private function __construct()
-    {
-
+    private function __construct() {
     }
 
 
-    /**
-     * Make an HTTP request
-     * @param string $method The request method
-     * @param string $url The request url
-     * @param array|null $headers The request headers
-     * @param array $params The request parameters
-     * @return mixed
-     */
-    public static function request(string $method, string $url, ?array $headers = null, array $params = []): mixed
-    {
+    public static function request(string $method, string $url, array $headers = array(), array $params = array(), array $attachments = array()): mixed {
         $method = strtoupper(trim($method));
-        if (Utils::isNotInArray($method, self::REQUEST_METHODS)) {
-            self::$message = "The request method must be one of the following: " . implode(", ", self::REQUEST_METHODS);
+        if (Utils::isNotInArray($method, self::$REQUEST_METHODS)) {
+            self::$message = "The request method must be one of the following: " . implode(", ", self::$REQUEST_METHODS);
         } elseif (!function_exists('curl_init')) {
             self::$message = "Curl extension isn't loaded";
         } else {
-            $curl = curl_init();
-            if (Utils::isFalse($curl)) {
-                self::$message = "Can't initialize Curl handle";
-            } else {
-                $_headers = [];
-                if (Utils::isArray($headers)) {
-                    foreach ($headers as $key => $value) {
-                        $_headers[] = $key . ": " . $value;
-                    }
-                }
-                if (isset($_headers['Content-Type']) && $method == "POST") {
-                    $_headers['Content-Type'] = "multipart/form-data";
-                }
-                $options = [
-                    CURLOPT_SSLVERSION => 0, // Default SSL Version
-                    CURLOPT_SSL_VERIFYPEER => false, // Stop cURL from verifying the peer's certificate
-                    CURLOPT_SSL_VERIFYSTATUS => false, // Do not verify the certificate's status.
-                    CURLOPT_PROXY_SSL_VERIFYPEER => false, // Stop cURL from verifying the peer's certificate
-                    CURLOPT_USERAGENT => Utils::USER_AGENT,
-                    CURLOPT_HEADER => false, // Include the header in the output
-                    CURLOPT_RETURNTRANSFER => true, // To return the transfer as a string of the return value of curl_exec() instead of outputting it directly
-                    CURLOPT_FOLLOWLOCATION => true, // Follow any "Location: " header that the server sends as part of the HTTP header
-                    CURLOPT_MAXREDIRS => 3, // The maximum amount of HTTP redirections to follow
-                    CURLOPT_CONNECTTIMEOUT => 60, // The number of seconds to wait while trying to connect. Use 0 to wait indefinitely.
-                    CURLOPT_TIMEOUT => 60, // The maximum number of seconds to allow cURL functions to execute.
-                    CURLOPT_HTTPHEADER => $_headers, // An array of HTTP header fields to set
-                    CURLOPT_FORBID_REUSE => true, // To force the connection to explicitly close when it has finished processing, and not be pooled for reuse
-                    CURLOPT_FRESH_CONNECT => true, // To force the use of a new connection instead of a cached one.
-                    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                ];
-
-                if ($method == "POST") {
-                    $options[CURLOPT_URL] = $url;
-                    $options[CURLOPT_POST] = true;
-                    $options[CURLOPT_POSTFIELDS] = http_build_query($params);
-                } elseif ($method == "GET") {
-                    $options[CURLOPT_HTTPGET] = true;
-                    $options[CURLOPT_URL] = $url . '?' . http_build_query($params);
-                    $options[CURLOPT_CUSTOMREQUEST] = $method;
-                } elseif ($method == "HEAD") {
-                    $options[CURLOPT_URL] = $url;
-                    $options[CURLOPT_CUSTOMREQUEST] = $method;
-                    $options[CURLOPT_NOBODY] = true;
-                }
-
-                if (Utils::isFalse(curl_setopt_array($curl, $options))) {
-                    self::$message = "Failed to set Curl options";
+            try {
+                $domain = Utils::getHostFromUrl($url);
+                $path = Utils::getPathFromUrl($url);
+                $options = array(
+                    "connect_timeout" => 3.0,
+                    "force_ip_resolve" => "v4",
+                    'on_headers' => function (ResponseInterface $response) {
+                        $expectedContentlength = 1073741824;
+                        if ($response->getHeaderLine('Content-Length') > $expectedContentlength) {
+                            throw new \Exception('The content length is too big (' . Utils::formatSize($expectedContentlength) . ')!');
+                        }
+                    },
+                    'progress' => function ($downloadTotal, $downloadedBytes, $uploadTotal, $uploadedBytes) {
+                    },
+                    'verify' => false
+                );
+                // Create a client with a base URI
+                $client = new Client(['base_uri' => $domain]);
+                if ($method == "GET") {
+                    $query = Utils::buildQueryParamFromQueryString(Utils::getQueryStringFromUrl($url));
+                    $response = $client->request('GET', $path, \array_merge(array(
+                        "query" => \array_merge($query, $params)
+                    ), $options));
                 } else {
-                    $response = curl_exec($curl);
-                    if (Utils::isFalse($response)) {
-                        self::$message = "Failed to execute Curl session: " . curl_error($curl);
-                    } else {
-                        curl_close($curl);
-                        return $response;
+                    $multipart = array();
+                    foreach ($attachments as $attachment) {
+                        if (\is_file($attachment)) {
+                            $multipart[] = array("name" => File::removeExtension(\basename($attachment)), "filename" => \basename($attachment), "content" => File::getFileContent($attachment));
+                        } else if (\is_array($attachment)) {
+                            $name = isset($attachment['name']) ? (string) $attachment['name'] : "";
+                            $filename = isset($attachment['filename']) ? (string) $attachment['filename'] : "";
+                            $contents = isset($attachment['contents']) ? (string) $attachment['contents'] : "";
+                            $multipart[] = array("name" => $name, "filename" => $filename, "contents" => $contents, "headers" => isset($attachment['headers']) ? (string) $attachment['headers'] : "");
+                        }
                     }
+                    $response = $client->request('POST', $path, \array_merge(array(
+                        'form_params' => $params,
+                        'multipart' => $multipart,
+                        "headers" => $headers
+                    ), $options));
                 }
+                $code = $response->getStatusCode(); // 200
+                $reason = $response->getReasonPhrase(); // OK
+                $body = (string) $response->getBody();
+                return $body;
+            } catch (\Throwable $e) {
+                self::$message = $e->getMessage();
             }
         }
         return false;
+    }
+
+    public static function getMessage(): string {
+        return self::$message;
     }
 
     // PRIVATE METHODS

@@ -9,14 +9,13 @@ use \PHPWebfuse\Path;
 /**
  * @author Senestro
  */
-class Captcha
-{
+class Captcha {
     // PRIVATE VARIABLES
 
     // PRIVATE CONSTANTS
 
     /**
-     * @var const Default options
+     * @var array Default options
      */
     private const OPTIONS = array(
         'bgColor' => "#fff",
@@ -40,12 +39,12 @@ class Captcha
     );
 
     /**
-     * @var const The default formats when saving the captcha image
+     * @var array The default formats when saving the captcha image
      */
     private const FORMATS = array("png", "jpg", "jpeg", "gif");
 
     /**
-     * @var const The characters from which the captcha will generate it text from
+     * @var string The characters from which the captcha will generate it text from
      */
     private const CHARSET = 'abcdefghijkmnopqrstuvwxzyABCDEFGHJKLMNPQRSTUVWXZY0123456789';
 
@@ -54,9 +53,7 @@ class Captcha
     /**
      * Prevent the constructor from being initialized
      */
-    private function __construct()
-    {
-
+    private function __construct() {
     }
 
     /**
@@ -66,8 +63,7 @@ class Captcha
      * @param string $format The the image format, default to png. only png, jpg, jpeg and gif are accepted, else the default will be used.
      * @return string
      */
-    public static function createBase64Image(array $options = array(), string $namespace = "default", string $format = "png"): string
-    {
+    public static function createBase64Image(array $options = array(), string $namespace = "default", string $format = "png"): string {
         $data = self::createImageData($options, $namespace, $format);
         return isset($data['image']) ? self::createBase64FromImage($data['image'], $data['directories'], $data['format']) : "";
     }
@@ -79,8 +75,7 @@ class Captcha
      * @param string $format The the image format, default to png. only png, jpg, jpeg and gif are accepted, else the default will be used.
      * @return void
      */
-    public static function createOuputImage(array $options = array(), string $namespace = "default", string $format = "png"): void
-    {
+    public static function createOuputImage(array $options = array(), string $namespace = "default", string $format = "png"): void {
         $data = self::createImageData($options, $namespace, $format);
         if (isset($data['image'])) {
             self::sendToBrowserFromImage($data['image'], $data['format']);
@@ -94,8 +89,7 @@ class Captcha
      * @param bool $caseInsensitive True to validate in a case insensitive manner, else sensitive manner, default to true
      * @return bool
      */
-    public static function validate(string $value, string $namespace = "default", bool $caseInsensitive = true): bool
-    {
+    public static function validate(string $value, string $namespace = "default", bool $caseInsensitive = true): bool {
         return self::validateValue($value, $namespace, $caseInsensitive);
     }
 
@@ -108,8 +102,7 @@ class Captcha
      * @param string $format The the image format, default to png. only png, jpg, jpeg and gif are accepted, else the default will be used.
      * @return array
      */
-    private static function createImageData(array $options = array(), string $namespace = "default", string $format = "png"): array
-    {
+    private static function createImageData(array $options = array(), string $namespace = "default", string $format = "png"): array {
         $result = array();
         self::setInternalEncoding();
         $directories = self::getDirectories();
@@ -136,8 +129,7 @@ class Captcha
      * Set internal encoding
      * @return void
      */
-    private static function setInternalEncoding(): void
-    {
+    private static function setInternalEncoding(): void {
         if (function_exists('mb_internal_encoding')) {
             mb_internal_encoding('UTF-8');
         }
@@ -147,8 +139,7 @@ class Captcha
      * Get the private directories
      * @return array
      */
-    private static function getDirectories(): array
-    {
+    private static function getDirectories(): array {
         $captchaDirname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['DATA'] . DIRECTORY_SEPARATOR . "captcha"));
         File::createDir($captchaDirname);
         $directories = array("backgrounds" => $captchaDirname . "backgrounds" . DIRECTORY_SEPARATOR, "fonts" => $captchaDirname . "fonts" . DIRECTORY_SEPARATOR, "namespaces" => $captchaDirname . "namespaces" . DIRECTORY_SEPARATOR, "temp" => $captchaDirname . "temp" . DIRECTORY_SEPARATOR);
@@ -163,8 +154,7 @@ class Captcha
      * @param array $options The captcha options
      * @return array
      */
-    private static function filterOptions(array $options = array()): array
-    {
+    private static function filterOptions(array $options = array()): array {
         $filtered = self::OPTIONS;
         foreach ($options as $key => $value) {
             if (isset(self::OPTIONS[$key])) {
@@ -187,8 +177,7 @@ class Captcha
      * @param array $options The captcha options
      * @return \GdImage
      */
-    private static function createImage(array $options = array()): \GdImage
-    {
+    private static function createImage(array $options = array()): \GdImage {
         $image = function_exists('imagecreatetruecolor') ? imagecreatetruecolor($options['width'], $options['height']) : imagecreate($options['width'], $options['height']);
         if (function_exists('imageantialias')) {
             imageantialias($image, true);
@@ -202,8 +191,7 @@ class Captcha
      * @param array $options The captcha options
      * @return array
      */
-    private static function allocateImageColors(\GdImage &$image, array $options = array()): array
-    {
+    private static function allocateImageColors(\GdImage &$image, array $options = array()): array {
         $colors = array();
         if (Utils::isNotFalse($image)) {
             $alpha = intval($options['transparentPercentage'] / 100 * 127);
@@ -229,8 +217,7 @@ class Captcha
      * @param array $directories The private directories
      * @return void
      */
-    private static function setBackground(\GdImage &$image, array $options = array(), array $colors = array(), array $directories = array()): void
-    {
+    private static function setBackground(\GdImage &$image, array $options = array(), array $colors = array(), array $directories = array()): void {
         if (Utils::isNotFalse($image) && Utils::isNotEmptyArray($colors) && Utils::isNotEmptyArray($directories)) {
             $backgroundImage = null;
             imagefilledrectangle($image, 0, 0, $options['width'], $options['height'], $colors['background']);
@@ -265,8 +252,7 @@ class Captcha
      * @param string $dirname The directory to search for image to serve as background
      * @return string|null
      */
-    private static function getBackground(string $dirname): ?string
-    {
+    private static function getBackground(string $dirname): ?string {
         if (File::isDir($dirname) && Utils::isReadable($dirname)) {
             $images = array();
             $extensions = array("jpg", "gif", "png", "jpeg");
@@ -293,8 +279,7 @@ class Captcha
      * @param string $namespace The captcha namespace
      * @return string
      */
-    private static function createNameSpaceFileAndReturnCaptchaText(array $options = array(), array $directories = array(), string $namespace = "default"): string
-    {
+    private static function createNameSpaceFileAndReturnCaptchaText(array $options = array(), array $directories = array(), string $namespace = "default"): string {
         $code = "";
         if (Utils::isNotEmptyArray($directories)) {
             for ($i = 0; $i < $options['textLength']; $i++) {
@@ -314,8 +299,7 @@ class Captcha
      * @param array $colors The captcha colors for creating the captcha
      * @return void
      */
-    private static function drawNoise(\GdImage &$image, array $options = array(), array $colors = array()): void
-    {
+    private static function drawNoise(\GdImage &$image, array $options = array(), array $colors = array()): void {
         // Check if the image is valid, colors array is not empty, and noise level is set and greater than 0
         if (Utils::isNotFalse($image) && Utils::isNotEmptyArray($colors) && isset($options['noiseLevel']) && $options['noiseLevel'] > 0) {
             // Limit noise level to a maximum of 10 and adjust by logarithm base 2 of e
@@ -352,8 +336,7 @@ class Captcha
      * @param array $colors The captcha colors for creating the captcha
      * @return void
      */
-    private static function drawLines(\GdImage &$image, array $options = array(), array $colors = array()): void
-    {
+    private static function drawLines(\GdImage &$image, array $options = array(), array $colors = array()): void {
         // Check if the image is valid, colors array is not empty, and numLines is set and greater than 0
         if (Utils::isNotFalse($image) && Utils::isNotEmptyArray($colors) && isset($options['numLines']) && $options['numLines'] > 0) {
             // Extract width, height, and number of lines from options
@@ -412,8 +395,7 @@ class Captcha
      * @param array $directories The private directories
      * @return void
      */
-    private static function drawSignature(\GdImage &$image, array $options = array(), array $colors = array(), array $directories = array()): void
-    {
+    private static function drawSignature(\GdImage &$image, array $options = array(), array $colors = array(), array $directories = array()): void {
         // Check if the image is valid, colors array is not empty, and directories array is not empty
         if (Utils::isNotFalse($image) && Utils::isNotEmptyArray($colors) && Utils::isNotEmptyArray($directories)) {
             // Define the path to the font file
@@ -443,8 +425,7 @@ class Captcha
      * @param string $generatedText The generated text to draw on the captcha image
      * @return void
      */
-    private static function drawCaptchaText(\GdImage &$image, array $options = array(), array $colors = array(), array $directories = array(), string $generatedText = ""): void
-    {
+    private static function drawCaptchaText(\GdImage &$image, array $options = array(), array $colors = array(), array $directories = array(), string $generatedText = ""): void {
         // Check if the image is valid, colors array is not empty, directories array is not empty, and generated text is not empty
         if (Utils::isNotFalse($image) && Utils::isNotEmptyArray($colors) && Utils::isNotEmptyArray($directories) && Utils::isNotEmptyString($generatedText)) {
             // Define the path to the font file
@@ -573,8 +554,7 @@ class Captcha
      * @param string $format The the image format, default to png. only png, jpg, jpeg and gif are accepted, else the default will be used.
      * @return string
      */
-    private static function createBase64FromImage(\GdImage &$image, array $directories = array(), string $format = "png"): string
-    {
+    private static function createBase64FromImage(\GdImage &$image, array $directories = array(), string $format = "png"): string {
         $base64Image = "";
         if (Utils::isNotFalse($image) && Utils::isNotEmptyArray($directories)) {
             $format = Utils::inArray(strtolower($format), self::FORMATS) ? $format : "png";
@@ -601,8 +581,7 @@ class Captcha
      * @param string $format The the image format, default to png. only png, jpg, jpeg and gif are accepted, else the default will be used.
      * @return void
      */
-    private static function sendToBrowserFromImage(\GdImage $image, string $format = "png"): void
-    {
+    private static function sendToBrowserFromImage(\GdImage $image, string $format = "png"): void {
         if (Utils::isNotFalse($image) && !headers_sent()) {
             $format = Utils::inArray(strtolower($format), self::FORMATS) ? $format : "png";
             $contentType = ($format === "png" ? 'image/png' : ($format === "jpg" ? 'image/jpeg' : 'image/gif'));
@@ -628,12 +607,11 @@ class Captcha
      * @param string $namespaceFilename The captcha namespace filename
      * @return array
      */
-    private static function getNamespaceFileData(string $namespaceFilename): array
-    {
+    private static function getNamespaceFileData(string $namespaceFilename): array {
         $data = array();
         if (File::isFile($namespaceFilename) && Utils::isReadable($namespaceFilename)) {
-            $json = self::methods->getFileContent($namespaceFilename);
-            $decoded = self::methods->jsonToArray($json);
+            $json = File::getFileContent($namespaceFilename);
+            $decoded = Utils::jsonToArray($json);
             if (Utils::isArray($decoded) && isset($decoded['expires']) && isset($decoded['code'])) {
                 $data['expires'] = $decoded['expires'];
                 $data['code'] = $decoded['code'];
@@ -649,8 +627,7 @@ class Captcha
      * @param bool $caseInsensitive If to validate in a case insensitive manner, default to true
      * @return bool
      */
-    private static function validateValue(string $value, string $namespace = "default", bool $caseInsensitive = true): bool
-    {
+    private static function validateValue(string $value, string $namespace = "default", bool $caseInsensitive = true): bool {
         $directories = self::getDirectories();
         $namespaceFilename = $directories['namespaces'] . $namespace . '.json';
         $data = self::getNamespaceFileData($namespaceFilename);
@@ -683,8 +660,7 @@ class Captcha
      * @param string $text
      * @return array
      */
-    private static function bboxDetails(float $size = 15, float $angle = 0, string $font = null, string $text = ""): array
-    {
+    private static function bboxDetails(float $size = 15, float $angle = 0, string $font = null, string $text = ""): array {
         $bbox = @imagettfbbox($size, $angle, $font, $text);
         $data = array();
         if (Utils::isNotFalse($bbox)) {
@@ -703,8 +679,7 @@ class Captcha
      * @param string $hex
      * @return array
      */
-    private static function hex2rgb(string $hex = ""): array
-    {
+    private static function hex2rgb(string $hex = ""): array {
         $r = $g = $b = 0;
         $hex = str_replace("#", "", $hex);
         if (self::strlen($hex) == 3 || self::strlen($hex) == 6) {
@@ -720,8 +695,7 @@ class Captcha
      * @param string $string
      * @return int
      */
-    private static function strlen(string $string): int
-    {
+    private static function strlen(string $string): int {
         $strlen = 'strlen';
         if (function_exists('mb_strlen')) {
             $strlen = 'mb_strlen';
@@ -736,8 +710,7 @@ class Captcha
      * @param int|null $length
      * @return string
      */
-    private static function substr(string $string, int $start, ?int $length = null): string
-    {
+    private static function substr(string $string, int $start, ?int $length = null): string {
         $substr = 'substr';
         if (function_exists('mb_substr')) {
             $substr = 'mb_substr';
@@ -755,8 +728,7 @@ class Captcha
      * @param int $offset
      * @return int|false
      */
-    private static function strpos(string $haystack, string $needle, int $offset = 0): int | false
-    {
+    private static function strpos(string $haystack, string $needle, int $offset = 0): int | false {
         $strpos = 'strpos';
         if (function_exists('mb_strpos')) {
             $strpos = 'mb_strpos';
@@ -768,12 +740,11 @@ class Captcha
      * Get character dimensions
      * @param string $string
      * @param float $size
-     * @param type $angle
+     * @param float $angle
      * @param string $font
      * @return array|false
      */
-    private static function characterDimensions(string $string, float $size, $angle, string $font): array | false
-    {
+    private static function characterDimensions(string $string, float $size, float $angle, string $font): array | false {
         $box = imagettfbbox($size, $angle, $font, $string);
         return Utils::isArray($box) ? array($box[2] - $box[0], max($box[1] - $box[7], $box[5] - $box[3]), $box[1]) : false;
     }
@@ -782,8 +753,7 @@ class Captcha
      * Generate a random number
      * @return float
      */
-    private static function rand(): float
-    {
+    private static function rand(): float {
         return (0.0001 * mt_rand(0, 9999));
     }
 }
