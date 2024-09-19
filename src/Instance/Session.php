@@ -39,7 +39,7 @@ class Session
      */
     public function getDomain(): string
     {
-        return "." . Utils::getDomain(getenv('HTTP_HOST'));
+        return "." . Utils::getHostFromUrl(getenv('HTTP_HOST'));
     }
 
     /**
