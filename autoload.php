@@ -24,10 +24,10 @@ if (!defined("PHPWEBFUSE")) {
         "DIRECTORIES" => array(
             "ROOT" => $PHPWEBFUSE_ROOT_DIR,
             "SRC" => $PHPWEBFUSE_SRC_FIR,
-            "DATA" => $PHPWEBFUSE_SRC_FIR . "data" . DIRECTORY_SEPARATOR,
-            "IMAGES" => $PHPWEBFUSE_SRC_FIR . "images" . DIRECTORY_SEPARATOR,
-            "LIBRARIES" => $PHPWEBFUSE_SRC_FIR . "libraries" . DIRECTORY_SEPARATOR,
-            "PLUGINS" => $PHPWEBFUSE_SRC_FIR . "plugins" . DIRECTORY_SEPARATOR,
+            "DATA" => $PHPWEBFUSE_ROOT_DIR . "assets" . DIRECTORY_SEPARATOR . "data" . DIRECTORY_SEPARATOR,
+            "IMAGES" => $PHPWEBFUSE_ROOT_DIR . "assets" . DIRECTORY_SEPARATOR . "images" . DIRECTORY_SEPARATOR,
+            "LIBRARIES" => $PHPWEBFUSE_ROOT_DIR . "assets" . DIRECTORY_SEPARATOR . "libraries" . DIRECTORY_SEPARATOR,
+            "PLUGINS" => $PHPWEBFUSE_ROOT_DIR . "assets" . DIRECTORY_SEPARATOR . "plugins" . DIRECTORY_SEPARATOR,
         ),
     ));
 }

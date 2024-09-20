@@ -8,8 +8,7 @@ use \PHPWebfuse\Aes;
 /**
  * @author Senestro
  */
-class Csrf
-{
+class Csrf {
     // PRIVATE VARIABLES
 
     // PUBLIC VARIABLES
@@ -19,28 +18,25 @@ class Csrf
     /**
      * Prevent the constructor from being initialized
      */
-    private function __construct()
-    {
-
+    private function __construct() {
     }
 
     /**
      * Generate the cross site request forgery token passing the expiration minutes
+     * @param string $key
      * @param int $minutes Default to 10 (10 Minutes)
      * @return string
      */
-    public static function generateToken(string $csrfKey, int $minutes = 10): string
-    {
+    public static function generateToken(string $csrfKey, int $minutes = 10): string {
         if (Utils::isNotEmptyString($csrfKey)) {
             try {
                 $hex = self::newHex();
                 $salt = hash_hmac('sha256', $hex, $csrfKey);
-                $expires = self::setFutureMinutes($minutes);
-                $json = Utils::arrayToJson(array("data" => $hex, "salt" => $salt, "expires" => $expires));
-                $enc = Aes::enc($json, "aes-128-cbc", $csrfKey);
+                $expires = self::setFutureMinutesFromMinutes($minutes);
+                $json = Utils::arrayToJson(array("token" => $hex, "salt" => $salt, "expires" => $expires));
+                $enc = Aes::enc($json, $csrfKey, "aes-128-cbc");
                 return $enc ? $enc : '';
             } catch (\Throwable $e) {
-
             }
         }
         return "";
@@ -51,22 +47,20 @@ class Csrf
      * @param string $generatedToken
      * @return bool
      */
-    public static function validateToken(string $csrfKey, string $generatedToken): bool
-    {
+    public static function validateToken(string $csrfKey, string $generatedToken): bool {
         if (Utils::isNotEmptyString($csrfKey) && Utils::isNotEmptyString($generatedToken)) {
             try {
-                $dec = Aes::dec($generatedToken, "aes-128-cbc", $csrfKey);
+                $dec = Aes::dec($generatedToken, $csrfKey, "aes-128-cbc");
                 if ($dec) {
                     $array = Utils::jsonToArray($dec);
-                    $data = $array['data'] ?? '';
+                    $token = $array['token'] ?? '';
                     $salt = $array['salt'] ?? '';
                     $expires = (int) ($array['expires'] ?? 0);
-                    if (hash_equals($salt, hash_hmac('sha256', $data, $csrfKey))) {
-                        return self::isMinutesInFuture($expires);
+                    if (hash_equals($salt, hash_hmac('sha256', $token, $csrfKey))) {
+                        return self::isCsrfMinutesInFuture($expires);
                     }
                 }
             } catch (\Throwable $e) {
-
             }
         }
         return false;
@@ -78,8 +72,7 @@ class Csrf
      * Generate hex string
      * @return string
      */
-    private static function newHex(): string
-    {
+    private static function newHex(): string {
         return bin2hex(openssl_random_pseudo_bytes(32));
     }
 
@@ -87,8 +80,7 @@ class Csrf
      * Get minute from time
      * @return float
      */
-    private static function getMinutesFromTime(): float
-    {
+    private static function getMinutesFromTime(): float {
         return round(time() / 60, 0, PHP_ROUND_HALF_DOWN);
     }
 
@@ -97,8 +89,7 @@ class Csrf
      * @param int $minutes
      * @return void
      */
-    private static function setFutureMinutes(int $minutes): float
-    {
+    private static function setFutureMinutesFromMinutes(int $minutes): float {
         return self::getMinutesFromTime() + $minutes;
     }
 
@@ -107,8 +98,7 @@ class Csrf
      * @param int $minutes
      * @return bool
      */
-    private static function isMinutesInFuture(int $minutes): bool
-    {
+    private static function isCsrfMinutesInFuture(int $minutes): bool {
         return $minutes > self::getMinutesFromTime();
     }
 }

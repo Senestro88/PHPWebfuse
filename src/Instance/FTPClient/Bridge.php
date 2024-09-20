@@ -34,13 +34,13 @@ class Bridge
      * Forward the method call to FTP functions
      * @param string $name
      * @param array $arguments
-     * @throws \PHPWebfuse\Instance\Exceptions\Exception
+     * @throws \PHPWebfuse\Exceptions\Exception
      */
     public function __call(string $name, array $arguments = array())
     {
         $function = "ftp_{$name}";
         if (!function_exists($function)) {
-            throw new \PHPWebfuse\Instance\Exceptions\Exception("{$function} is not a valid FTP function");
+            throw new \PHPWebfuse\Exceptions\Exception("{$function} is not a valid FTP function");
         } else {
             // Add the stream to the beginning of the arguments
             array_unshift($arguments, $this->connection);

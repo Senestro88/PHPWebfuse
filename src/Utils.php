@@ -567,7 +567,7 @@ class Utils {
      * @return string
      */
     public static function stringToJson(string $string): string {
-        return json_encode($string, JSON_FORCE_OBJECT);
+        return json_encode($string, JSON_FORCE_OBJECT, 2147483646);
     }
 
     /**
@@ -576,7 +576,8 @@ class Utils {
      * @return array
      */
     public static function jsonToArray(string $json): array {
-        return json_decode($json, JSON_OBJECT_AS_ARRAY) ?? [];
+        $decoded = json_decode($json, true, 2147483646, JSON_OBJECT_AS_ARRAY);
+        return \is_array($decoded) ? $decoded : array();
     }
 
     /**
@@ -1819,15 +1820,12 @@ class Utils {
                 return false;
             }
             $errstr = htmlspecialchars($errstr);
-            $defaultErrorDir = Path::insert_dir_separator(PHPWEBFUSE['DIRECTORIES']['ROOT']);
-            $errorDir = $errorDir ?? $defaultErrorDir;
-            $errorDir = is_dir($errorDir) && is_readable($errorDir) ? Path::insert_dir_separator($errorDir) : $defaultErrorDir;
-            $defaultErrorName = '$error-messages.log';
-            $errorName = $errorName ?? $defaultErrorName;
-            $errorName = !empty($errorName) ? basename($errorName) : $defaultErrorName;
-            $absolutePath = $errorDir . $errorName;
-            File::saveContentToFile($absolutePath, strip_tags($errno . " ::Filename >> " . $errfile . " ::Line >> " . $errline . " ::Message >> " . $errstr . " ::Date >> " . date("F jS, Y", time()) . " @ " . date("h:i A", time())), true, true);
             echo "<div style='" . self::ERRORS_CSS['error'] . "'>" . $errno . " :: " . (self::isTrue(self::isLocalhost()) ? "<b>Filename >></b> " . $errfile . " <b>Line >></b> " . $errline . " <b>Message >></b> " : "") . "" . $errstr . "</div>";
+            $errorDir = is_string($errorDir) && is_dir($errorDir) && is_readable($errorDir) ? Path::insert_dir_separator($errorDir) : null;
+            $errorName = is_string($errorName) && !empty($errorName) ? basename($errorName) : null;
+            if ($errorDir && $errorName) {
+                File::saveContentToFile($errorDir . $errorName, strip_tags($errno . " ::Filename >> " . $errfile . " ::Line >> " . $errline . " ::Message >> " . $errstr . " ::Date >> " . date("F jS, Y", time()) . " @ " . date("h:i A", time())), true, true);
+            }
         });
     }
 
@@ -1839,15 +1837,12 @@ class Utils {
      */
     public static function registerExceptionHandler(?string $exceptionDir = null, ?string $exceptionName = null): void {
         set_exception_handler(function (\Throwable $ex) use ($exceptionDir, $exceptionName) {
-            $defaultExceptionDir = Path::insert_dir_separator(PHPWEBFUSE['DIRECTORIES']['ROOT']);
-            $exceptionDir = $exceptionDir ?? $defaultExceptionDir;
-            $exceptionDir = is_dir($exceptionDir) && is_readable($exceptionDir) ? Path::insert_dir_separator($exceptionDir) : $defaultExceptionDir;
-            $defaultExceptionName = '$exception-messages.log';
-            $exceptionName = $exceptionName ?? $defaultExceptionName;
-            $exceptionName = !empty($exceptionName) ? basename($exceptionName) : $defaultExceptionName;
-            $absolutePath = $exceptionDir . $exceptionName;
-            File::saveContentToFile($absolutePath, strip_tags("Filename >> " . $ex->getFile() . " ::Line >> " . $ex->getLIne() . " ::Message >> " . $ex->getMessage() . " ::Date >> " . date("F jS, Y", time()) . " @ " . date("h:i A", time())), true, true);
             echo "<div style='" . self::ERRORS_CSS['exception'] . "'>" . (self::isTrue(self::isLocalhost()) ? "<b>Filename >></b> " . $ex->getFile() . " <b>Line >></b> " . $ex->getLIne() . " <b>Message >></b> " : "") . "" . $ex->getMessage() . "</div>";
+            $exceptionDir = is_string($exceptionDir) && is_dir($exceptionDir) && is_readable($exceptionDir) ? Path::insert_dir_separator($exceptionDir) : null;
+            $exceptionName = is_string($exceptionName) && !empty($exceptionName) ? basename($exceptionName) : null;
+            if ($exceptionDir && $exceptionName) {
+                File::saveContentToFile($exceptionDir . $exceptionName, strip_tags("Filename >> " . $ex->getFile() . " ::Line >> " . $ex->getLIne() . " ::Message >> " . $ex->getMessage() . " ::Date >> " . date("F jS, Y", time()) . " @ " . date("h:i A", time())), true, true);
+            }
         });
     }
 
@@ -2725,36 +2720,58 @@ class Utils {
     }
 
     /**
-     * Return new instance of the Exception class
+     * Throws an Exception
      * @param string $message
      * @param int $code
      * @param \Throwable|null $previous
-     * @return \PHPWebfuse\Instance\Exceptions\Exception
+     * @return \PHPWebfuse\Exceptions\Exception
      */
     public static function throwException(string $message, int $code = 0, ?\Throwable $previous = null): void {
-        throw new \PHPWebfuse\Instance\Exceptions\Exception($message, $code, $previous);
+        throw new \PHPWebfuse\Exceptions\Exception($message, $code, $previous);
     }
 
     /**
-     * Return new instance of the IOException class
+     * Throws an IOException
      * @param string $message
      * @param int $code
      * @param \Throwable|null $previous
-     * @return \PHPWebfuse\Instance\Exceptions\IOException
+     * @return \PHPWebfuse\Exceptions\IOException
      */
     public static function throwIOException(string $message, int $code = 0, ?\Throwable $previous = null): void {
-        throw new \PHPWebfuse\Instance\Exceptions\IOException($message, $code, $previous);
+        throw new \PHPWebfuse\Exceptions\IOException($message, $code, $previous);
     }
 
     /**
-     * Return new instance of the InvalidArgumentException class
+     * Throws an InvalidArgumentException
      * @param string $message
      * @param int $code
      * @param \Throwable|null $previous
-     * @return \PHPWebfuse\Instance\Exceptions\InvalidArgumentException
+     * @return \PHPWebfuse\Exceptions\InvalidArgumentException
      */
     public static function throwInvalidArgumentException(string $message, int $code = 0, ?\Throwable $previous = null): void {
-        throw new \PHPWebfuse\Instance\Exceptions\InvalidArgumentException($message, $code, $previous);
+        throw new \PHPWebfuse\Exceptions\InvalidArgumentException($message, $code, $previous);
+    }
+
+    /**
+     * Throws a Session exception
+     * @param string $message
+     * @param int $code
+     * @param \Throwable|null $previous
+     * @return \PHPWebfuse\Exceptions\Session
+     */
+    public static function throwSessionException(string $message, int $code = 0, ?\Throwable $previous = null): void {
+        throw new \PHPWebfuse\Exceptions\Session($message, $code, $previous);
+    }
+
+    /**
+     * Throws a Token exception
+     * @param string $message
+     * @param int $code
+     * @param \Throwable|null $previous
+     * @return \PHPWebfuse\Exceptions\Token
+     */
+    public static function throwTokenException(string $message, int $code = 0, ?\Throwable $previous = null): void {
+        throw new \PHPWebfuse\Exceptions\Token($message, $code, $previous);
     }
 
     /**
@@ -2799,7 +2816,7 @@ class Utils {
      * @param string $filename
      * @param string $toDirectory
      * @return bool|string Return true on success or false/string on failure
-     * @throws \PHPWebfuse\Instance\Exceptions\Exception
+     * @throws \PHPWebfuse\Exceptions\Exception
      */
     public static function extractPhar(string $filename, string $toDirectory): bool|string {
         $pharReadonly = ini_get('phar.readonly');

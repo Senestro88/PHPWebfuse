@@ -222,7 +222,7 @@ class Archive
      * @param string $dirname The directory to save the archive
      * @param bool $compress
      * @return array|string Return string on failure which contains error message else file info
-     * @throws \PHPWebfuse\Instance\Exceptions\Exception
+     * @throws \PHPWebfuse\Exceptions\Exception
      */
     private static function createTarArchive(string $name, array $items, string $dirname, bool $compress = true): array|string
     {
@@ -276,7 +276,7 @@ class Archive
                             File::deleteFile($archivename);
                             $archivename = $compressedname;
                         } else {
-                            throw new \PHPWebfuse\Instance\Exceptions\Exception("Failed to create the compress .gz archive from the .tar archive [".$compressedname."] - [".$archivename."]");
+                            throw new \PHPWebfuse\Exceptions\Exception("Failed to create the compress .gz archive from the .tar archive [".$compressedname."] - [".$archivename."]");
                         }
                     }
                     // Check if archive is created

@@ -76,14 +76,14 @@ class FTPClient
 
     /**
      * TConstruct a new FTPClient instance
-     * @throws \PHPWebfuse\Instance\Exceptions\Exception
+     * @throws \PHPWebfuse\Exceptions\Exception
      */
     public function __construct()
     {
         $this->connection = null;
         $this->bridge = null;
         if(!extension_loaded('ftp')) {
-            throw new \PHPWebfuse\Instance\Exceptions\Exception('FTP extension is not loaded!');
+            throw new \PHPWebfuse\Exceptions\Exception('FTP extension is not loaded!');
         }
     }
 
@@ -181,7 +181,7 @@ class FTPClient
      * array('response' => string, 'code' => int, 'message' => string, 'body' => string, 'endmessage' => string, 'success' => bool, 'responsecode'=>int);
      * @param string $command
      * @return array
-     * @throws \PHPWebfuse\Instance\Exceptions\Exception
+     * @throws \PHPWebfuse\Exceptions\Exception
      */
     public function raw(string $command): array
     {
