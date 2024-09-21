@@ -328,7 +328,7 @@ class Session {
                 $this->stopSession();
                 $newId = session_create_id(substr(md5(time()), 0, 10));
                 if (\is_string($newId) && session_commit() === true && \is_string(session_id($newId))) {
-                    if (Utils::isTrue(session_start())) {
+                    if (Utils::isTrue(@session_start())) {
                         $this->setExpirationTime();
                         return true;
                     }
@@ -345,7 +345,7 @@ class Session {
      * @return bool
      */
     private function start(): bool {
-        if (Utils::isTrue(session_start())) {
+        if (Utils::isTrue(@session_start())) {
             $this->revalidateElapsedTime();
             return true;
         }
