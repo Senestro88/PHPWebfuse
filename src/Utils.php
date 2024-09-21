@@ -159,7 +159,7 @@ class Utils {
      * @return bool
      */
     public static function deleteCookie(string $name, string $path, string $domain, bool $secure, bool $httponly, string $samesite): bool {
-        if (isset($_COOKIE[$name])) {
+        if (isset($_COOKIE) && isset($_COOKIE[$name])) {
             $expires = strtotime('2010');
             $setcookie = @setcookie($name, "", array('expires' => $expires, 'path' => $path, 'domain' => $domain, 'secure' => $secure, 'httponly' => $httponly, 'samesite' => ucfirst($samesite)));
             if (self::isTrue($setcookie)) {
@@ -171,6 +171,22 @@ class Utils {
             }
         }
         return false;
+    }
+
+    /**
+     * Gets the value of a cookie
+     *
+     * @param string $name The name of the cookie
+     * @return string The value of the cookie, or an empty string if it doesn't exist
+     */
+    public function getCookieValue(string $name): string {
+        // Check if the cookie exists
+        if (isset($_COOKIE) && isset($_COOKIE[$name])) {
+            // Return the value of the cookie
+            return (string) $_COOKIE[$name];
+        }
+        // Return an empty string if the cookie doesn't exist
+        return "";
     }
 
     /**
@@ -506,26 +522,52 @@ class Utils {
     }
 
     /**
-     * Create a session
-     * @param string $name
-     * @param string $value
-     * @return bool
+     * Creates a new session variable
+     *
+     * @param string $name  The name of the session variable
+     * @param string $value The value of the session variable
+     * @return bool Whether the session variable was successfully created
      */
-    public static function createSession(string $name, string $value): bool {
-        @session_start();
-        $_SESSION[$name] = $value;
-        return isset($_SESSION[$name]);
+    public function createSession(string $name, string $value): bool {
+        // Check if the session is already started
+        if (isset($_SESSION)) {
+            // Set the session variable
+            $_SESSION[$name] = $value;
+        }
+        // Return true if the session variable was successfully created
+        return isset($_SESSION) && isset($_SESSION[$name]);
     }
 
     /**
-     * Delete a session
-     * @param string $name
-     * @return bool
+     * Deletes a session variable
+     *
+     * @param string $name The name of the session variable to delete
+     * @return bool Whether the session variable was successfully deleted
      */
-    public static function deleteSession(string $name): bool {
-        @session_start();
-        unset($_SESSION[$name]);
-        return !isset($_SESSION[$name]);
+    public function deleteSession(string $name): bool {
+        // Check if the session is already started and the variable exists
+        if (isset($_SESSION) && isset($_SESSION[$name])) {
+            // Unset the session variable
+            unset($_SESSION[$name]);
+        }
+        // Return true if the session variable was successfully deleted
+        return !isset($_SESSION) || !isset($_SESSION[$name]);
+    }
+
+    /**
+     * Gets the value of a session variable
+     *
+     * @param string $name The name of the session variable
+     * @return string The value of the session variable, or an empty string if it doesn't exist
+     */
+    public function getSessionValue(string $name): string {
+        // Check if the session variable exists
+        if (isset($_SESSION) && isset($_SESSION[$name])) {
+            // Return the value of the session variable
+            return (string) $_SESSION[$name];
+        }
+        // Return an empty string if the session variable doesn't exist
+        return "";
     }
 
     /**

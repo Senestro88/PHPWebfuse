@@ -166,6 +166,127 @@ class Session {
         return session_destroy();
     }
 
+    /**
+     * Creates a new session variable
+     *
+     * @param string $name  The name of the session variable
+     * @param string $value The value of the session variable
+     * @return bool Whether the session variable was successfully created
+     */
+    public function createSession(string $name, string $value): bool {
+        // Check if the session is already started
+        if (isset($_SESSION)) {
+            // Set the session variable
+            $_SESSION[$name] = $value;
+        }
+        // Return true if the session variable was successfully created
+        return isset($_SESSION) && isset($_SESSION[$name]);
+    }
+
+    /**
+     * Deletes a session variable
+     *
+     * @param string $name The name of the session variable to delete
+     * @return bool Whether the session variable was successfully deleted
+     */
+    public function deleteSession(string $name): bool {
+        // Check if the session is already started and the variable exists
+        if (isset($_SESSION) && isset($_SESSION[$name])) {
+            // Unset the session variable
+            unset($_SESSION[$name]);
+        }
+        // Return true if the session variable was successfully deleted
+        return !isset($_SESSION) || !isset($_SESSION[$name]);
+    }
+
+    /**
+     * Creates a new cookie
+     *
+     * @param string $name  The name of the cookie
+     * @param string $value The value of the cookie
+     * @param int $days The number of days until the cookie expires
+     * @return bool Whether the cookie was successfully created
+     */
+    public function createCookie(string $name, string $value, int $days): bool {
+        // Calculate the expiration time
+        $expires = strtotime('+' . $days . ' days');
+        // Set the cookie with the calculated expiration time
+        return @setcookie($name, $value, array(
+            'expires' => $expires,
+            'path' => $this->getPath(),
+            'domain' => $this->getDomain(),
+            'secure' => $this->inSecuredContext(),
+            'httponly' => $this->isHttpOnly(),
+            'samesite' => ucfirst($this->getSameSite())
+        ));
+    }
+
+    /**
+     * Deletes a cookie
+     *
+     * @param string $name The name of the cookie to delete
+     * @return bool Whether the cookie was successfully deleted
+     */
+    public function deleteCookie(string $name): bool {
+        // Check if the cookie exists
+        if (isset($_COOKIE) && isset($_COOKIE[$name])) {
+            // Set the cookie to expire in the past
+            $expires = strtotime('2010');
+            // Set the cookie with the expired time
+            $setcookie = @setcookie($name, "", array(
+                'expires' => $expires,
+                'path' => $this->getPath(),
+                'domain' => $this->getDomain(),
+                'secure' => $this->inSecuredContext(),
+                'httponly' => $this->isHttpOnly(),
+                'samesite' => ucfirst($this->getSameSite())
+            ));
+            // Check if the cookie was successfully deleted
+            if (Utils::isTrue($setcookie)) {
+                try {
+                    // Unset the cookie
+                    unset($_COOKIE[$name]);
+                } catch (\Throwable $e) {
+                    // Ignore any exceptions
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Gets the value of a session variable
+     *
+     * @param string $name The name of the session variable
+     * @return string The value of the session variable, or an empty string if it doesn't exist
+     */
+    public function getSessionValue(string $name): string {
+        // Check if the session variable exists
+        if (isset($_SESSION) && isset($_SESSION[$name])) {
+            // Return the value of the session variable
+            return (string) $_SESSION[$name];
+        }
+        // Return an empty string if the session variable doesn't exist
+        return "";
+    }
+
+    /**
+     * Gets the value of a cookie
+     *
+     * @param string $name The name of the cookie
+     * @return string The value of the cookie, or an empty string if it doesn't exist
+     */
+    public function getCookieValue(string $name): string {
+        // Check if the cookie exists
+        if (isset($_COOKIE) && isset($_COOKIE[$name])) {
+            // Return the value of the cookie
+            return (string) $_COOKIE[$name];
+        }
+        // Return an empty string if the cookie doesn't exist
+        return "";
+    }
+
     // PRIVATE METHODS
 
     /**
@@ -176,11 +297,11 @@ class Session {
         $params = session_get_cookie_params();
         return (
             (int) $params['lifetime'] == 0 &&
-            (string) $params['path'] == $this->path &&
+            (string) $params['path'] == $this->getPath() &&
             (string) $params['domain'] == $this->getDomain() &&
             (bool) $params['secure'] == $this->inSecuredContext() &&
-            (bool) $params['httponly'] == $this->httponly &&
-            (string) $params['samesite'] == $this->samesite
+            (bool) $params['httponly'] == $this->isHttpOnly() &&
+            (string) $params['samesite'] == $this->getSameSite()
         );
     }
 
@@ -189,8 +310,10 @@ class Session {
      * @return void
      */
     private function setExpirationTime(): void {
-        $expirationDays = (int) $this->maxDays;
-        $_SESSION['session-expires'] = strtotime('+ ' . $expirationDays . ' ' . ($expirationDays > 1 ? "days" : "day"));
+        if (isset($_SESSION)) {
+            $expirationDays = (int) $this->maxDays;
+            $_SESSION['session-expires'] = strtotime('+ ' . $expirationDays . ' ' . ($expirationDays > 1 ? "days" : "day"));
+        }
     }
 
     /**
@@ -198,13 +321,13 @@ class Session {
      * @return bool
      */
     private function revalidateElapsedTime(): bool {
-        if (isset($_SESSION['session-expires']) && !empty($_SESSION['session-expires'])) {
+        if (isset($_SESSION) && isset($_SESSION['session-expires']) && !empty($_SESSION['session-expires'])) {
             $sessionExpires = (int) $_SESSION['session-expires'];
             if ($sessionExpires <= time()) {
                 session_gc();
                 $this->stopSession();
                 $newId = session_create_id(substr(md5(time()), 0, 10));
-                if ($newId !== false && session_commit() === true && session_id($newId) !== false) {
+                if (\is_string($newId) && session_commit() === true && \is_string(session_id($newId))) {
                     if (Utils::isTrue(session_start())) {
                         $this->setExpirationTime();
                         return true;
@@ -235,11 +358,11 @@ class Session {
      */
     private function setParameters(): bool {
         $lifetime = 0;
-        $path = $this->path;
+        $path = $this->getPath();
         $domain = $this->getDomain();
         $secure = $this->inSecuredContext();
-        $httponly = $this->httponly;
-        $samesite = $this->samesite;
+        $httponly = $this->isHttpOnly();
+        $samesite = $this->getSameSite();
         if (PHP_VERSION_ID < 70300) {
             return session_set_cookie_params($lifetime, $path, $domain, $secure, $httponly);
         } else {
