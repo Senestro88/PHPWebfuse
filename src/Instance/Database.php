@@ -354,7 +354,7 @@ class Database {
      *
      * Example: insertToDatabaseTable("main_db", "users_table", array('id'=>1, 'timestamp'=>123456789));
      */
-    public function insertToDatabaseTable(string $database, string $table, array $data = array(), bool $preprare = true): bool {
+    public function insertToDatabaseTable(string $database, string $table, array $data = array(), bool $preprare = true): bool | \mysqli_stmt | \mysqli_result {
         if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
