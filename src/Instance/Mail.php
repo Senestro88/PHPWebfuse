@@ -8,9 +8,8 @@ use \PHPWebfuse\File;
 /**
  * @author Senestro
  */
-class Mail
-{
-    // PRIVATE VARIABLE
+class Mail {
+    // PRIVATE VARIABLES
 
     /**
      * @var string The default mail host
@@ -47,70 +46,62 @@ class Mail
 
     /**
      * Construct a new Mail instance
-     * @param array $config The mail configuration data which are the host, username, mode (tls or ssl), port (tls: 587 and ssl:465), wordwrap
+     * 
+     * @param array $config The mail configuration data which consists of host, username, password, mode (tls or ssl), port (tls: 587 and ssl:465), and wordwrap
      */
-    public function __construct(array $config = array())
-    {
-        $this->setConfig($config);
+    public function __construct(array $config = array()) {
+        // Initialize mail configuration
+        $this->config($config);
     }
 
     /**
      * Send a mail
+     * 
      * @param string $emailFrom
      * @param string $emailTo
      * @param string $title
-     * @param string $messgae
+     * @param string $message
      * @param array $attachments
-     * @param array $config Set to override the configuration passed to the constructor
+     * @param bool $authenticate
      * @return bool|string
-     *
+     * 
      * Return true on success, otherwise false or string representing error message
      */
-    public function sendMail(string $emailFrom, string $emailTo, string $title, string $messgae, array $attachments = array()): bool|string
-    {
+    public function sendMail(string $emailFrom, string $emailTo, string $title, string $message, array $attachments = array(), bool $authenticate = true): bool|string {
         $result = "";
-        if(class_exists("\PHPMailer\PHPMailer\PHPMailer")) {
-            if(Utils::isNotEmptyString($this->host) && Utils::isNotEmptyString($this->username) && Utils::isNotEmptyString($this->password)) {
-                $isLocalhost = Utils::isLocalhost();
-                $mailer = new \PHPMailer\PHPMailer\PHPMailer();
-                try {
-                    foreach($attachments as $index => $attachment) {
-                        if(File::isNotFile($attachment)) {
-                            unset($attachments[$index]);
-                        }
-                    }
-                    $mailer->SMTPDebug = 0;
-                    $mailer->isSMTP();
-                    $mailer->WordWrap = $this->wordwrap;
-                    $mailer->Host = $this->host;
-                    if(!$isLocalhost) {
-                        $mailer->SMTPAuth = true;
-                        $mailer->SMTPAutoTLS = true;
-                        $mailer->Username = $this->username;
-                        $mailer->Password = $this->password;
-                        $mailer->SMTPSecure = $this->mode;
-                    }
-                    $mailer->Port = $this->port;
-                    if($isLocalhost) {
-                        $mailer->SMTPOptions = array('ssl' => array('verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true));
-                    }
-                    $mailer->setFrom($emailFrom, explode("@", $emailFrom)[0]);
-                    $mailer->addAddress($emailTo, explode("@", $emailTo)[0]);
-                    $mailer->isHTML(true);
-                    foreach($attachments as $attachment) {
-                        $mailer->addAttachment($attachment);
-                    }
-                    $mailer->Subject = $title;
-                    $mailer->Body = "<!DOCTYPE html><html><body style='font-family: monospace, sans-serif;font-size: 16px;font-weight: normal;text-align:left;'>" . $messgae . "</body></html>";
-                    $mailer->AltBody = strip_tags($messgae);
-                    $mailer->send();
-                    $mailer->clearAllRecipients();
-                    $result = true;
-                } catch(\Throwable $e) {
-                    $result = "Unable to mail message to " . $emailTo . " [" . $mailer->ErrorInfo . "]";
-                }
-            } else {
-                $result = "To sent a mail to " . $emailTo . ", the host, username and password must be provided.";
+
+        // Check if PHPMailer class exists
+        if (class_exists("\PHPMailer\PHPMailer\PHPMailer")) {
+            $mailer = new \PHPMailer\PHPMailer\PHPMailer();
+            try {
+                // Reset attachments to only include valid files
+                $attachments = $this->resetAttachments($attachments);
+                // Configure mailer settings
+                $mailer->SMTPDebug = 0;
+                $mailer->isSMTP();
+                $mailer->WordWrap = $this->wordwrap;
+                $mailer->Host = $this->host;
+                $mailer->SMTPAuth = $authenticate;
+                $mailer->SMTPAutoTLS = true;
+                $mailer->Username = $this->username;
+                $mailer->Password = $this->password;
+                $mailer->SMTPSecure = $this->mode;
+                $mailer->Port = $this->port;
+                $mailer->SMTPOptions = array('ssl' => array('verify_peer' => $authenticate, 'verify_peer_name' => $authenticate, 'allow_self_signed' => !$authenticate));
+                // Set mail content
+                $mailer->setFrom($emailFrom);
+                $mailer->addAddress($emailTo);
+                $mailer->isHTML(true);
+                $this->insertAttachments($mailer, $attachments);
+                $mailer->Subject = $title;
+                $mailer->Body = "<!DOCTYPE html><html><body style='font-family: monospace, sans-serif;font-size: 16px;font-weight: normal;text-align:left;'>" . $message . "</body></html>";
+                $mailer->AltBody = strip_tags($message);
+                // Send mail
+                $mailer->send();
+                $mailer->clearAllRecipients();
+                $result = true;
+            } catch (\Throwable $e) {
+                $result = "Unable to mail message to " . $emailTo . " [" . $mailer->ErrorInfo . "]";
             }
         } else {
             $result = "To send a mail, the PHPMailer class [\PHPMailer\PHPMailer\PHPMailer] must exists.";
@@ -122,27 +113,45 @@ class Mail
 
     /**
      * Override configuration
+     * 
      * @param array $config
      */
-    private function setConfig(array $config = array())
-    {
-        if(isset($config['host']) && Utils::isNotEmptyString($config['host'])) {
-            $this->host = $config['host'];
+    private function config(array $config = array()) {
+        // Update mail configuration with provided settings
+        $this->host = isset($config['host']) && Utils::isNotEmptyString($config['host']) ? (string) $config['host'] : "localhost";
+        $this->username = isset($config['username']) && Utils::isNotEmptyString($config['username']) ? (string) $config['username'] : "";
+        $this->password = isset($config['password']) && Utils::isNotEmptyString($config[' password']) ? (string) $config['password'] : "";
+        $this->mode = isset($config['mode']) && Utils::isNotEmptyString($config['mode']) ? (string) $config['mode'] : "tls";
+        $this->port = isset($config['port']) && Utils::isNumeric($config['port']) ? (int) $config['port'] : 587;
+        $this->wordwrap = isset($config['wordwrap']) && Utils::isNumeric($config['wordwrap']) ? (int) $config['wordwrap'] : 100;
+    }
+
+    /**
+     * Reset attachments to only include valid files
+     * 
+     * @param array $attachments
+     * @return array
+     */
+    private function resetAttachments(array $attachments = array()): array {
+        foreach ($attachments as $index => $attachment) {
+            if (File::isNotFile($attachment)) {
+                unset($attachments[$index]);
+            }
         }
-        if(isset($config['username']) && Utils::isNotEmptyString($config['username'])) {
-            $this->username = $config['username'];
-        }
-        if(isset($config['password']) && Utils::isNumeric($config['password'])) {
-            $this->password = (int) $config['password'];
-        }
-        if(isset($config['mode']) && Utils::isNotEmptyString($config['mode'])) {
-            $this->mode = $config['mode'];
-        }
-        if(isset($config['port']) && Utils::isNumeric($config['port'])) {
-            $this->port = (int) $config['port'];
-        }
-        if(isset($config['wordwrap']) && Utils::isInt($config['wordwrap'])) {
-            $this->wordwrap = $config['wordwrap'];
+        return $attachments;
+    }
+
+    /**
+     * Insert attachments into the mailer
+     * 
+     * @param \PHPMailer\PHPMailer\PHPMailer $mailer
+     * @param array $attachments
+     */
+    private function insertAttachments(\PHPMailer\PHPMailer\PHPMailer $mailer, array $attachments = array()): void {
+        foreach ($attachments as $attachment) {
+            if (File::isFile($attachment)) {
+                $mailer->addAttachment($attachment);
+            }
         }
     }
 }
