@@ -2108,7 +2108,7 @@ class Utils {
     }
 
     /**
-     * Validate mobile number. Return true on success, otherwise false or string representing error message
+     * Validate mobile number. Return false on failure, otherwise a string representing the validated number
      * @param int|string $number
      * @param string $shortcode
      * @return bool|string
@@ -2125,11 +2125,8 @@ class Utils {
                     $util = \libphonenumber\PhoneNumberUtil::getInstance();
                     $parse = $util->parseAndKeepRawInput($number, $shortcode);
                     $isValid = $util->isValidNumber($parse);
-                    if (self::isTrue($isValid)) {
-                        return trim($util->format($parse, \libphonenumber\PhoneNumberFormat::E164));
-                    }
+                    return self::isTrue($isValid) ? trim($util->format($parse, \libphonenumber\PhoneNumberFormat::E164)) : false;
                 } catch (\libphonenumber\NumberParseException $e) {
-                    return $e->getMessage();
                 }
             }
         }
