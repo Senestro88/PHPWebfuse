@@ -11,8 +11,7 @@ namespace PHPWebfuse\Instance\MultiAuth;
  *
  * @author Andre DeMarre
  */
-class FixedBitNotation
-{
+class FixedBitNotation {
     /**
      * @var string
      */
@@ -55,8 +54,7 @@ class FixedBitNotation
      * @param bool   $padFinalGroup     Add padding to end of encoded output
      * @param string $padCharacter      Character to use for padding
      */
-    public function __construct(int $bitsPerCharacter, ?string $chars = null, bool $rightPadFinalBits = false, bool $padFinalGroup = false, string $padCharacter = '=')
-    {
+    public function __construct(int $bitsPerCharacter, ?string $chars = null, bool $rightPadFinalBits = false, bool $padFinalGroup = false, string $padCharacter = '=') {
         // Ensure validity of $chars
         if (!\is_string($chars) || ($charLength = \strlen($chars)) < 2) {
             $chars =
@@ -101,8 +99,7 @@ class FixedBitNotation
      *
      * @param string $rawString Binary data to encode
      */
-    public function encode($rawString): string
-    {
+    public function encode($rawString): string {
         // Unpack string into an array of bytes
         $bytes = unpack('C*', $rawString);
         $byteCount = \count($bytes);
@@ -142,8 +139,8 @@ class FixedBitNotation
                         $lcmMap = [1 => 1, 2 => 1, 3 => 3, 4 => 1, 5 => 5, 6 => 3, 7 => 7, 8 => 1];
                         $bytesPerGroup = $lcmMap[$bitsPerCharacter];
                         $pads = (int) ($bytesPerGroup * 8 / $bitsPerCharacter
-                             - ceil((\strlen($rawString) % $bytesPerGroup)
-                                 * 8 / $bitsPerCharacter));
+                            - ceil((\strlen($rawString) % $bytesPerGroup)
+                                * 8 / $bitsPerCharacter));
                         $encodedString .= str_repeat($padCharacter[0], $pads);
                     }
 
@@ -164,7 +161,7 @@ class FixedBitNotation
             $bitsRead += $newBitCount;
 
             if ($oldBitCount) {
-                // Bits come from seperate bytes, add $oldBits to $bits
+                // Bits come from separate bytes, add $oldBits to $bits
                 $bits = ($oldBits << $newBitCount) | $bits;
             }
 
@@ -182,45 +179,36 @@ class FixedBitNotation
      * @param bool   $strict        Returns null if $encodedString contains
      *                              an undecodable character
      */
-    public function decode($encodedString, $caseSensitive = true, $strict = false): string
-    {
+    public function decode($encodedString, $caseSensitive = true, $strict = false): string {
         if (!$encodedString || !\is_string($encodedString)) {
             // Empty string, nothing to decode
             return '';
         }
-
         $chars = $this->chars;
         $bitsPerCharacter = $this->bitsPerCharacter;
         $radix = $this->radix;
         $rightPadFinalBits = $this->rightPadFinalBits;
         $padCharacter = $this->padCharacter;
-
         // Get index of encoded characters
         if ($this->charmap) {
             $charmap = $this->charmap;
         } else {
             $charmap = [];
-
             for ($i = 0; $i < $radix; ++$i) {
                 $charmap[$chars[$i]] = $i;
             }
-
             $this->charmap = $charmap;
         }
-
         // The last encoded character is $encodedString[$lastNotatedIndex]
         $lastNotatedIndex = \strlen($encodedString) - 1;
-
         // Remove trailing padding characters
         while ($encodedString[$lastNotatedIndex] === $padCharacter[0]) {
             $encodedString = substr($encodedString, 0, $lastNotatedIndex);
             --$lastNotatedIndex;
         }
-
         $rawString = '';
         $byte = 0;
         $bitsWritten = 0;
-
         // Convert each encoded character to a series of unencoded bits
         for ($c = 0; $c <= $lastNotatedIndex; ++$c) {
             if (!isset($charmap[$encodedString[$c]]) && !$caseSensitive) {
@@ -231,11 +219,9 @@ class FixedBitNotation
                     $charmap[$encodedString[$c]] = $charmap[$cLower];
                 }
             }
-
             if (isset($charmap[$encodedString[$c]])) {
                 $bitsNeeded = 8 - $bitsWritten;
                 $unusedBitCount = $bitsPerCharacter - $bitsNeeded;
-
                 // Get the new bits ready
                 if ($bitsNeeded > $bitsPerCharacter) {
                     // New bits aren't enough to complete a byte; shift them
@@ -253,18 +239,14 @@ class FixedBitNotation
                     $newBits = $charmap[$encodedString[$c]];
                     $bitsWritten = 8;
                 }
-
                 $byte |= $newBits;
-
                 if (8 === $bitsWritten || $c === $lastNotatedIndex) {
                     // Byte is ready to be written
                     $rawString .= pack('C', $byte);
-
                     if ($c !== $lastNotatedIndex) {
                         // Start the next byte
                         $bitsWritten = $unusedBitCount;
-                        $byte = ($charmap[$encodedString[$c]]
-                             ^ ($newBits << $unusedBitCount)) << 8 - $bitsWritten;
+                        $byte = ($charmap[$encodedString[$c]] ^ ($newBits << $unusedBitCount)) << 8 - $bitsWritten;
                     }
                 }
             } elseif ($strict) {

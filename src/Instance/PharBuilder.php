@@ -9,8 +9,7 @@ use \PHPWebfuse\Path;
 /**
  * @author Senestro
  */
-class PharBuilder
-{
+class PharBuilder {
     // PRIVATE VARIABLES
 
     /**
@@ -50,8 +49,7 @@ class PharBuilder
      * @param string $rootPath The root path
      * @throws \Exception If phar.readonly is set to true in php.ini or project directory doesn't exists
      */
-    public function __construct(string $rootPath)
-    {
+    public function __construct(string $rootPath) {
         $pharReadonly = ini_get('phar.readonly');
         if (is_string($pharReadonly) && (strtolower($pharReadonly) == "on" || $pharReadonly == "1" || $pharReadonly == 1)) {
             throw new \Exception('Creation of Phar archives is disabled in php.ini. Please make sure that "phar.readonly" is set to "off".');
@@ -70,8 +68,7 @@ class PharBuilder
      * @param string $file The name of the file relative to the root path
      * @return void
      */
-    public function addFile(string $file): void
-    {
+    public function addFile(string $file): void {
         $entry = Path::arrange_dir_separators($file);
         $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . $entry);
         if (is_string($realPath) && is_file($realPath) && is_readable($realPath)) {
@@ -83,8 +80,7 @@ class PharBuilder
      * Gets list of all added files.
      * @return array
      */
-    public function getFiles(): array
-    {
+    public function getFiles(): array {
         return $this->files;
     }
 
@@ -92,8 +88,7 @@ class PharBuilder
      * Get the root path
      * @return string
      */
-    public function getRootPath(): string
-    {
+    public function getRootPath(): string {
         return $this->rootPath;
     }
 
@@ -103,8 +98,7 @@ class PharBuilder
      * @param array $exclude List of file name patterns to exclude (optional)
      * @return void
      */
-    public function addDirectory(string $directory, string $excludePattern = ""): void
-    {
+    public function addDirectory(string $directory, string $excludePattern = ""): void {
         $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . Path::arrange_dir_separators($directory));
         if (is_string($realPath) && is_dir($realPath)) {
             $iterator = new \RecursiveDirectoryIterator($realPath, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::UNIX_PATHS | \FilesystemIterator::CURRENT_AS_SELF);
@@ -130,8 +124,7 @@ class PharBuilder
      * Gets list of defined interface files.
      * @return array
      */
-    public function getInterfaces(): array
-    {
+    public function getInterfaces(): array {
         return $this->interfaces;
     }
 
@@ -143,8 +136,7 @@ class PharBuilder
      * @throws \InvalidArgumentException
      * @throws \Exception
      */
-    public function setInterface(string $file, string $sapi = 'cli'): void
-    {
+    public function setInterface(string $file, string $sapi = 'cli'): void {
         $entry = Path::arrange_dir_separators($file);
         $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . $entry);
         if (is_string($realPath) && is_file($realPath) && is_readable($realPath)) {
@@ -152,10 +144,10 @@ class PharBuilder
             if (!in_array($sapi, array('cli', 'web'))) {
                 throw new \InvalidArgumentException(sprintf('The interface file specified by sapi "%s" is invalid, must be either cli or web', $sapi));
             } else {
-                if(in_array($entry, array_keys($this->files))) {
+                if (in_array($entry, array_keys($this->files))) {
                     $this->interfaces[$sapi] = $entry;
                 } else {
-                    throw  new \Exception('To set the Phar interface specified by file "'.$file.'" is invalid, the file file must be added using addFile()');
+                    throw  new \Exception('To set the Phar interface specified by file "' . $file . '" is invalid, the file file must be added using addFile()');
                 }
             }
         }
@@ -166,17 +158,16 @@ class PharBuilder
      * @param string $file The name of the file relative to the root path
      * @return void
      */
-    public function overrideInterfaces(string $file): void
-    {
+    public function overrideInterfaces(string $file): void {
         $entry = Path::arrange_dir_separators($file);
         $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . $entry);
         if (is_string($realPath) && is_file($realPath) && is_readable($realPath)) {
-            if(in_array($entry, array_keys($this->files))) {
+            if (in_array($entry, array_keys($this->files))) {
                 $this->index = $realPath;
                 $this->interfaces = array();
                 unset($this->files[$entry]);
             } else {
-                throw  new \Exception('To override the Phar interfaces specified by file "'.$file.'" is invalid, the file file must be added using addFile()');
+                throw  new \Exception('To override the Phar interfaces specified by file "' . $file . '" is invalid, the file file must be added using addFile()');
             }
         }
     }
@@ -185,8 +176,7 @@ class PharBuilder
      * Gets list of all SAPIs in the interfaces
      * @return array
      */
-    public function getSapisForInterface(): array
-    {
+    public function getSapisForInterface(): array {
         return array_keys($this->interfaces);
     }
 
@@ -195,8 +185,7 @@ class PharBuilder
      * @param string $sapi The SAPI type
      * @return bool
      */
-    public function supportsSapiInInterface(string $sapi): bool
-    {
+    public function supportsSapiInInterface(string $sapi): bool {
         return in_array($sapi, $this->getSapisForInterface());
     }
 
@@ -207,10 +196,9 @@ class PharBuilder
      * @return \PHPWebfuse\FileInfo | false
      * @throws \Exception if no interface is defined
      */
-    public function build(string $output, bool $compress = false, bool $addshebang = false): array | false
-    {
+    public function build(string $output, bool $compress = false, bool $addshebang = false): array | false {
         $this->output = $output;
-        if(!is_file($this->index) && empty($this->interfaces)) {
+        if (!is_file($this->index) && empty($this->interfaces)) {
             throw new \Exception('Cannot compile when no interface is defined.');
         } else {
             @unlink($this->output);
@@ -227,7 +215,7 @@ class PharBuilder
                 @$phar->addFile($realPath, $relativePath);
             }
             // Used to set the PHP loader or bootstrap stub of a Phar archive
-            if(is_file($this->index)) {
+            if (is_file($this->index)) {
                 $this->setPharStubFromIndex($phar, $addshebang);
             } else {
                 $this->setPharStubFromInterfaces($phar, $addshebang);
@@ -235,12 +223,12 @@ class PharBuilder
             // Stop buffering write requests to the Phar archive, and save changes to disk
             $phar->stopBuffering();
             // Compresses all files in the current Phar archive
-            if($compress) {
+            if ($compress) {
                 $this->compressPhar($phar);
             }
             @chmod($this->output, 0770);
             unset($phar);
-            if(is_file($this->output)) {
+            if (is_file($this->output)) {
                 return File::getInfo($this->output);
             }
         }
@@ -254,8 +242,7 @@ class PharBuilder
      * @param string $path
      * @return string|false
      */
-    private function realPath(string $path): string|false
-    {
+    private function realPath(string $path): string|false {
         return @realpath($path);
     }
 
@@ -265,8 +252,7 @@ class PharBuilder
      * @param string $excludePattern
      * @return bool
      */
-    private function matchFilename(string $path, string $excludePattern): bool
-    {
+    private function matchFilename(string $path, string $excludePattern): bool {
         $inverted = false;
         if ($excludePattern[0] == '!') {
             $excludePattern = substr($excludePattern, 1);
@@ -282,8 +268,7 @@ class PharBuilder
      * @param bool $useExit
      * @return void
      */
-    private function setPharStubFromInterfaces(\Phar $phar, bool $addshebang = false, bool $useExit = true): void
-    {
+    private function setPharStubFromInterfaces(\Phar $phar, bool $addshebang = false, bool $useExit = true): void {
         $alias = basename($this->output);
         $stub = $addshebang ? array($this->shebang, '<?php') : array('<?php');
         $stub[] = "[space]Phar::mapPhar('$alias');";
@@ -292,14 +277,14 @@ class PharBuilder
         if (isset($this->interfaces['cli'])) {
             $stub[] = "[space][space]require_once 'phar://" . $alias . "/" . $this->interfaces['cli'] . "';";
         } else {
-            $stub[] = "[space][space]".($useExit ? "exit" : "throw new \RuntimeException")."('This program can not be invoked via the CLI version of PHP, use the Web interface instead.');";
+            $stub[] = "[space][space]" . ($useExit ? "exit" : "throw new \RuntimeException") . "('This program can not be invoked via the CLI version of PHP, use the Web interface instead.');";
         }
         $stub[] = '[space]} else {';
         if (isset($this->interfaces['web'])) {
             $stub[] = "[space][space]set_include_path('phar://' . __FILE__ . PATH_SEPARATOR . get_include_path());";
             $stub[] = "[space][space]require_once 'phar://" . $alias . "/" . $this->interfaces['web'] . "';";
         } else {
-            $stub[] = "[space][space]".($useExit ? "exit" : "throw new \RuntimeException")."('This program can not be invoked via the Web interface, use the CLI version of PHP instead.');";
+            $stub[] = "[space][space]" . ($useExit ? "exit" : "throw new \RuntimeException") . "('This program can not be invoked via the Web interface, use the CLI version of PHP instead.');";
         }
         $stub[] = '[space]}';
         $stub[] = '[space]__HALT_COMPILER();';
@@ -313,12 +298,11 @@ class PharBuilder
      * @param bool $addshebang
      * @return void
      */
-    private function setPharStubFromIndex(\Phar $phar, bool $addshebang = false): void
-    {
+    private function setPharStubFromIndex(\Phar $phar, bool $addshebang = false): void {
         // Get content and trim white spaces
         $content = trim(File::getFileContent($this->index));
         // Add the shebang if $addshebang is set to true
-        $content = $addshebang && !Utils::startsWith($this->shebang, $content) ? $this->shebang."[newline]".$content : $content;
+        $content = $addshebang && !Utils::startsWith($this->shebang, $content) ? $this->shebang . "[newline]" . $content : $content;
         // Set the stub by formatting and adding the __HALT_COMPILER()
         $phar->setStub($this->contentFormatter($this->addHalt($content)));
     }
@@ -328,8 +312,7 @@ class PharBuilder
      * @param \Phar $phar
      * @return void
      */
-    private function compressPhar(\Phar $phar): void
-    {
+    private function compressPhar(\Phar $phar): void {
         if ($phar->canCompress(\Phar::GZ)) {
             $phar->compressFiles(\Phar::GZ);
         }
@@ -340,8 +323,7 @@ class PharBuilder
      * @param string $content
      * @return string
      */
-    private function contentFormatter(string $content): string
-    {
+    private function contentFormatter(string $content): string {
         return str_replace(array("[newline]", "[space]", "[tab]"), array("\n", " ", "\t"), $content);
     }
 
@@ -350,11 +332,10 @@ class PharBuilder
      * @param string $content
      * @return bool
      */
-    private function isHaltFound(string $content): bool
-    {
+    private function isHaltFound(string $content): bool {
         $halts = array("__HALT_COMPILER()", "__HALT_COMPILER();", "__HALT_COMPILER(); ?>", "__HALT_COMPILER();?>", "__HALT_COMPILER();\n?>");
         foreach ($halts as $value) {
-            if(Utils::endsWith($value, $content)) {
+            if (Utils::endsWith($value, $content)) {
                 return true;
             }
         }
@@ -366,9 +347,8 @@ class PharBuilder
      * @param string $content
      * @return string
      */
-    private function addHalt(string $content): string
-    {
-        if(!$this->isHaltFound($content)) {
+    private function addHalt(string $content): string {
+        if (!$this->isHaltFound($content)) {
             $content = substr($content, -2) == "?>" ? substr($content, 0, -2) : $content;
             $content .= "\n__HALT_COMPILER();\n?>";
         }

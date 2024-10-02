@@ -153,13 +153,13 @@ class Database {
 
     /**
      * Get the last query info
-     * @return string
+     * @return ?string
      */
-    public function lastQueryInfo(): string {
+    public function lastQueryInfo(): ?string {
         if (Utils::isNonNull($this->connection)) {
             return $this->connection->info;
         }
-        return "";
+        return null;
     }
 
     /**
@@ -188,9 +188,9 @@ class Database {
     /**
      * Run a query
      * @param string $query The query string
-     * @return mixed
+     * @return mysqli_result|bool
      */
-    public function query(string $query): mixed {
+    public function query(string $query): \mysqli_result|bool {
         if (Utils::isNonNull($this->connection)) {
             return $this->connection->query($query);
         }
@@ -200,13 +200,13 @@ class Database {
     /**
      * Prepare a query
      * @param string $query The query string
-     * @return mixed
+     * @return \mysqli_stmt|false
      */
-    public function prepareQuery(string $query): mixed {
+    public function prepare(string $query): \mysqli_stmt|false {
         if (Utils::isNonNull($this->connection)) {
             return $this->connection->prepare($query);
         }
-        return \null;
+        return false;
     }
 
     /**
@@ -214,11 +214,11 @@ class Database {
      * @param string $query The query string
      * @return mixed
      */
-    public function multiQuery(string $query): mixed {
+    public function multiQuery(string $query): bool {
         if (Utils::isNonNull($this->connection)) {
             return $this->connection->multi_query($query);
         }
-        return \null;
+        return false;
     }
 
     /**
@@ -265,13 +265,13 @@ class Database {
      * @param array $databases The database's
      * @return array
      */
-    public function optimiseDatabases(array $databases): array {
+    public function optimizeDatabases(array $databases): array {
         $result = array();
         if (Utils::isNonNull($this->connection)) {
             foreach ($databases as $database) {
                 $database = $this->sanitizeIdentifier($database);
                 $status = $this->connection->query("SHOW TABLE STATUS FROM " . $database . ";");
-                if ($status) {
+                if ($status && $status->num_rows >= 1) {
                     while ($row = $status->fetch_assoc()) {
                         $dataFree = $row['Data_free'];
                         $table = $row['Name'];
@@ -318,7 +318,7 @@ class Database {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
             $tables = $this->connection->query('SHOW TABLES FROM ' . $database . ';');
-            if ($tables) {
+            if ($tables && $tables->num_rows >= 1) {
                 while ($ft = $tables->fetch_array()) {
                     if ($ft[0] == $table) {
                         return true;
@@ -346,28 +346,33 @@ class Database {
 
     /**
      * Insert into database table
+     *
      * @param string $database The database name
      * @param string $table The database table name
      * @param array $data The database table array data
-     * @param bool $preprare If to prepare or directly execute the query
-     * @return bool
-     *
-     * Example: insertToDatabaseTable("main_db", "users_table", array('id'=>1, 'timestamp'=>123456789));
+     * @param bool $prepare If to prepare or directly execute the query
+     * @param array $onDuplicateKeyUpdate The ON DUPLICATE KEY UPDATE clause
+     * @return bool|\mysqli_stmt
      */
-    public function insertToDatabaseTable(string $database, string $table, array $data = array(), bool $preprare = true): bool | \mysqli_stmt | \mysqli_result {
+    public function insertToDatabaseTable(string $database, string $table, array $data = [], bool $prepare = true, array $onDuplicateKeyUpdate = []): bool|\mysqli_stmt|\mysqli_result {
+        // Check if connection is established and table exists
         if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
+            // Sanitize database and table names
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
-            $fields = $values = array();
+            // Prepare fields and values arrays
+            $fields = $values = [];
             foreach ($data as $index => $value) {
                 if (!Utils::isEmptyString($index) && !Utils::isEmptyString($value)) {
                     $fields[] = $index;
                     $values[] = $value;
                 }
             }
+            // Build the INSERT IGNORE INTO statement
             $statement = "INSERT IGNORE INTO " . $database . "." . $table . " (`" . implode("`, `", $fields) . "`) VALUES (";
             $rows = "";
             foreach ($values as $value) {
+                // Escape values based on their data types
                 if (Utils::isInt($value)) {
                     $rows .= $this->escape($value) . ', ';
                 } elseif (Utils::isString($value)) {
@@ -377,50 +382,71 @@ class Database {
                 }
             }
             $statement .= substr(trim($rows), -1) == "," ? substr(trim($rows), 0, -1) : $rows;
+            // Add ON DUPLICATE KEY UPDATE clause if provided
+            if (!empty($onDuplicateKeyUpdate)) {
+                $updateFields = [];
+                foreach ($onDuplicateKeyUpdate as $key => $value) {
+                    $updateFields[] = "`" . $key . "` = " . $this->escape($value);
+                }
+                $statement .= " ON DUPLICATE KEY UPDATE " . implode(", ", $updateFields);
+            }
+            // Execute the statement
             $statement .= ");";
-            $result = $preprare === true ? $this->connection->prepare($statement) : $this->connection->query($statement);
-            if (!$result || (isset($result->affected_rows) && $result->affected_rows < 1)) {
+            $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
+            if (!$result) {
                 $this->message = $this->lastError();
+                return false;
             }
             return $result;
         }
+        // Return false if connection or table is not valid
         return false;
     }
 
     /**
      * Create a database table
+     * 
      * @param string $database The database name
      * @param string $table The database table name
-     * @param array $columns Defaults to 'array()'
-     * @param string $comment Defaults to ''
-     * @param string $engine Defaults to 'MyISAM'
-     * @param string $character Defaults to 'latin1'
-     * @param string $collate Defaults to 'latin1_general_ci'
-     * @param bool $autoincrement If to set it as auto increment, default to 'true'.
-     *
+     * @param array $columns Defaults to 'array()' - an associative array of column names and their definitions
+     * @param string $comment Defaults to '' - the comment for the table
+     * @param string $engine Defaults to 'MyISAM' - the database engine to use
+     * @param string $character Defaults to 'latin1' - the character set to use
+     * @param string $collate Defaults to 'latin1_general_ci' - the collation to use
+     * @param bool $autoIncrement If to set the primary key as auto increment, default to 'true'
+     * 
      * Example: createDatabaseTable("main_db", "users_table", array("id" => "bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT ''", "timestamp" => "bigint(10) UNSIGNED NOT NULL DEFAULT '0' COMMENT ''", "PRIMARY KEY" => "(id)"), "users_table_comment");
-     * @return bool
+     * @return bool - true if the table was created successfully, false otherwise
      */
-    public function createDatabaseTable(string $database, string $table, array $columns = array(), string $comment = '', string $engine = "MyISAM", string $character = "latin1", string $collate = "latin1_general_ci", bool $autoincrement = true): bool {
+    public function createDatabaseTable(string $database, string $table, array $columns = array(), string $comment = '', string $engine = "MyISAM", string $character = "latin1", string $collate = "latin1_general_ci", bool $autoIncrement = true): bool {
+        // Check if the connection is valid and the table does not already exist
         if (Utils::isNonNull($this->connection) && Utils::isFalse($this->doesDatabaseTableExist($database, $table))) {
+            // Sanitize the database and table names
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
+            // Build the CREATE TABLE statement
             $statement = "CREATE TABLE IF NOT EXISTS " . $database . "." . $table . " (";
+            // Add the columns to the statement
             foreach ($columns as $name => $value) {
-                $statement .= "" . $name . " " . $value . ", ";
+                $statement .= "`" . $name . "` " . $value . ", ";
             }
-            $statement = rtrim($statement, ", ");
-            $statement .= ")";
-            $autoincrementValue = $autoincrement ? ' AUTO_INCREMENT=1' : '';
-            $statement .= ' ENGINE=' . $engine . ' DEFAULT CHARSET=' . $character . ' COLLATE=' . $collate . '' . $autoincrementValue . '';
+            // Remove the trailing comma and add the closing parenthesis
+            $statement = rtrim($statement, ", ") . ")";
+            // Add the auto increment value if specified
+            $autoIncrementValue = $autoIncrement ? ' AUTO_INCREMENT=1' : '';
+            $statement .= ' ENGINE=' . $engine . ' DEFAULT CHARSET=' . $character . ' COLLATE=' . $collate . '' . $autoIncrementValue . '';
+            // Add the table comment if specified
             $statement .= strlen($comment) > 0 ? ' COMMENT "' . $this->escape($comment) . '";' : ';';
+            // Execute the statement and check for errors
             $created = $this->connection->query($statement);
             if (Utils::isNotTrue($created)) {
                 $this->message = $this->lastError();
                 return false;
             }
+            // Return true if the table was created successfully
             return true;
         }
+        // Return false if the table already exists or the connection is invalid
         return false;
     }
 
@@ -440,17 +466,17 @@ class Database {
                     while ($ft = $tables->fetch_array()) {
                         $table = $ft[0];
                         $messages[$database][$table] = "";
-                        $tablestatements = array();
-                        $columnsdata = array();
+                        $tableStatements = array();
+                        $columnsData = array();
                         $columns = $this->connection->query('SHOW FULL COLUMNS FROM ' . $table . ';');
                         if ($columns) {
                             try {
                                 while ($ft = $columns->fetch_assoc()) {
-                                    $columnsdata[] = $ft;
+                                    $columnsData[] = $ft;
                                 }
                             } catch (\Exception $e) {
                             }
-                            foreach ($columnsdata as $index => $data) {
+                            foreach ($columnsData as $index => $data) {
                                 $field = $data['Field'];
                                 $type = $data['Type'];
                                 $collation = $data['Collation'];
@@ -460,16 +486,16 @@ class Database {
                                 $extra = $data['Extra'];
                                 $comment = $data['Comment'];
                                 if ($field == "id" && $key == "PRI") {
-                                    $tablestatements[$table] = "ALTER TABLE `" . $table . "` CHANGE `" . $field . "` `" . $field . "` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;";
+                                    $tableStatements[$table] = "ALTER TABLE `" . $table . "` CHANGE `" . $field . "` `" . $field . "` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;";
                                 } elseif (substr($type, 0, 3) == 'int' || substr($type, 0, 6) == 'bigint') {
-                                    $tablestatements[$table] = "ALTER TABLE `" . $table . "` CHANGE `" . $field . "` `" . $field . "` bigint(20) UNSIGNED NOT NULL DEFAULT '0' COMMENT '" . $comment . "';";
+                                    $tableStatements[$table] = "ALTER TABLE `" . $table . "` CHANGE `" . $field . "` `" . $field . "` bigint(20) UNSIGNED NOT NULL DEFAULT '0' COMMENT '" . $comment . "';";
                                 } elseif ((substr($type, 0, 7) == 'varchar' || substr($type, 0, 4) == 'char') && $collation !== "NULL") {
-                                    $tablestatements[$table] = "ALTER TABLE `" . $table . "` CHANGE `" . $field . "` `" . $field . "` " . strtoupper($type) . " CHARACTER SET latin1 COLLATE " . $collation . " NOT NULL DEFAULT '' COMMENT '" . $comment . "';";
+                                    $tableStatements[$table] = "ALTER TABLE `" . $table . "` CHANGE `" . $field . "` `" . $field . "` " . strtoupper($type) . " CHARACTER SET latin1 COLLATE " . $collation . " NOT NULL DEFAULT '' COMMENT '" . $comment . "';";
                                 } elseif (substr($type, 0, 4) == 'text' && $collation !== "NULL") {
-                                    $tablestatements[$table] = "ALTER TABLE `" . $table . "` CHANGE `" . $field . "` `" . $field . "` " . strtoupper($type) . " CHARACTER SET latin1 COLLATE " . $collation . " NOT NULL COMMENT '" . $comment . "';";
+                                    $tableStatements[$table] = "ALTER TABLE `" . $table . "` CHANGE `" . $field . "` `" . $field . "` " . strtoupper($type) . " CHARACTER SET latin1 COLLATE " . $collation . " NOT NULL COMMENT '" . $comment . "';";
                                 }
                             }
-                            foreach ($tablestatements as $statement) {
+                            foreach ($tableStatements as $statement) {
                                 if ($this->connection->query($statement)) {
                                     $messages[$database][$table] = true;
                                 } else {
@@ -515,19 +541,19 @@ class Database {
      * @param string $database The database name
      * @param string $table The database table name
      * @param string $column The database table column name
-     * @param mixed $columnvalue The database column value name
+     * @param mixed $columnValue The database column value name
      * @param string $orderBy The order by
      * @return array
      *
      * Example: getTableRowsWhereClause("main_db", "users_table", "country" "Nigeria", "state");
      */
-    public function getTableRowsWhereClause(string $database, string $table, string $column, mixed $columnvalue, string $orderBy = "id"): array {
+    public function getTableRowsWhereClause(string $database, string $table, string $column, mixed $columnValue, string $orderBy = "id"): array {
         $result = array();
         if (Utils::isNonNull($this->connection)) {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
-            $columnvalue = $this->escape($columnvalue);
-            $statement = "SELECT * FROM " . $database . "." . $table . " WHERE `" . $column . "`='" . $this->escape($columnvalue) . "' ORDER BY " . $orderBy . ";";
+            $columnValue = $this->escape($columnValue);
+            $statement = "SELECT * FROM " . $database . "." . $table . " WHERE `" . $column . "`='" . $this->escape($columnValue) . "' ORDER BY " . $orderBy . ";";
             $result = $this->executeAndFetchAssociationFromSelectStatement($statement);
         }
         return $result;
@@ -556,19 +582,19 @@ class Database {
      * @param string $database The database name
      * @param string $table The database table name
      * @param string $column The database table column name
-     * @param mixed $columnvalue The database column value name
+     * @param mixed $columnValue The database column value name
      * @param mixed $index The index to match from rows
      * @return string
      *
      * Example: getTableRowsIndexValue("main_db", "users_table", "country", "Nigeria", "id");
      */
-    public function getTableRowsIndexValue(string $database, string $table, string $column, mixed $columnvalue, mixed $index): string {
+    public function getTableRowsIndexValue(string $database, string $table, string $column, mixed $columnValue, mixed $index): string {
         $value = "";
         if (Utils::isNonNull($this->connection)) {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
-            $columnvalue = $this->escape($columnvalue);
-            $assoc = $this->getTableRowsWhereClause($database, $table, $column, $columnvalue);
+            $columnValue = $this->escape($columnValue);
+            $assoc = $this->getTableRowsWhereClause($database, $table, $column, $columnValue);
             foreach ($assoc as $i => $data) {
                 if (isset($data[$index])) {
                     $value = $data[$index];

@@ -9,12 +9,10 @@ namespace PHPWebfuse\Instance\MultiAuth;
  * @see http://goqr.me/api/doc/
  * @see https://github.com/google/google-authenticator/wiki/Key-Uri-Format
  */
-class QrCodeUrl
-{
+class QrCodeUrl {
     // PUBLIC METHODS
 
-    public function __construct()
-    {
+    public function __construct() {
     }
 
     /**
@@ -41,8 +39,7 @@ class QrCodeUrl
      * @param string $secret The secret is the generated secret unique to that user
      * @param string|null $issuer Where you log in to
      */
-    public function generate(string $accountName, string $secret, ?string $issuer = null): string
-    {
+    public function generate(string $accountName, string $secret, ?string $issuer = null): string {
         if ($accountName === "" || strpos($accountName, ':') !== false) {
             throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidAccountName($accountName);
         }

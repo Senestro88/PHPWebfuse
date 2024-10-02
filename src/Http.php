@@ -49,9 +49,9 @@ class Http {
                     "connect_timeout" => 3.0,
                     "force_ip_resolve" => "v4",
                     'on_headers' => function (ResponseInterface $response) {
-                        $expectedContentlength = 1073741824;
-                        if ($response->getHeaderLine('Content-Length') > $expectedContentlength) {
-                            throw new \Exception('The content length is too big (' . Utils::formatSize($expectedContentlength) . ')!');
+                        $expectedContentLength = 1073741824;
+                        if ($response->getHeaderLine('Content-Length') > $expectedContentLength) {
+                            throw new \Exception('The content length is too big (' . Utils::formatSize($expectedContentLength) . ')!');
                         }
                     },
                     'progress' => function ($downloadTotal, $downloadedBytes, $uploadTotal, $uploadedBytes) {

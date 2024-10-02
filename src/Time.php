@@ -5,13 +5,11 @@ namespace PHPWebfuse;
 /**
  * @author Senestro
  */
-class Time
-{
+class Time {
     /**
      * Prevent the constructor from being initialized
      */
-    private function __construct()
-    {
+    private function __construct() {
     }
 
     /**
@@ -19,8 +17,7 @@ class Time
      * @param int|null $timestamp
      * @return array
      */
-    public static function getDate(?int $timestamp = null): array
-    {
+    public static function getDate(?int $timestamp = null): array {
         return getdate($timestamp);
     }
 
@@ -29,8 +26,7 @@ class Time
      * @param ?int  $timestamp
      * @return string
      */
-    public static function organizeTime(?int $timestamp = null): string
-    {
+    public static function organizeTime(?int $timestamp = null): string {
         $currentDate = self::getDate();
         $targetDate = self::getDate($timestamp);
         if ($currentDate['mday'] === $targetDate['mday'] && $currentDate['mon'] === $targetDate['mon'] && $currentDate['year'] === $targetDate['year']) {
@@ -48,8 +44,7 @@ class Time
      * @param int $timestamp:
      * @return string
      */
-    public static function FormatTimeAgoVersion1(int $timestamp): string
-    {
+    public static function FormatTimeAgoVersion1(int $timestamp): string {
         $difference = time() - $timestamp;
         if ($difference < 5) {
             return 'less than 5 seconds ago';
@@ -71,8 +66,7 @@ class Time
      * @param int $level
      * @return string
      */
-    public static function FormatTimeAgoVersion2(int $timestamp, int $level = 2): string
-    {
+    public static function FormatTimeAgoVersion2(int $timestamp, int $level = 2): string {
         $date = new \DateTime();
         $date->setTimestamp($timestamp);
         $dateDiff = $date->diff(new \DateTime());

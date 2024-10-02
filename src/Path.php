@@ -14,7 +14,6 @@ class Path {
      * Prevent the constructor from being initialized
      */
     private function __construct() {
-        
     }
 
     /**

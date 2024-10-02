@@ -5,8 +5,7 @@ namespace PHPWebfuse\Instance\FTPClient;
 /**
  * @author Senestro
  */
-class Bridge
-{
+class Bridge {
     /* PRIVATE VARIABLES */
 
     /**
@@ -14,7 +13,7 @@ class Bridge
      * @var \FTP\Connection
      */
     private \FTP\Connection $connection;
-    
+
     /**
      * Error message are stored here
      * @var string|null
@@ -25,8 +24,7 @@ class Bridge
      * The constructor
      * @param \FTP\Connection $connection
      */
-    public function __construct(\FTP\Connection $connection)
-    {
+    public function __construct(\FTP\Connection $connection) {
         $this->connection = $connection;
     }
 
@@ -36,8 +34,7 @@ class Bridge
      * @param array $arguments
      * @throws \PHPWebfuse\Exceptions\Exception
      */
-    public function __call(string $name, array $arguments = array())
-    {
+    public function __call(string $name, array $arguments = array()) {
         $function = "ftp_{$name}";
         if (!function_exists($function)) {
             throw new \PHPWebfuse\Exceptions\Exception("{$function} is not a valid FTP function");
@@ -57,7 +54,7 @@ class Bridge
             });
             // Call the FTP function
             $returnValue = call_user_func_array($function, $arguments);
-            // Restor the error handler to default
+            // Restore the error handler to default
             restore_error_handler();
             // Return the value
             return $returnValue;
@@ -68,8 +65,7 @@ class Bridge
      * Gets the last FTP error message sent by the remote server.
      * @return string
      */
-    public function getErrorMessage(): string
-    {
+    public function getErrorMessage(): string {
         return $this->errorMessage ?: '';
     }
 }

@@ -19,105 +19,105 @@ class Aes {
     }
 
     /**
- * Encrypt data into a raw binary string
- * @param string $content The content to encrypt
- * @param string $key The encryption key
- * @param string $cm The encryption cipher method
- * @return bool|string Returns a raw binary string on success, otherwise returns false on failure
- * @throws \PHPWebfuse\Exceptions\Exception
- * @throws \PHPWebfuse\Exceptions\InvalidArgumentException
- */
-public static function enc(string $content, string $key, string $cm = "aes-128-cbc"): bool|string {
-    // Check if the provided cipher method is valid
-    if (in_array($cm, openssl_get_cipher_methods(), true)) {
-        // Determine the required key size based on the cipher method
-        $keysize = self::determineKeysizeFromCipherMethod($cm);
-        // Trim the content and key to remove any unnecessary characters
-        $content = trim($content);
-        $key = trim($key);
-        // Check if the key size matches the required size
-        if ($keysize == strlen($key)) {
-            try {
-                // Get the initialization vector length for the cipher method
-                $ivlenght = openssl_cipher_iv_length($cm);
-                if (Utils::isInt($ivlenght)) {
-                    // Generate a random initialization vector
-                    $iv = openssl_random_pseudo_bytes($ivlenght);
-                    // Encrypt the content using the provided key and cipher method
-                    $result = @openssl_encrypt($content, $cm, $key, $options = OPENSSL_RAW_DATA, $iv);
-                    // Clear the content and key variables for security
-                    $content = $key = "";
-                    // Return the encrypted data, which includes the initialization vector and the encrypted content
-                    if (Utils::isString($result)) {
-                        return $iv . $result;
-                    } else {
-                        return false;
+     * Encrypt data into a raw binary string
+     * @param string $content The content to encrypt
+     * @param string $key The encryption key
+     * @param string $cm The encryption cipher method
+     * @return bool|string Returns a raw binary string on success, otherwise returns false on failure
+     * @throws \PHPWebfuse\Exceptions\Exception
+     * @throws \PHPWebfuse\Exceptions\InvalidArgumentException
+     */
+    public static function enc(string $content, string $key, string $cm = "aes-128-cbc"): bool|string {
+        // Check if the provided cipher method is valid
+        if (in_array($cm, openssl_get_cipher_methods(), true)) {
+            // Determine the required key size based on the cipher method
+            $keySize = self::determineKeySizeFromCipherMethod($cm);
+            // Trim the content and key to remove any unnecessary characters
+            $content = trim($content);
+            $key = trim($key);
+            // Check if the key size matches the required size
+            if ($keySize == strlen($key)) {
+                try {
+                    // Get the initialization vector length for the cipher method
+                    $ivLength = openssl_cipher_iv_length($cm);
+                    if (Utils::isInt($ivLength)) {
+                        // Generate a random initialization vector
+                        $iv = openssl_random_pseudo_bytes($ivLength);
+                        // Encrypt the content using the provided key and cipher method
+                        $result = @openssl_encrypt($content, $cm, $key, $options = OPENSSL_RAW_DATA, $iv);
+                        // Clear the content and key variables for security
+                        $content = $key = "";
+                        // Return the encrypted data, which includes the initialization vector and the encrypted content
+                        if (Utils::isString($result)) {
+                            return $iv . $result;
+                        } else {
+                            return false;
+                        }
                     }
+                } catch (\Exception $e) {
+                    // Throw an exception if an error occurs during encryption
+                    Utils::throwException($e->getMessage());
                 }
-            } catch (\Exception $e) {
-                // Throw an exception if an error occurs during encryption
-                Utils::throwException($e->getMessage());
+            } else {
+                // Throw an exception if the key size does not match the required size
+                Utils::throwInvalidArgumentException("The required key size should be {$keySize} bytes in length");
             }
         } else {
-            // Throw an exception if the key size does not match the required size
-            Utils::throwInvalidArgumentException("The required key size should be {$keysize} bytes in length");
+            // Throw an exception if the cipher method is unknown or invalid
+            Utils::throwInvalidArgumentException("Unknown or invalid cipher method");
         }
-    } else {
-        // Throw an exception if the cipher method is unknown or invalid
-        Utils::throwInvalidArgumentException("Unknown or invalid cipher method");
     }
-}
 
-/**
- * Decrypt the encrypted raw binary string
- * @param string $content The encrypted content to decrypt
- * @param string $key The decryption key
- * @param string $cm The encryption cipher method
- * @throws \PHPWebfuse\Exceptions\Exception
- * @throws \PHPWebfuse\Exceptions\InvalidArgumentException
- */
-public static function dec(string $content, string $key, string $cm = "aes-128-cbc"): bool|string {
-    // Check if the provided cipher method is valid
-    if (in_array($cm, openssl_get_cipher_methods(), true)) {
-        // Determine the required key size based on the cipher method
-        $keysize = self::determineKeysizeFromCipherMethod($cm);
-        // Trim the content and key to remove any unnecessary characters
-        $content = trim($content);
-        $key = trim($key);
-        // Check if the key size matches the required size
-        if ($keysize == strlen($key)) {
-            try {
-                // Get the initialization vector length for the cipher method
-                $ivlenght = openssl_cipher_iv_length($cm);
-                if (Utils::isInt($ivlenght)) {
-                    // Extract the initialization vector from the encrypted content
-                    $iv = substr($content, 0, $ivlenght);
-                    // Extract the encrypted content
-                    $cipher = substr($content, $ivlenght);
-                    // Decrypt the content using the provided key and cipher method
-                    $result = @openssl_decrypt($cipher, $cm, $key, $options = OPENSSL_RAW_DATA, $iv);
-                    // Clear the content, key, and cipher variables for security
-                    $content = $key = $cipher = "";
-                    // Return the decrypted content
-                    if (Utils::isString($result)) {
-                        return $result;
-                    } else {
-                        return false;
+    /**
+     * Decrypt the encrypted raw binary string
+     * @param string $content The encrypted content to decrypt
+     * @param string $key The decryption key
+     * @param string $cm The encryption cipher method
+     * @throws \PHPWebfuse\Exceptions\Exception
+     * @throws \PHPWebfuse\Exceptions\InvalidArgumentException
+     */
+    public static function dec(string $content, string $key, string $cm = "aes-128-cbc"): bool|string {
+        // Check if the provided cipher method is valid
+        if (in_array($cm, openssl_get_cipher_methods(), true)) {
+            // Determine the required key size based on the cipher method
+            $keySize = self::determineKeySizeFromCipherMethod($cm);
+            // Trim the content and key to remove any unnecessary characters
+            $content = trim($content);
+            $key = trim($key);
+            // Check if the key size matches the required size
+            if ($keySize == strlen($key)) {
+                try {
+                    // Get the initialization vector length for the cipher method
+                    $ivLength = openssl_cipher_iv_length($cm);
+                    if (Utils::isInt($ivLength)) {
+                        // Extract the initialization vector from the encrypted content
+                        $iv = substr($content, 0, $ivLength);
+                        // Extract the encrypted content
+                        $cipher = substr($content, $ivLength);
+                        // Decrypt the content using the provided key and cipher method
+                        $result = @openssl_decrypt($cipher, $cm, $key, $options = OPENSSL_RAW_DATA, $iv);
+                        // Clear the content, key, and cipher variables for security
+                        $content = $key = $cipher = "";
+                        // Return the decrypted content
+                        if (Utils::isString($result)) {
+                            return $result;
+                        } else {
+                            return false;
+                        }
                     }
+                } catch (\Exception $e) {
+                    // Throw an exception if an error occurs during decryption
+                    Utils::throwException($e->getMessage());
                 }
-            } catch (\Exception $e) {
-                // Throw an exception if an error occurs during decryption
-                Utils::throwException($e->getMessage());
+            } else {
+                // Throw an exception if the key size does not match the required size
+                Utils::throwInvalidArgumentException("The required key size should be {$keySize} bytes in length");
             }
         } else {
-            // Throw an exception if the key size does not match the required size
-            Utils::throwInvalidArgumentException("The required key size should be {$keysize} bytes in length");
+            // Throw an exception if the cipher method is unknown or invalid
+            Utils::throwInvalidArgumentException("Unknown or invalid cipher method");
         }
-    } else {
-        // Throw an exception if the cipher method is unknown or invalid
-        Utils::throwInvalidArgumentException("Unknown or invalid cipher method");
     }
-}
 
     // PRIVATE METHODS
 
@@ -126,7 +126,7 @@ public static function dec(string $content, string $key, string $cm = "aes-128-c
      * @param string $cm The cipher method
      * @return int Returns 0 when the key size couldn't be determined
      */
-    private static function determineKeysizeFromCipherMethod(string $cm): int {
+    private static function determineKeySizeFromCipherMethod(string $cm): int {
         // Initialize key size to 0, default value when key size couldn't be determined
         $size = 0;
         // Check if the provided cipher method is valid

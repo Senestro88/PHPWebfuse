@@ -70,9 +70,9 @@ class CsrfSession {
      */
     public static function validateToken(): bool {
         if (self::sessionIdValid()) {
-            $seesionToken = self::getToken();
-            if (!self::isNull($seesionToken)) {
-                $isValid = Csrf::validateToken(self::$password, base64_decode($seesionToken));
+            $sessionToken = self::getToken();
+            if (!self::isNull($sessionToken)) {
+                $isValid = Csrf::validateToken(self::$password, base64_decode($sessionToken));
                 if ($isValid) {
                     self::unsetToken();
                 } else {
@@ -113,9 +113,9 @@ class CsrfSession {
      */
     public static function echoTokenInForm(): void {
         if (self::sessionIdValid()) {
-            $seesionToken = self::getToken();
-            if (!self::isNull($seesionToken)) {
-                echo "<input type='hidden' name='" . self::$name . "' id='" . self::$name . "' value='" . $seesionToken . " />";
+            $sessionToken = self::getToken();
+            if (!self::isNull($sessionToken)) {
+                echo "<input type='hidden' name='" . self::$name . "' id='" . self::$name . "' value='" . $sessionToken . " />";
             } else {
                 self::$message = "Failed to echo token in html form, unable to get the session token.";
             }
@@ -129,9 +129,9 @@ class CsrfSession {
      */
     public static function echoTokenInHtmlHead(): void {
         if (self::sessionIdValid()) {
-            $seesionToken = self::getToken();
-            if (!self::isNull($seesionToken)) {
-                echo "<meta name='" . self::$name . "' content='" . $seesionToken . " />";
+            $sessionToken = self::getToken();
+            if (!self::isNull($sessionToken)) {
+                echo "<meta name='" . self::$name . "' content='" . $sessionToken . " />";
             } else {
                 self::$message = "Failed to echo token in html head, unable to get the session token.";
             }

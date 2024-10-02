@@ -14,13 +14,13 @@ class Session {
      * Same-site policy for the session cookie
      * @var string
      */
-    private string $samesite = "Lax";
+    private string $sameSite = "Lax";
 
     /**
      * HTTP-only flag for the session cookie
      * @var bool
      */
-    private bool $httponly = true;
+    private bool $httpOnly = true;
 
     /**
      * Path for the session cookie
@@ -97,11 +97,11 @@ class Session {
 
     /**
      * Set HTTP-only flag
-     * @param bool $httponly
+     * @param bool $httpOnly
      * @return void
      */
-    public function setHttpOnly(bool $httponly): void {
-        $this->httponly = $httponly;
+    public function setHttpOnly(bool $httpOnly): void {
+        $this->httpOnly = $httpOnly;
     }
 
     /**
@@ -109,16 +109,16 @@ class Session {
      * @return bool
      */
     public function isHttpOnly(): bool {
-        return $this->httponly;
+        return $this->httpOnly;
     }
 
     /**
      * Set same-site policy
-     * @param string $samesite
+     * @param string $sameSite
      * @return void
      */
-    public function setSameSite(string $samesite): void {
-        $this->samesite = $samesite;
+    public function setSameSite(string $sameSite): void {
+        $this->sameSite = $sameSite;
     }
 
     /**
@@ -126,7 +126,7 @@ class Session {
      * @return string
      */
     public function getSameSite(): string {
-        return $this->samesite;
+        return $this->sameSite;
     }
 
     /**
@@ -361,18 +361,18 @@ class Session {
         $path = $this->getPath();
         $domain = $this->getDomain();
         $secure = $this->inSecuredContext();
-        $httponly = $this->isHttpOnly();
-        $samesite = $this->getSameSite();
+        $httpOnly = $this->isHttpOnly();
+        $sameSite = $this->getSameSite();
         if (PHP_VERSION_ID < 70300) {
-            return session_set_cookie_params($lifetime, $path, $domain, $secure, $httponly);
+            return session_set_cookie_params($lifetime, $path, $domain, $secure, $httpOnly);
         } else {
             return session_set_cookie_params([
                 'lifetime' => $lifetime,
                 'path' => $path,
                 'domain' => $domain,
                 'secure' => $secure,
-                'httponly' => $httponly,
-                'samesite' => $samesite,
+                'httponly' => $httpOnly,
+                'samesite' => $sameSite,
             ]);
         }
     }

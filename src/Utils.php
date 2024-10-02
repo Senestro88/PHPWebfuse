@@ -138,13 +138,13 @@ class Utils {
      * @param string $path
      * @param string $domain
      * @param bool $secure
-     * @param bool $httponly
-     * @param string $samesite
+     * @param bool $httpOnly
+     * @param string $sameSite
      * @return bool
      */
-    public static function createCookie(string $name, string $value, int $days, string $path, string $domain, bool $secure, bool $httponly, string $samesite): bool {
+    public static function createCookie(string $name, string $value, int $days, string $path, string $domain, bool $secure, bool $httpOnly, string $sameSite): bool {
         $expires = strtotime('+' . $days . ' days');
-        return @setcookie($name, $value, array('expires' => $expires, 'path' => $path, 'domain' => $domain, 'secure' => $secure, 'httponly' => $httponly, 'samesite' => ucfirst($samesite)));
+        return @setcookie($name, $value, array('expires' => $expires, 'path' => $path, 'domain' => $domain, 'secure' => $secure, 'httponly' => $httpOnly, 'samesite' => ucfirst($sameSite)));
     }
 
     /**
@@ -154,14 +154,14 @@ class Utils {
      * @param string $path
      * @param string $domain
      * @param bool $secure
-     * @param bool $httponly
-     * @param string $samesite
+     * @param bool $httpOnly
+     * @param string $sameSite
      * @return bool
      */
-    public static function deleteCookie(string $name, string $path, string $domain, bool $secure, bool $httponly, string $samesite): bool {
+    public static function deleteCookie(string $name, string $path, string $domain, bool $secure, bool $httpOnly, string $sameSite): bool {
         if (isset($_COOKIE) && isset($_COOKIE[$name])) {
             $expires = strtotime('2010');
-            $setcookie = @setcookie($name, "", array('expires' => $expires, 'path' => $path, 'domain' => $domain, 'secure' => $secure, 'httponly' => $httponly, 'samesite' => ucfirst($samesite)));
+            $setcookie = @setcookie($name, "", array('expires' => $expires, 'path' => $path, 'domain' => $domain, 'secure' => $secure, 'httponly' => $httpOnly, 'samesite' => ucfirst($sameSite)));
             if (self::isTrue($setcookie)) {
                 try {
                     unset($_COOKIE['' . $name . '']);
@@ -211,7 +211,7 @@ class Utils {
             } elseif ($fileType === 0x6000) {
                 $info = 'b'; // Block special
             } elseif ($fileType === 0x4000) {
-                $info = 'd'; // Fileectory
+                $info = 'd'; // File directory
             } elseif ($fileType === 0x2000) {
                 $info = 'c'; // Character special
             } elseif ($fileType === 0x1000) {
@@ -1032,18 +1032,24 @@ class Utils {
     }
 
     /**
-     * Randomize the string
-     * @param string $string
-     * @return string
+     * Generates a random text of the specified length.
+     * 
+     * @param int $length The length of the random text. Defaults to 10.
+     * @return string The generated random text.
      */
-    public static function randomizeString(string $string): string {
-        if (empty($string)) {
-            $string = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    public static function generateRandomText(int $length = 10): string {
+        // Define the characters to use for the random text
+        $characters = md5('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789');
+        // Initialize the random text
+        $random = '';
+        // Ensure the length is within the valid range (10-200)
+        $length = $length < 10 ? 10 : min(200, $length);
+        // Generate the random text
+        for ($i = 0; $i < $length; $i++) {
+            // Select a random character from the defined characters
+            $random .= $characters[rand(0, strlen($characters) - 1)];
         }
-        for ($i = 1; $i <= 10; $i++) {
-            $string = str_shuffle(strrev($string));
-        }
-        return $string;
+        return $random;
     }
 
     /**
@@ -2091,7 +2097,7 @@ class Utils {
     public static function convertImageToBase64(string $file): string {
         $base64Image = "";
         // Supported image extensions
-        $extensions = array('gif', 'jpg', 'jpeg', 'png');
+        $extensions = array('gif', 'jpg', 'jpeg', 'png', 'webp');
         // Check if the file exists and is readable
         if (File::isFile($file) && self::isReadable($file)) {
             // Get the file extension
@@ -2099,7 +2105,7 @@ class Utils {
             // Check if the file extension is supported
             if (self::isNotEmptyString($extension) && self::inArray($extension, $extensions)) {
                 // Get the image content and encode the image content to base64
-                $base64Encode = base64_encode(File::getFileContent($file));
+                $base64Encode = base64_encode(@\file_get_contents($file));
                 // Add the appropriate data URI prefix
                 $base64Image = 'data:' . mime_content_type($file) . ';base64,' . $base64Encode;
             }
@@ -2830,6 +2836,22 @@ class Utils {
     }
 
     /**
+     * Alias of convertBytes()
+     * @param int $bytes
+     * @return array
+     */
+    public static function convertBytesToHumanReadable(int $bytes): array {
+        $kb = $bytes / 1024;
+        $mb = $bytes / (1024 * 1024);
+        $gb = $bytes / (1024 * 1024 * 1024);
+        return array(
+            'KB' => $kb,
+            'MB' => $mb,
+            'GB' => $gb,
+        );
+    }
+
+    /**
      * Sort files first then folders
      * @param array $lists
      * @return array
@@ -2890,6 +2912,104 @@ class Utils {
             }
         }
         return false;
+    }
+
+    /**
+     * Gets the root path of the application, either as a URL or a filesystem path.
+     *
+     * @param bool $urlForm Whether to return the path as a URL (true) or a filesystem path (false).
+     * @param bool $endForwardslash Whether to add a trailing forward slash to the path.
+     * @return string The root path.
+     */
+    public static function getDocumentRoot(bool $urlForm = false, bool $endForwardslash = true): string {
+        return $urlForm ? Utils::currentUrl() . ($endForwardslash ? '/' : '') : Path::insert_dir_separator(getenv('DOCUMENT_ROOT'), $endForwardslash);
+    }
+
+    /**
+     * Gets a path relative to the root path.
+     *
+     * @param string $name The relative path.
+     * @param bool $urlForm Whether to return the path as a URL (true) or a filesystem path (false).
+     * @param bool $endForwardslash Whether to add a trailing forward slash to the path.
+     * @return string The absolute path.
+     */
+    public static function getFromDocumentRoot(string $name, bool $urlForm = false, bool $endForwardslash = true): string {
+        $rootPath = $urlForm ? self::getDocumentRoot(true) : self::getDocumentRoot(false);
+        $name = Path::arrange_dir_separators($name, false);
+        $name = $urlForm ? str_replace('\\', '/', $name) : $name;
+        return $rootPath . $name . ($endForwardslash ? ($urlForm ? '/' : DIRECTORY_SEPARATOR) : '');
+    }
+
+    /**
+     * Generate a bootstrap HTML error message
+     *
+     * @param string $message The error message to display
+     * @param bool $useEcho Whether to echo the message directly or return it as a string
+     * @return string The HTML error message
+     */
+    public static function bootstrapErrorMessage(string $message, bool $useEcho = true): string {
+        $html = "<div class='container alert alert-danger'>$message</div>";
+        if ($useEcho) {
+            // Echo the message directly if $useEcho is true
+            echo $html;
+            return ""; // Return an empty string if echoing
+        }
+        // Return the HTML string if not echoing
+        return $html;
+    }
+
+    /**
+     * Generate a bootstrap HTML success message
+     *
+     * @param string $message The success message to display
+     * @param bool $useEcho Whether to echo the message directly or return it as a string
+     * @return string The HTML success message
+     */
+    public static function bootstrapSuccessMessage(string $message, bool $useEcho = true): string {
+        $html = "<div class='container alert alert-success'>$message</div>";
+        if ($useEcho) {
+            // Echo the message directly if $useEcho is true
+            echo $html;
+            return ""; // Return an empty string if echoing
+        }
+        // Return the HTML string if not echoing
+        return $html;
+    }
+
+    /**
+     * Generate a bootstrap HTML info message
+     *
+     * @param string $message The info message to display
+     * @param bool $useEcho Whether to echo the message directly or return it as a string
+     * @return string The HTML info message
+     */
+    public static function bootstrapInfoMessage(string $message, bool $useEcho = true): string {
+        $html = "<div class='container alert alert-info'>$message</div>";
+        if ($useEcho) {
+            // Echo the message directly if $useEcho is true
+            echo $html;
+            return ""; // Return an empty string if echoing
+        }
+        // Return the HTML string if not echoing
+        return $html;
+    }
+
+    /**
+     * Generate a bootstrap HTML normal message
+     *
+     * @param string $message The normal message to display
+     * @param bool $useEcho Whether to echo the message directly or return it as a string
+     * @return string The HTML normal message
+     */
+    public static function bootstrapNormalMessage(string $message, bool $useEcho = true): string {
+        $html = "<div class='container alert alert-default'>$message</div>";
+        if ($useEcho) {
+            // Echo the message directly if $useEcho is true
+            echo $html;
+            return ""; // Return an empty string if echoing
+        }
+        // Return the HTML string if not echoing
+        return $html;
     }
 
     // PRIVATE METHOD

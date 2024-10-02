@@ -26,12 +26,12 @@ class File {
     private string $day;
     private string $time;
     private string $target;
-    
+
     /**
      * The remote directory separator
      * @var string
      */
-    private string $rds= "/"; 
+    private string $rds = "/";
 
     // PUBLIC METHODS
 
@@ -101,8 +101,8 @@ class File {
      * Ge the file extension
      * @return string
      */
-    public function getEtension(): string {
-        return File::getEtension($this->getBasename());
+    public function getExtension(): string {
+        return File::getExtension($this->getBasename());
     }
 
     /**
@@ -114,7 +114,7 @@ class File {
     }
 
     /**
-     * Get the raw permission, like -drwx and octal permssion, like 0775
+     * Get the raw permission, like -drwx and octal permission, like 0775
      * @return string
      */
     public function getPermission(): array {
@@ -182,7 +182,7 @@ class File {
      * @return string
      */
     public function getDir(): string {
-        return $this->insertrds($this->arrangerds($this->dir), true);
+        return $this->insert_ds($this->arrange_ds($this->dir), true);
     }
 
     /**
@@ -202,11 +202,11 @@ class File {
      */
     private function validate(): void {
         // Make sure the line is not empty
-        if(Utils::isNotEmptyString($this->line)) {
+        if (Utils::isNotEmptyString($this->line)) {
             // Split the raw list entry by space
             $parts = preg_split("/\s+/", $this->line);
             // Making sure that the line parts are greater than or equal to 9
-            if(count($parts) >= 9) {
+            if (count($parts) >= 9) {
                 // Extract the relevant parts
                 $permission = $parts[0]; // Raw permission
                 $number = $parts[1]; // The number
@@ -218,18 +218,18 @@ class File {
                 $time = $parts[7]; // The time
                 $basename = $parts[8]; // The file basename
                 // Make sure the basename is set and it's a string
-                if($basename && is_string($basename)) {
+                if ($basename && is_string($basename)) {
                     // Set a variable to check if the basename is empty or the basename is parent directory or current directory
                     $notValid = empty($basename) || $basename == "." || $basename == "..";
                     // Include when basename is not empty or basename is not the current directory or parent directory
-                    if(!$notValid) {
+                    if (!$notValid) {
                         // Get the file type (file, directory, link or unknown)
                         $this->type = $this->convertRawPermissionToType($permission);
                         // Get the full path of the item
                         $this->realpath = Path::arrange_dir_separators(Path::merge($this->dir, $basename, $this->rds), false, $this->rds);
                         // Handle filenames with spaces
-                        if(isset($parts[9])) {
-                            for($i = 9; $i < count($parts); $i++) {
+                        if (isset($parts[9])) {
+                            for ($i = 9; $i < count($parts); $i++) {
                                 $this->realpath .= ' ' . $parts[$i];
                             }
                         }
@@ -260,15 +260,19 @@ class File {
      */
     private function convertRawPermissionToType(string $permission): string {
 
-        if(!is_numeric($permission)) {
-            if(empty($permission[0])) {
+        if (!is_numeric($permission)) {
+            if (empty($permission[0])) {
                 return 'unknown';
             }
-            switch($permission[0]) {
-                case '-': return 'file';
-                case 'd': return 'directory';
-                case 'l': return 'link';
-                default: return 'unknown';
+            switch ($permission[0]) {
+                case '-':
+                    return 'file';
+                case 'd':
+                    return 'directory';
+                case 'l':
+                    return 'link';
+                default:
+                    return 'unknown';
             }
         }
         return "unknown";
@@ -281,29 +285,29 @@ class File {
      */
     private function convertRawPermissionToOctal(string $permission): ?string {
         // Check if the permission string is not numeric (i.e., it's a symbolic permission like "rwxr-xr--")
-        if(!is_numeric($permission)) {
+        if (!is_numeric($permission)) {
             // Remove the first character (usually a file type indicator like '-', 'd', etc.)
             $permission = substr($permission, 1);
             // Split the remaining permission string into parts of 3 characters each (owner, group, world)
-            $permissionparts = str_split($permission, 3);
+            $permissionParts = str_split($permission, 3);
             // Initialize an associative array to store octal values for owner, group, and world
             $octalPermission = array(
-                'owner' => $permissionparts[0] ?: "",
-                'group' => $permissionparts[1] ?: "",
-                'world' => $permissionparts[2] ?: ""
+                'owner' => $permissionParts[0] ?: "",
+                'group' => $permissionParts[1] ?: "",
+                'world' => $permissionParts[2] ?: ""
             );
             // Define an associative array to map permission characters to their octal values
             $permsValues = array("r" => 4, "w" => 2, "x" => 1);
             // Loop through each part (owner, group, world) to calculate the octal value
-            foreach($octalPermission as $index => $value) {
+            foreach ($octalPermission as $index => $value) {
                 $permInt = 0;
                 // Check if the permission part is not empty
-                if(Utils::isNotEmptyString($value)) {
+                if (Utils::isNotEmptyString($value)) {
                     // Loop through each character in the permission part
-                    foreach(str_split($value, 1) as $splitedValue) {
+                    foreach (str_split($value, 1) as $splitValue) {
                         // Add the corresponding octal value if the character exists in the permsValues array
-                        if(isset($permsValues[$splitedValue])) {
-                            $permInt += $permsValues[$splitedValue];
+                        if (isset($permsValues[$splitValue])) {
+                            $permInt += $permsValues[$splitValue];
                         }
                     }
                 }
@@ -316,23 +320,23 @@ class File {
         // Return null if the permission string was numeric (not a symbolic permission)
         return null;
     }
-    
+
     /**
      * Arrange remote  separator by replacing multiple separators joined together (\\ or //) to single separator
      * @param string $path
      * @return string
      */
-    private function arrangerds(string $path): string {
+    private function arrange_ds(string $path): string {
         return Path::arrange_dir_separators($path, false, $this->rds);
     }
-    
+
     /**
      * Insert directory separator to the beginning or end of the directory path
      * @param string $path
      * @param bool $toEnd
      * @return string
      */
-    private function insertrds(string $path, bool $toEnd = true): string {
+    private function insert_ds(string $path, bool $toEnd = true): string {
         return Path::insert_dir_separator($path, $toEnd, $this->rds);
     }
 }

@@ -7,8 +7,7 @@ use \PHPWebfuse\Http;
 /**
  * @author Senestro
  */
-class MultiAuth
-{
+class MultiAuth {
     // PRIVATE VARIABLES
 
     /**
@@ -50,8 +49,7 @@ class MultiAuth
      * @param \DateTimeInterface|null $time
      * @param int $codeperiod The duration in seconds that the code is valid.
      */
-    public function __construct(int $passcodelength = 6, int $keylength = 10, ?\DateTimeInterface $time = null, int $codeperiod = 30)
-    {
+    public function __construct(int $passcodelength = 6, int $keylength = 10, ?\DateTimeInterface $time = null, int $codeperiod = 30) {
         $this->passcodelength = $passcodelength;
         $this->keylength = $keylength;
         $this->codeperiod = $codeperiod;
@@ -64,8 +62,7 @@ class MultiAuth
      * Generate a random key
      * @return string
      */
-    public function generateKey(): string
-    {
+    public function generateKey(): string {
         return (new \PHPWebfuse\Instance\MultiAuth\FixedBitNotation(5, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567', true, true))->encode(random_bytes($this->keylength));
     }
 
@@ -77,8 +74,7 @@ class MultiAuth
      * @param string $key
      * @return string
      */
-    public function createBase64Image(string $user, string $hostname, string $issuer, string $key): string
-    {
+    public function createBase64Image(string $user, string $hostname, string $issuer, string $key): string {
         return (new \PHPWebfuse\Instance\MultiAuth\QrCodeImage())->createBase64Image(sprintf('%s@%s', $user, $hostname), $key, $issuer);
     }
 
@@ -90,8 +86,7 @@ class MultiAuth
      * @param string $key
      * @return void
      */
-    public function createOuputImage(string $user, string $hostname, string $issuer, string $key): void
-    {
+    public function createOuputImage(string $user, string $hostname, string $issuer, string $key): void {
         (new \PHPWebfuse\Instance\MultiAuth\QrCodeImage())->createOuputImage(sprintf('%s@%s', $user, $hostname), $key, $issuer);
     }
 
@@ -103,8 +98,7 @@ class MultiAuth
      * @param string $key
      * @return string
      */
-    public function createImageUrl(string $user, string $hostname, string $issuer, string $key): string
-    {
+    public function createImageUrl(string $user, string $hostname, string $issuer, string $key): string {
         return (new \PHPWebfuse\Instance\MultiAuth\QrCodeUrl())->generate(sprintf('%s@%s', $user, $hostname), $key, $issuer);
     }
 
@@ -114,8 +108,7 @@ class MultiAuth
      * @param \DateTimeInterface|null $time
      * @return string
      */
-    public function getCode(string $key, ?\DateTimeInterface $time = null): string
-    {
+    public function getCode(string $key, ?\DateTimeInterface $time = null): string {
         if (null === $time) {
             $time = $this->time;
         }
@@ -152,8 +145,7 @@ class MultiAuth
      * Each comparison uses hash_equals() instead of an operator to implement constant time equality comparison
      * for each code.
      */
-    public function isCodeValid(string $key, string $code, int $discrepancy = 1): bool
-    {
+    public function isCodeValid(string $key, string $code, int $discrepancy = 1): bool {
         $periods = floor($this->codeperiod / $this->periodsize);
         $result = 0;
         for ($i = -$discrepancy; $i < $periods + $discrepancy; ++$i) {
@@ -171,8 +163,7 @@ class MultiAuth
      * @param int $start
      * @return int
      */
-    private function hashToInt(string $bytes, int $start): int
-    {
+    private function hashToInt(string $bytes, int $start): int {
         return unpack('N', substr(substr($bytes, $start), 0, 4))[1];
     }
 }

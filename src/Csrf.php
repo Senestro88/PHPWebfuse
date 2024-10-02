@@ -35,7 +35,7 @@ class Csrf {
                 $expires = self::setFutureMinutesFromMinutes($minutes);
                 $json = Utils::arrayToJson(array("token" => $hex, "salt" => $salt, "expires" => $expires));
                 $enc = Aes::enc($json, $csrfKey, "aes-128-cbc");
-                return $enc ? $enc : '';
+                return $enc ?: '';
             } catch (\Throwable $e) {
             }
         }
@@ -56,9 +56,7 @@ class Csrf {
                     $token = $array['token'] ?? '';
                     $salt = $array['salt'] ?? '';
                     $expires = (int) ($array['expires'] ?? 0);
-                    if (hash_equals($salt, hash_hmac('sha256', $token, $csrfKey))) {
-                        return self::isCsrfMinutesInFuture($expires);
-                    }
+                    return hash_equals($salt, hash_hmac('sha256', $token, $csrfKey)) ? self::isCsrfMinutesInFuture($expires) : false;
                 }
             } catch (\Throwable $e) {
             }
