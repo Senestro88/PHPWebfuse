@@ -386,7 +386,7 @@ class Database {
             if (!empty($onDuplicateKeyUpdate)) {
                 $updateFields = [];
                 foreach ($onDuplicateKeyUpdate as $key => $value) {
-                    $updateFields[] = "`" . $key . "` = " . $this->escape($value);
+                    $updateFields[] = "" . $key . " = " . $this->escape($value);
                 }
                 $statement .= " ON DUPLICATE KEY UPDATE " . implode(", ", $updateFields);
             }
@@ -428,7 +428,7 @@ class Database {
             $statement = "CREATE TABLE IF NOT EXISTS " . $database . "." . $table . " (";
             // Add the columns to the statement
             foreach ($columns as $name => $value) {
-                $statement .= "`" . $name . "` " . $value . ", ";
+                $statement .= "" . $name . " " . $value . ", ";
             }
             // Remove the trailing comma and add the closing parenthesis
             $statement = rtrim($statement, ", ") . ")";
