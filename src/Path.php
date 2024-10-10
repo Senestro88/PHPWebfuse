@@ -49,18 +49,58 @@ class Path {
         return ltrim(self::convert_dir_separators($path, $separator), $separator);
     }
 
+
     /**
-     * Arrange directory separator by replacing multiple separators joined together (\\ or //) to single separator
-     * @param string $path
-     * @param bool $closeEdges Close the edged with a separator. Defaults to false
-     * @param string|null $separator Use this to overwrite the default build in DIRECTORY_SEPARATOR constant
-     * @return string
-     * */
+     * Normalizes the directory separators in the given path.
+     *
+     * This function ensures that the directory separators are consistent throughout the given path.
+     * It can optionally add a separator at the start and end of the path, depending on the 
+     * value of the `$closeEdges` parameter.
+     *
+     * @param string $path The directory path to normalize.
+     * @param bool $closeEdges If true, adds directory separators at the start and end of the path.
+     *                         Default is false.
+     * @param string|null $separator The separator to use for the path (defaults to DIRECTORY_SEPARATOR).
+     *                               If null or empty, the system's DIRECTORY_SEPARATOR is used.
+     * @return string The normalized path with consistent directory separators.
+     */
     public static function arrange_dir_separators(string $path, bool $closeEdges = false, ?string $separator = null): string {
+        // Use the provided separator, or default to the system's DIRECTORY_SEPARATOR if not provided.
         $separator = \is_string($separator) && !empty($separator) ? $separator : DIRECTORY_SEPARATOR;
+        // Convert the path to use consistent separators and split the path into components.
         $explodedPath = array_filter(explode($separator, self::convert_dir_separators($path, $separator)));
+        // Return the path, optionally closing the edges with the separator.
         return ($closeEdges ? $separator : "") . implode($separator, $explodedPath) . ($closeEdges ? $separator : "");
     }
+
+    /**
+     * Normalizes the directory separators in the given path, with special handling for Windows paths.
+     *
+     * This function normalizes the directory separators in a path and can optionally add a separator
+     * at the start and end of the path. If the operating system is Windows and the path starts with a 
+     * drive letter (e.g., "C:\"), the edges are not closed.
+     *
+     * @param string $path The directory path to normalize.
+     * @param bool $closeEdges If true, adds directory separators at the start and end of the path, unless
+     *                         it's a Windows path with a drive letter.
+     *                         Default is false.
+     * @param string|null $separator The separator to use for the path (defaults to DIRECTORY_SEPARATOR).
+     *                               If null or empty, the system's DIRECTORY_SEPARATOR is used.
+     * @return string The normalized path with consistent directory separators.
+     */
+    public static function arrange_dir_separators_v2(string $path, bool $closeEdges = false, ?string $separator = null): string {
+        // Use the provided separator, or default to the system's DIRECTORY_SEPARATOR if not provided.
+        $separator = \is_string($separator) && !empty($separator) ? $separator : DIRECTORY_SEPARATOR;
+        // Convert the path to use consistent separators and split the path into components.
+        $explodedPath = array_filter(explode($separator, self::convert_dir_separators($path, $separator)));
+        // Check if the current operating system is Windows.
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        // Check if the path starts with a drive letter (e.g., "C:\").
+        $startWithDriveLetter = preg_match('/^[A-Za-z]:[\/\\\]/', $path);
+        // Return the path, conditionally closing the edges unless it's a Windows path with a drive letter.
+        return ($closeEdges ? (!$isWindows || !$startWithDriveLetter ? $separator : "") : "") . implode($separator, $explodedPath) . ($closeEdges ? $separator : "");
+    }
+
 
     /**
      * Insert directory separator to the beginning or end of the directory path

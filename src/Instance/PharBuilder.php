@@ -56,7 +56,7 @@ class PharBuilder {
         } else {
             $realPath = $this->realPath($rootPath);
             if (is_string($realPath) && is_dir($rootPath) && is_readable($rootPath)) {
-                $this->rootPath = Path::arrange_dir_separators($realPath);
+                $this->rootPath = Path::arrange_dir_separators_v2($realPath);
             } else {
                 throw new \Exception('To creation a Phar archive, the root path must exists and readable.');
             }
@@ -69,7 +69,7 @@ class PharBuilder {
      * @return void
      */
     public function addFile(string $file): void {
-        $entry = Path::arrange_dir_separators($file);
+        $entry = Path::arrange_dir_separators_v2($file);
         $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . $entry);
         if (is_string($realPath) && is_file($realPath) && is_readable($realPath)) {
             $this->files[$entry] = $realPath;
@@ -99,7 +99,7 @@ class PharBuilder {
      * @return void
      */
     public function addDirectory(string $directory, string $excludePattern = ""): void {
-        $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . Path::arrange_dir_separators($directory));
+        $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . Path::arrange_dir_separators_v2($directory));
         if (is_string($realPath) && is_dir($realPath)) {
             $iterator = new \RecursiveDirectoryIterator($realPath, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::UNIX_PATHS | \FilesystemIterator::CURRENT_AS_SELF);
             if (!empty($excludePattern)) {
@@ -137,7 +137,7 @@ class PharBuilder {
      * @throws \Exception
      */
     public function setInterface(string $file, string $sapi = 'cli'): void {
-        $entry = Path::arrange_dir_separators($file);
+        $entry = Path::arrange_dir_separators_v2($file);
         $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . $entry);
         if (is_string($realPath) && is_file($realPath) && is_readable($realPath)) {
             $sapi = strtolower($sapi);
@@ -159,7 +159,7 @@ class PharBuilder {
      * @return void
      */
     public function overrideInterfaces(string $file): void {
-        $entry = Path::arrange_dir_separators($file);
+        $entry = Path::arrange_dir_separators_v2($file);
         $realPath = $this->realPath($this->rootPath . DIRECTORY_SEPARATOR . $entry);
         if (is_string($realPath) && is_file($realPath) && is_readable($realPath)) {
             if (in_array($entry, array_keys($this->files))) {

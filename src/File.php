@@ -342,7 +342,7 @@ class File {
      */
     public static function rename(string $source, string $name): bool {
         if (Utils::isExists($source)) {
-            $dirname = Path::arrange_dir_separators(self::getDirname($source));
+            $dirname = Path::arrange_dir_separators_v2(self::getDirname($source));
             $name = \basename($name);
             return @rename($source, $dirname . DIRECTORY_SEPARATOR . $name);
         }
@@ -375,7 +375,7 @@ class File {
     public static function copyFileToDir(string $source, string $dir, ?string $name = null): bool {
         if (self::isFile($source)) {
             self::createDir($dir);
-            $dir = Path::arrange_dir_separators(\realpath($dir));
+            $dir = Path::arrange_dir_separators_v2(\realpath($dir));
             $destination = $dir . DIRECTORY_SEPARATOR . (\is_string($name) && !empty($name) ? $name : basename($source));
             if (self::isFile($destination)) {
                 return true;
@@ -397,7 +397,7 @@ class File {
     public static function moveFileOrDirToDir(string $source, string $dir, ?string $name = null): bool {
         if (Utils::isExists($source)) {
             self::createDir($dir);
-            $dir = Path::arrange_dir_separators(\realpath($dir));
+            $dir = Path::arrange_dir_separators_v2(\realpath($dir));
             $destination = $dir . DIRECTORY_SEPARATOR . (\is_string($name) && !empty($name) ? $name : basename($source));
             if (Utils::isExists($destination)) {
                 return true;
@@ -424,7 +424,7 @@ class File {
             $base = $destination . DIRECTORY_SEPARATOR . basename($source);
             if (self::createDir($base)) {
                 foreach ($lists as $srcPath) {
-                    $destPath = Path::arrange_dir_separators($base . DIRECTORY_SEPARATOR . str_replace($source, "", $srcPath));
+                    $destPath = Path::arrange_dir_separators_v2($base . DIRECTORY_SEPARATOR . str_replace($source, "", $srcPath));
                     if (self::isDir($srcPath)) {
                         // Create the directory in the destination
                         if (!self::isDir($destPath) && !self::createDir($destPath)) {

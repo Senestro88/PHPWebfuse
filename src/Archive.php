@@ -40,7 +40,7 @@ class Archive {
                 // Filter the archive name
                 $name = self::setName($name, "zip");
                 // Arrange dirname
-                $dirname = Path::arrange_dir_separators($dirname);
+                $dirname = Path::arrange_dir_separators_v2($dirname);
                 // The archive absolute path
                 $archiveName = $dirname . DIRECTORY_SEPARATOR . $name;
                 // Delete file if exist
@@ -50,9 +50,9 @@ class Archive {
                 // Loop items
                 foreach ($items as $index => $item) {
                     // Arrange the item path
-                    $item = Path::arrange_dir_separators($item);
+                    $item = Path::arrange_dir_separators_v2($item);
                     if (File::isFile($item) || File::isDir($item)) {
-                        $removePath = Path::arrange_dir_separators(File::getDirname($item));
+                        $removePath = Path::arrange_dir_separators_v2(File::getDirname($item));
                         $archive->add(Utils::resolvePath($item), PCLZIP_OPT_REMOVE_PATH, $removePath);
                     }
                 }
@@ -114,7 +114,7 @@ class Archive {
                 // Filter the archive name
                 $name = self::setName($name, "zip");
                 // Arrange dirname
-                $dirname = Path::arrange_dir_separators($dirname);
+                $dirname = Path::arrange_dir_separators_v2($dirname);
                 // The archive absolute path
                 $archiveName = $dirname . DIRECTORY_SEPARATOR . $name;
                 // Delete file if exist
@@ -138,7 +138,7 @@ class Archive {
                     // Loop the items
                     foreach ($items as $item) {
                         // Arrange the item path
-                        $item = Path::arrange_dir_separators($item);
+                        $item = Path::arrange_dir_separators_v2($item);
                         // Add the file to zip
                         if (File::isFile($item)) {
                             $entry = basename($item);
@@ -149,7 +149,7 @@ class Archive {
                             // Recursively iterate the directory item
                             $files = File::scanDirRecursively($item);
                             foreach ($files as $file) {
-                                $entry = Path::arrange_dir_separators(\str_replace(File::getDirname($item), "", $file), false, "/");
+                                $entry = Path::arrange_dir_separators_v2(\str_replace(File::getDirname($item), "", $file), false, "/");
                                 // When it's an empty directory or file
                                 if (File::isDir($file) && $archive->addEmptyDir($entry)) {
                                     $entries[] = $entry;
@@ -227,7 +227,7 @@ class Archive {
                 // Filter the archive name
                 $name = self::setName($name, "tar");
                 // Arrange dirname
-                $dirname = Path::arrange_dir_separators($dirname);
+                $dirname = Path::arrange_dir_separators_v2($dirname);
                 // The archive absolute path
                 $archiveName = $dirname . DIRECTORY_SEPARATOR . $name;
                 // Delete file if exist
@@ -238,7 +238,7 @@ class Archive {
                     // Loop the items
                     foreach ($items as $item) {
                         // Arrange the item path
-                        $item = Path::arrange_dir_separators($item);
+                        $item = Path::arrange_dir_separators_v2($item);
                         // Add the file to zip
                         if (File::isFile($item)) {
                             $entry = basename($item);
@@ -247,7 +247,7 @@ class Archive {
                             // Recursively iterate the directory item
                             $files = File::scanDirRecursively($item);
                             foreach ($files as $file) {
-                                $entry = Path::arrange_dir_separators(\str_replace(File::getDirname($item), "", $file), false, "/");
+                                $entry = Path::arrange_dir_separators_v2(\str_replace(File::getDirname($item), "", $file), false, "/");
                                 // When it's an empty directory or file
                                 if (File::isDir($file)) {
                                     $phar->addEmptyDir($entry);

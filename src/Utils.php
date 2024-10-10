@@ -1602,7 +1602,7 @@ class Utils {
         $parse = parse_url($ccUrl);
         $scheme = $parse['scheme'];
         $host = $parse['host'];
-        $path = Path::arrange_dir_separators($parse['path'], true);
+        $path = Path::arrange_dir_separators_v2($parse['path'], true);
         return $scheme . '://' . $host . '' . $path;
     }
 
@@ -1809,8 +1809,8 @@ class Utils {
      * @throws \Exception
      */
     public static function loadPlugin(string $plugin): void {
-        $dirname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['PLUGINS']));
-        $plugin = Path::arrange_dir_separators($plugin);
+        $dirname = Path::insert_dir_separator(Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['PLUGINS'], true));
+        $plugin = Path::arrange_dir_separators_v2($plugin);
         $extension = File::getExtension($plugin);
         $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $plugin : $plugin . '.php';
         $plugin = $dirname . '' . $name;
@@ -1828,8 +1828,8 @@ class Utils {
      * @throws \Exception
      */
     public static function loadLib(string $lib): void {
-        $dirname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['LIBRARIES']));
-        $lib = Path::arrange_dir_separators($lib);
+        $dirname = Path::insert_dir_separator(Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['LIBRARIES'], true));
+        $lib = Path::arrange_dir_separators_v2($lib);
         $extension = File::getExtension($lib);
         $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $lib : $lib . '.php';
         $lib = $dirname . '' . $name;
@@ -2235,7 +2235,7 @@ class Utils {
                 if (isset($options['unique_file_identifier'])) {
                     $data['unique_file_identifier'] = array('ownerid' => "email", 'data' => md5(time()));
                 }
-                $tempPathname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['DATA'] . DIRECTORY_SEPARATOR . 'getid3' . DIRECTORY_SEPARATOR . 'temp'));
+                $tempPathname = Path::insert_dir_separator(Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['DATA'] . DIRECTORY_SEPARATOR . 'getid3' . DIRECTORY_SEPARATOR . 'temp'));
                 if (File::createFile($tempPathname)) {
                     $random = self::generateRandomFilename("png");
                     $_covername = $tempPathname . '' . $random;
@@ -2935,7 +2935,7 @@ class Utils {
      */
     public static function getFromDocumentRoot(string $name, bool $urlForm = false, bool $endForwardslash = true): string {
         $rootPath = $urlForm ? self::getDocumentRoot(true) : self::getDocumentRoot(false);
-        $name = Path::arrange_dir_separators($name, false);
+        $name = Path::arrange_dir_separators_v2($name, false);
         $name = $urlForm ? str_replace('\\', '/', $name) : $name;
         return $rootPath . $name . ($endForwardslash ? ($urlForm ? '/' : DIRECTORY_SEPARATOR) : '');
     }
