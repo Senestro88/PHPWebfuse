@@ -2,6 +2,8 @@
 
 namespace PHPWebfuse;
 
+use Carbon\Carbon;
+
 /**
  * @author Senestro
  */
@@ -83,5 +85,32 @@ class Time {
             $string .= $value . ' ' . $unit . $plural; // Add date value
         }
         return $string . ' ago';
+    }
+
+
+    /**
+     * Generates a greeting based on the current time and optional name.
+     *
+     * @param string|null $name The optional name to include in the greeting.
+     * @return string The generated greeting.
+     */
+    public static function greeting(?string $name = null): string {
+        $now = Carbon::now();
+        $hour = $now->hour;
+        // Define time ranges and corresponding greetings
+        $timeRanges = ['morning' => 0,'afternoon' => 12,'evening' => 17,'night' => 22];
+        // Determine the appropriate greeting based on the current hour
+        $greeting = match (true) {
+            $hour < $timeRanges['afternoon'] => 'Good Morning',
+            $hour < $timeRanges['evening'] => 'Good Afternoon',
+            $hour < $timeRanges['night'] => 'Good Evening',
+            default => 'Do have a good night',
+        };
+        // Add the name to the greeting if provided
+        if (!empty($name)) {
+            $greeting .= ", " . ucwords($name);
+        }
+        $greeting .= "!";
+        return $greeting;
     }
 }
