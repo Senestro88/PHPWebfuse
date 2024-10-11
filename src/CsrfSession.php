@@ -13,7 +13,7 @@ class CsrfSession {
     // Private constants
     private static $name = "X-SESS-CSRF-TOKEN";
     private static $password = "1291707412917074";
-    private static $lastMessage = "";
+    private static $errorMessage = "";
 
     // Prevent the constructor from being initialized
     private function __construct() {
@@ -28,11 +28,11 @@ class CsrfSession {
     }
 
     /**
-     * Get the last session message
-     * @return string The session last message
+     * Get the last session error message
+     * @return string The session last error message
      */
-    public static function getMessage(): string {
-        return self::$lastMessage;
+    public static function getErrorMessage(): string {
+        return self::$errorMessage;
     }
 
     /**
@@ -46,13 +46,13 @@ class CsrfSession {
                 // Set the token in the session
                 $_SESSION[self::$name] = base64_encode($generatedToken);
                 if (!isset($_SESSION[self::$name])) {
-                    self::$lastMessage = "Failed to set the token session.";
+                    self::$errorMessage = "Failed to set the token session.";
                 }
             } else {
-                self::$lastMessage = "Failed to generated session token.";
+                self::$errorMessage = "Failed to generated session token.";
             }
         } else {
-            self::$lastMessage = "Failed to set session token, session is not started.";
+            self::$errorMessage = "Failed to set session token, session is not started.";
         }
     }
 
@@ -76,14 +76,14 @@ class CsrfSession {
                 if ($isValid) {
                     self::unsetToken();
                 } else {
-                    self::$lastMessage = "Failed to validated session token, session token is not valid or has expired.";
+                    self::$errorMessage = "Failed to validated session token, session token is not valid or has expired.";
                 }
                 return $isValid;
             } else {
-                self::$lastMessage = "Failed to validated session token, unable to get the session token.";
+                self::$errorMessage = "Failed to validated session token, unable to get the session token.";
             }
         } else {
-            self::$lastMessage = "Failed to validate session token, session is not started.";
+            self::$errorMessage = "Failed to validate session token, session is not started.";
         }
         return false;
     }
@@ -99,11 +99,11 @@ class CsrfSession {
             if ($isValid) {
                 self::unsetToken();
             } else {
-                self::$lastMessage = "Failed to validated token, token is not valid or has expired.";
+                self::$errorMessage = "Failed to validated token, token is not valid or has expired.";
             }
             return $isValid;
         } else {
-            self::$lastMessage = "Failed to validate token, the token provided is empty.";
+            self::$errorMessage = "Failed to validate token, the token provided is empty.";
         }
         return false;
     }
@@ -117,10 +117,10 @@ class CsrfSession {
             if (!self::isNull($sessionToken)) {
                 echo "<input type='hidden' name='" . self::$name . "' id='" . self::$name . "' value='" . $sessionToken . " />";
             } else {
-                self::$lastMessage = "Failed to echo token in html form, unable to get the session token.";
+                self::$errorMessage = "Failed to echo token in html form, unable to get the session token.";
             }
         } else {
-            self::$lastMessage = "Failed to echo token in html form, the token provided is empty.";
+            self::$errorMessage = "Failed to echo token in html form, the token provided is empty.";
         }
     }
 
@@ -133,10 +133,10 @@ class CsrfSession {
             if (!self::isNull($sessionToken)) {
                 echo "<meta name='" . self::$name . "' content='" . $sessionToken . " />";
             } else {
-                self::$lastMessage = "Failed to echo token in html head, unable to get the session token.";
+                self::$errorMessage = "Failed to echo token in html head, unable to get the session token.";
             }
         } else {
-            self::$lastMessage = "Failed to echo token in html head, the token provided is empty.";
+            self::$errorMessage = "Failed to echo token in html head, the token provided is empty.";
         }
     }
 
@@ -150,11 +150,11 @@ class CsrfSession {
             if ($isValid) {
                 self::unsetToken();
             } else {
-                self::$lastMessage = "Failed to validated token from post rquest, token is not valid or has expired.";
+                self::$errorMessage = "Failed to validated token from post rquest, token is not valid or has expired.";
             }
             return $isValid;
         } else {
-            self::$lastMessage = "Failed to validated token from post request, the token provided is empty or not a POST request.";
+            self::$errorMessage = "Failed to validated token from post request, the token provided is empty or not a POST request.";
         }
         return false;
     }
@@ -171,12 +171,12 @@ class CsrfSession {
                 if ($isValid) {
                     self::unsetToken();
                 } else {
-                    self::$lastMessage = "Failed to validated token from request header, token is not valid or has expired.";
+                    self::$errorMessage = "Failed to validated token from request header, token is not valid or has expired.";
                 }
                 return $isValid;
             }
         } else {
-            self::$lastMessage = "Failed to validated token from request header, the token provided is empty or not in header request.";
+            self::$errorMessage = "Failed to validated token from request header, the token provided is empty or not in header request.";
         }
         return false;
     }

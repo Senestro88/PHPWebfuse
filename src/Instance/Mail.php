@@ -5,6 +5,7 @@ namespace PHPWebfuse\Instance;
 use PHPMailer\PHPMailer\SMTP;
 use \PHPWebfuse\Utils;
 use \PHPWebfuse\File;
+use  \PHPMailer\PHPMailer\PHPMailer;
 
 /**
  * @author Senestro
@@ -71,13 +72,12 @@ class Mail {
      */
     public function sendMail(string $emailFrom, string $emailTo, string $title, string $message, array $attachments = array(), bool $authenticate = true, bool $debug = false): bool|string {
         $result = "";
-
         // Check if PHPMailer class exists
         if (class_exists("\PHPMailer\PHPMailer\PHPMailer")) {
-            $mailer = new \PHPMailer\PHPMailer\PHPMailer();
+            $mailer = new PHPMailer();
             try {
                 // Reset attachments to only include valid files
-                $attachments = $this->resetAttachments($attachments);
+                $attachments = $this->validateAttachments($attachments);
                 // Configure mailer settings
                 $mailer->SMTPDebug = $debug ? SMTP::DEBUG_CONNECTION : SMTP::DEBUG_OFF;
                 $mailer->isSMTP();
@@ -130,7 +130,7 @@ class Mail {
      * @param array $attachments
      * @return array
      */
-    private function resetAttachments(array $attachments = array()): array {
+    private function validateAttachments(array $attachments = array()): array {
         foreach ($attachments as $index => $attachment) {
             if (File::isNotFile($attachment)) {
                 unset($attachments[$index]);

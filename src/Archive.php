@@ -5,6 +5,7 @@ namespace PHPWebfuse;
 use PHPWebfuse\Utils;
 use PHPWebfuse\File;
 use PHPWebfuse\Path;
+use \PHPWebfuse\Exceptions\Exception;
 
 /**
  * @author Senestro
@@ -267,7 +268,7 @@ class Archive {
                             File::deleteFile($archiveName);
                             $archiveName = $compressedName;
                         } else {
-                            throw new \PHPWebfuse\Exceptions\Exception("Failed to create the compress .gz archive from the .tar archive [" . $compressedName . "] - [" . $archiveName . "]");
+                            throw new Exception("Failed to create the compress .gz archive from the .tar archive [" . $compressedName . "] - [" . $archiveName . "]");
                         }
                     }
                     // Check if archive is created

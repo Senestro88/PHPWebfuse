@@ -2,6 +2,9 @@
 
 namespace PHPWebfuse\Instance\MultiAuth;
 
+use PHPWebfuse\Utils;
+use \PHPWebfuse\Instance\MultiAuth\QrException;
+
 /**
  * Responsible for QR image url generation.
  *
@@ -40,23 +43,26 @@ class QrCodeUrl {
      * @param string|null $issuer Where you log in to
      */
     public function generate(string $accountName, string $secret, ?string $issuer = null): string {
-        if ($accountName === "" || strpos($accountName, ':') !== false) {
-            throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidAccountName($accountName);
-        }
-        if ($secret === "") {
-            throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidKey();
-        }
-        $label = $accountName;
-        $content = 'otpauth://totp/%s?secret=%s';
-        if ($issuer !== null) {
-            if ($issuer === "" || strpos($issuer, ':') !== false) {
-                throw \PHPWebfuse\Instance\MultiAuth\QrException::InvalidIssuer($issuer);
+        if (Utils::isEmptyString($accountName) || Utils::containText(":", $accountName)) {
+            throw QrException::InvalidAccountName($accountName);
+        } else {
+            if (Utils::isEmptyString($secret)) {
+                throw QrException::InvalidKey();
+            } else {
+                $label = $accountName;
+                $content = 'otpauth://totp/%s?secret=%s';
+                if (Utils::isNonNull($issuer)) {
+                    if (Utils::isEmptyString($issuer) || Utils::containText(":", $issuer)) {
+                        throw QrException::InvalidIssuer($issuer);
+                    } else {
+                        // Use both the issuer parameter and label prefix as recommended by Google for BC reasons
+                        $label = $issuer . ':' . $label;
+                        $content .= '&issuer=%s';
+                    }
+                }
+                $content = rawurlencode(sprintf($content, $label, $secret, $issuer));
+                return sprintf('https://api.qrserver.com/v1/create-qr-code/?size=%1$dx%1$d&data=%2$s&ecc=M', 212, $content);
             }
-            // Use both the issuer parameter and label prefix as recommended by Google for BC reasons
-            $label = $issuer . ':' . $label;
-            $content .= '&issuer=%s';
         }
-        $content = rawurlencode(sprintf($content, $label, $secret, $issuer));
-        return sprintf('https://api.qrserver.com/v1/create-qr-code/?size=%1$dx%1$d&data=%2$s&ecc=M', 212, $content);
     }
 }

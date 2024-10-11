@@ -4,7 +4,7 @@
   "type": "library",
   "license": "MIT",
   "minimum-stability": "stable",
-  "version": "5.5.0",
+  "version": "6.0.0",
   "keywords": [
     "phpwebfuse",
     "webfuse",
@@ -52,7 +52,9 @@
     "symfony/filesystem": "^7.1",
     "vlucas/phpdotenv": "^5.6",
     "maennchen/zipstream-php": "^3.1",
-    "nesbot/carbon": "^3.8"
+    "nesbot/carbon": "^3.8",
+    "chillerlan/php-qrcode": "^5.0",
+    "chillerlan/php-authenticator": "^5.2"
   },
   "suggest": {
     "ext-libsodium": "SSH2/SFTP can make use of some algorithms provided by the libsodium-php extension.",

@@ -3,6 +3,8 @@
 namespace PHPWebfuse;
 
 use \PHPWebfuse\Utils;
+use \PHPWebfuse\Exceptions\Exception;
+use \PHPWebfuse\Exceptions\InvalidArgumentException;
 
 /**
  * @author Senestro
@@ -56,15 +58,15 @@ class Aes {
                     }
                 } catch (\Exception $e) {
                     // Throw an exception if an error occurs during encryption
-                    Utils::throwException($e->getMessage());
+                    throw new Exception($e->getMessage());
                 }
             } else {
                 // Throw an exception if the key size does not match the required size
-                Utils::throwInvalidArgumentException("The required key size should be {$keySize} bytes in length");
+                throw new InvalidArgumentException("The required key size should be {$keySize} bytes in length");
             }
         } else {
             // Throw an exception if the cipher method is unknown or invalid
-            Utils::throwInvalidArgumentException("Unknown or invalid cipher method");
+            throw new InvalidArgumentException("Unknown or invalid cipher method");
         }
     }
 
@@ -107,15 +109,15 @@ class Aes {
                     }
                 } catch (\Exception $e) {
                     // Throw an exception if an error occurs during decryption
-                    Utils::throwException($e->getMessage());
+                    throw new Exception($e->getMessage());
                 }
             } else {
                 // Throw an exception if the key size does not match the required size
-                Utils::throwInvalidArgumentException("The required key size should be {$keySize} bytes in length");
+                throw new InvalidArgumentException("The required key size should be {$keySize} bytes in length");
             }
         } else {
             // Throw an exception if the cipher method is unknown or invalid
-            Utils::throwInvalidArgumentException("Unknown or invalid cipher method");
+            throw new InvalidArgumentException("Unknown or invalid cipher method");
         }
     }
 

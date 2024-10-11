@@ -86,7 +86,7 @@ class MultiAuth {
      * @param string $key
      * @return void
      */
-    public function createOuputImage(string $user, string $hostname, string $issuer, string $key): void {
+    public function createOutputImage(string $user, string $hostname, string $issuer, string $key): void {
         (new \PHPWebfuse\Instance\MultiAuth\QrCodeImage())->createOuputImage(sprintf('%s@%s', $user, $hostname), $key, $issuer);
     }
 

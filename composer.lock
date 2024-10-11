@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1169e9c02a8e4510211ca1733e102831",
+    "content-hash": "a215c390e74176a283f0ca18356713b7",
     "packages": [
         {
             "name": "carbonphp/carbon-doctrine-types",
@@ -74,6 +74,246 @@
                 }
             ],
             "time": "2024-02-09T16:56:22+00:00"
+        },
+        {
+            "name": "chillerlan/php-authenticator",
+            "version": "5.2.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/chillerlan/php-authenticator.git",
+                "reference": "040318f0055421ff1ee52f6afa13e5f60a88ade9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/chillerlan/php-authenticator/zipball/040318f0055421ff1ee52f6afa13e5f60a88ade9",
+                "reference": "040318f0055421ff1ee52f6afa13e5f60a88ade9",
+                "shasum": ""
+            },
+            "require": {
+                "chillerlan/php-settings-container": "^3.2.1",
+                "paragonie/constant_time_encoding": "^3.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "ext-curl": "*",
+                "ext-json": "*",
+                "ext-sodium": "*",
+                "phpmd/phpmd": "^2.15",
+                "phpstan/phpstan": "^1.11",
+                "phpstan/phpstan-deprecation-rules": "^1.2",
+                "phpunit/phpunit": "^11.2",
+                "squizlabs/php_codesniffer": "^3.10"
+            },
+            "suggest": {
+                "chillerlan/php-qrcode": "Create QR Codes for use with an authenticator app."
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "chillerlan\\Authenticator\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Smiley",
+                    "email": "smiley@chillerlan.net",
+                    "homepage": "https://github.com/codemasher"
+                },
+                {
+                    "name": "Contributors",
+                    "homepage": "https://github.com/chillerlan/php-authenticator/graphs/contributors"
+                }
+            ],
+            "description": "A generator for counter- and time based 2-factor authentication codes (Google Authenticator). PHP 8.2+",
+            "homepage": "https://github.com/chillerlan/php-authenticator",
+            "keywords": [
+                "2fa",
+                "MFA",
+                "authenticator",
+                "google2fa",
+                "hotp",
+                "otp",
+                "rfc4226",
+                "rfc6238",
+                "tfa",
+                "totp",
+                "two factor"
+            ],
+            "support": {
+                "issues": "https://github.com/chillerlan/php-authenticator/issues",
+                "source": "https://github.com/chillerlan/php-authenticator"
+            },
+            "funding": [
+                {
+                    "url": "https://ko-fi.com/codemasher",
+                    "type": "Ko-Fi"
+                }
+            ],
+            "time": "2024-07-16T23:53:16+00:00"
+        },
+        {
+            "name": "chillerlan/php-qrcode",
+            "version": "5.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/chillerlan/php-qrcode.git",
+                "reference": "da5bdb82c8755f54de112b271b402aaa8df53269"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/chillerlan/php-qrcode/zipball/da5bdb82c8755f54de112b271b402aaa8df53269",
+                "reference": "da5bdb82c8755f54de112b271b402aaa8df53269",
+                "shasum": ""
+            },
+            "require": {
+                "chillerlan/php-settings-container": "^2.1.4 || ^3.1",
+                "ext-mbstring": "*",
+                "php": "^7.4 || ^8.0"
+            },
+            "require-dev": {
+                "chillerlan/php-authenticator": "^4.1 || ^5.1",
+                "phan/phan": "^5.4",
+                "phpmd/phpmd": "^2.15",
+                "phpunit/phpunit": "^9.6",
+                "setasign/fpdf": "^1.8.2",
+                "squizlabs/php_codesniffer": "^3.8"
+            },
+            "suggest": {
+                "chillerlan/php-authenticator": "Yet another Google authenticator! Also creates URIs for mobile apps.",
+                "setasign/fpdf": "Required to use the QR FPDF output.",
+                "simple-icons/simple-icons": "SVG icons that you can use to embed as logos in the QR Code"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "chillerlan\\QRCode\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT",
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Kazuhiko Arase",
+                    "homepage": "https://github.com/kazuhikoarase/qrcode-generator"
+                },
+                {
+                    "name": "ZXing Authors",
+                    "homepage": "https://github.com/zxing/zxing"
+                },
+                {
+                    "name": "Ashot Khanamiryan",
+                    "homepage": "https://github.com/khanamiryan/php-qrcode-detector-decoder"
+                },
+                {
+                    "name": "Smiley",
+                    "email": "smiley@chillerlan.net",
+                    "homepage": "https://github.com/codemasher"
+                },
+                {
+                    "name": "Contributors",
+                    "homepage": "https://github.com/chillerlan/php-qrcode/graphs/contributors"
+                }
+            ],
+            "description": "A QR code generator and reader with a user friendly API. PHP 7.4+",
+            "homepage": "https://github.com/chillerlan/php-qrcode",
+            "keywords": [
+                "phpqrcode",
+                "qr",
+                "qr code",
+                "qr-reader",
+                "qrcode",
+                "qrcode-generator",
+                "qrcode-reader"
+            ],
+            "support": {
+                "docs": "https://php-qrcode.readthedocs.io",
+                "issues": "https://github.com/chillerlan/php-qrcode/issues",
+                "source": "https://github.com/chillerlan/php-qrcode"
+            },
+            "funding": [
+                {
+                    "url": "https://www.paypal.com/donate?hosted_button_id=WLYUNAT9ZTJZ4",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://ko-fi.com/codemasher",
+                    "type": "ko_fi"
+                }
+            ],
+            "time": "2024-02-27T14:37:26+00:00"
+        },
+        {
+            "name": "chillerlan/php-settings-container",
+            "version": "3.2.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/chillerlan/php-settings-container.git",
+                "reference": "95ed3e9676a1d47cab2e3174d19b43f5dbf52681"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/chillerlan/php-settings-container/zipball/95ed3e9676a1d47cab2e3174d19b43f5dbf52681",
+                "reference": "95ed3e9676a1d47cab2e3174d19b43f5dbf52681",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "phpmd/phpmd": "^2.15",
+                "phpstan/phpstan": "^1.11",
+                "phpstan/phpstan-deprecation-rules": "^1.2",
+                "phpunit/phpunit": "^10.5",
+                "squizlabs/php_codesniffer": "^3.10"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "chillerlan\\Settings\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Smiley",
+                    "email": "smiley@chillerlan.net",
+                    "homepage": "https://github.com/codemasher"
+                }
+            ],
+            "description": "A container class for immutable settings objects. Not a DI container.",
+            "homepage": "https://github.com/chillerlan/php-settings-container",
+            "keywords": [
+                "Settings",
+                "configuration",
+                "container",
+                "helper"
+            ],
+            "support": {
+                "issues": "https://github.com/chillerlan/php-settings-container/issues",
+                "source": "https://github.com/chillerlan/php-settings-container"
+            },
+            "funding": [
+                {
+                    "url": "https://www.paypal.com/donate?hosted_button_id=WLYUNAT9ZTJZ4",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://ko-fi.com/codemasher",
+                    "type": "ko_fi"
+                }
+            ],
+            "time": "2024-07-16T11:13:48+00:00"
         },
         {
             "name": "giggsey/libphonenumber-for-php",

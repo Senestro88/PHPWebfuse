@@ -759,26 +759,25 @@ class Utils {
 
     /**
      * Set mb internal encoding
-     * @staticvar array $encodings
-     * @param type $reset Wether to reset
+     * @statical array $encodings
+     * @param bool $reset Wether to reset
+     * @param string $internalEncoding The internal encoding to set to
      * @return void
      */
-    public static function setMBInternalEncoding($reset = false): void {
-        if (self::isFalse(function_exists('mb_internal_encoding'))) {
-            return;
-        }
-        static $encodings = [];
-        $overloaded = (bool) ((int) ini_get('mbstring.func_overload') & 2);
-        if (!$overloaded) {
-            return;
-        }
-        if (!$reset) {
-            $encoding = mb_internal_encoding();
-            array_push($encodings, $encoding);
-            mb_internal_encoding('ISO-8859-1');
-        } elseif ($reset && $encodings) {
-            $encoding = array_pop($encodings);
-            mb_internal_encoding($encoding);
+    public static function setMBInternalEncoding($reset = false, ?string $internalEncoding = \null): void {
+        if (self::isTrue(function_exists('mb_internal_encoding'))) {
+            static $encodings = [];
+            $overloaded = (bool) ((int) ini_get('mbstring.func_overload') & 2);
+            if (!$overloaded) {
+                if (!$reset) {
+                    $encoding = mb_internal_encoding();
+                    array_push($encodings, $encoding);
+                    mb_internal_encoding(is_string($internalEncoding) ? $internalEncoding : 'ISO-8859-1');
+                } elseif ($reset && $encodings) {
+                    $encoding = array_pop($encodings);
+                    mb_internal_encoding($encoding);
+                }
+            }
         }
     }
 
