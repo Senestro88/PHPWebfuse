@@ -35,14 +35,15 @@ class QrCode {
      * 
      * @param string|null $data The text data to be encoded into the QR code.
      * @param string|null $logo The logo image to place at the middle of the QR code.
-     * @param string|null $filename The filename to save the generated QR code image. If null, the image is returned.
+     * @param string|null $filename The filename to save the generated QR code image. If null, the image is returned. (Filename must not exist)
      * @param int $quality The quality of the generated QR code image (default: 90).
      * @param int $scaling The scaling factor of the QR code (default: 8).
+     * @param bool $transparent Whether to enable transparent background (default: false).
      * @param bool $base64 Whether to return the image as a base64 encoded string (default: false).
      * 
      * @return bool|string Returns false on failure, but return a filename if filename parameter is provided, else the raw image data or the base64 version if base64 parameter is set to true
      */
-    public static function createFromText(?string $data = null, ?string $logo, ?string $filename = null, int $quality = 90, int $scaling = 8, bool $base64 = false): bool|string {
+    public static function createFromText(string $data, ?string $logo = null, ?string $filename = null, int $quality = 90, int $scaling = 8, bool $transparent = false, bool $base64 = false): bool|string {
         try {
             // Set the internal character encoding to UTF-8
             Utils::setMBInternalEncoding(false, "UTF-8");
@@ -50,27 +51,27 @@ class QrCode {
             $options = new CQROptions;
             $options->version = 7; // QR code version (determines size)
             // Choose the output interface depending on whether a logo is provided
-            $options->outputInterface = self::validFile($logo) ? QrCodeLogoOutputInterface::class : CQRGdImage::class;
+            $options->outputInterface = CQRGdImage::class;
             $options->scale = $scaling; // Scale factor for the QR code image
             $options->outputBase64 = $base64; // Return the image as a base64 string
             $options->drawLightModules = true; // Render the light modules (background spaces)
-            $options->eccLevel = CEccLevel::H; // Error correction level (H = high for better fault tolerance)
+            $options->eccLevel = CEccLevel::Q; // Error correction level
             $options->quality = $quality; // Set image quality
             $options->bgColor = array(255, 255, 255); // Set background color (white)
-            $options->imageTransparent = true; // Enable transparent background
+            $options->imageTransparent = $transparent; // Enable transparent background
             $options->outputType = CQROutputInterface::GDIMAGE_PNG; // Output type (PNG)
             // Customize the QR code appearance
             $options->drawCircularModules = true; // Use circular modules instead of square ones
             $options->circleRadius = 0.45; // Set the radius for circular modules
             $options->keepAsSquare = array(CQRMatrix::M_FINDER, CQRMatrix::M_FINDER_DOT, CQRMatrix::M_ALIGNMENT_DARK); // Keep these parts as square
-            // Add space for a logo if a valid logo file is provided
-            $options->addLogoSpace = self::validFile($logo);
-            $options->logoSpaceWidth = 12; // Width for the logo space
-            $options->logoSpaceHeight = 12; // Height for the logo space
-            // Create a new QR code instance with the configured options
-            $qrcode = new CQRCode($options);
             // Generate the QR code output with or without a logo
             if (self::validFile($logo)) {
+                // Add space for a logo if a valid logo file is provided
+                $options->addLogoSpace = true;
+                $options->logoSpaceWidth = 12; // Width for the logo space
+                $options->logoSpaceHeight = 12; // Height for the logo space
+                // Create a new QR code instance with the configured options
+                $qrcode = new CQRCode($options);
                 // Use a custom output interface for the logo
                 $outputInterface = new QrCodeLogoOutputInterface($options, $qrcode->getQRMatrix());
                 $result = $outputInterface->dump(null, $logo); // Generate QR code with logo
@@ -78,7 +79,7 @@ class QrCode {
                 $result = (new CQRCode($options))->render($data); // Generate standard QR code
             }
             // If a filename is provided, save the result to the specified file
-            if (Utils::isNonNull($filename)) {
+            if (Utils::isNonNull($filename) && !File::isFile($filename)) {
                 if (!File::saveContentToFile($filename, $result, false, false)) {
                     return false; // Return false if file saving fails
                 } else {
@@ -153,8 +154,8 @@ class QrCode {
 
     // PRIVATE METHODS
 
-    private static function validFile(?string $filename): bool {
-        return \is_file($filename) && \is_readable($filename);
+    private static function validFile(?string $filename = null): bool {
+        return \is_string($filename) ? (\is_file($filename) && \is_readable($filename)) : false;
     }
 }
 
