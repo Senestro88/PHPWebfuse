@@ -852,7 +852,7 @@ class Utils {
      * @param int $height
      * @return array
      */
-    public static function scaleIDemention(int $originalWidth, int $originalHeight, int $width, int $height): array {
+    public static function scaleIDimension(int $originalWidth, int $originalHeight, int $width, int $height): array {
         if ($originalWidth > $width && ($originalWidth / $width) > ($originalHeight / $height)) {
             $width = $originalWidth * ($width / $originalWidth);
             $height = $originalHeight * ($height / $originalWidth);
@@ -871,11 +871,11 @@ class Utils {
      * @param string $source
      * @param string $extension
      * @param bool $useWandH
-     * @param bool $scaleIDemention
+     * @param bool $scaleIDimension
      * @param string $file If empty, the source will be used
      * @return bool
      */
-    public static function convertImage(string $source, string $extension = "webp", bool $useWandH = false, bool $scaleIDemention = false, string $file = ""): bool {
+    public static function convertImage(string $source, string $extension = "webp", bool $useWandH = false, bool $scaleIDimension = false, string $file = ""): bool {
         $validExtensions = array("webp", "png", "jpg", "gif");
         if (in_array($extension, $validExtensions)) {
             $sourceData = @getimagesize($source);
@@ -904,8 +904,8 @@ class Utils {
                 if (self::isNotFalse($image)) {
                     $imageWidth = $useWandH ? $width : self::IMAGE_WIDTH;
                     $imageHeight = $useWandH ? $height : self::IMAGE_HEIGHT;
-                    if ($scaleIDemention) {
-                        list($imageWidth, $imageHeight) = self::scaleIDemention($width, $height, $imageWidth, $imageHeight);
+                    if ($scaleIDimension) {
+                        list($imageWidth, $imageHeight) = self::scaleIDimension($width, $height, $imageWidth, $imageHeight);
                     }
                     $color = @imagecreatetruecolor($imageWidth, $imageHeight);
                     if (self::isNotFalse($color)) {
@@ -1523,10 +1523,10 @@ class Utils {
      */
     public static function formatInt(float $num): float|string {
         if ($num > 0 && self::inArray("NumberFormatter", get_declared_classes())) {
-            $formater = new \NumberFormatter('en_US', \NumberFormatter::PADDING_POSITION);
-            return $formater->format($num);
+            $formatter = new \NumberFormatter('en_US', \NumberFormatter::PADDING_POSITION);
+            return $formatter->format($num);
         }
-        return $num;
+        return number_format($num);
     }
 
     /**
@@ -1594,10 +1594,12 @@ class Utils {
     public static function currentPathURL(): string {
         $ccUrl = self::completeCurrentUrl();
         $parse = parse_url($ccUrl);
-        $scheme = $parse['scheme'];
-        $host = $parse['host'];
+        $scheme = isset($parts['scheme']) ?  $parts['scheme'] : "";
+        $host = isset($parts['host']) ? $parts['host'] : "";
         $path = Path::arrange_dir_separators_v2($parse['path'], true);
-        return $scheme . '://' . $host . '' . $path;
+        $path = str_replace(array("//", "\\\\", "\\",  "/\\", "\\/"), "/", $path);
+        $path = !empty($path) ? (!Utils::startsWith("/", $path) ? "/" . $path : $path) : "";
+        return (!empty($scheme) && !empty($host) ? $scheme . '://' . $host  : "") . '' . $path;
     }
 
     /**
@@ -1961,7 +1963,7 @@ class Utils {
      * Get the temporary directory
      * @return string
      */
-    public static function getTmpFile(): string {
+    public static function getSystemTmpDir(): string {
         return @sys_get_temp_dir();
     }
 
@@ -1969,7 +1971,7 @@ class Utils {
      * Get the upload directory
      * @return string
      */
-    public static function getUploadFile(): string {
+    public static function getUploadTempDir(): string {
         return @ini_get('upload_tmp_dir');
     }
 
@@ -1977,7 +1979,7 @@ class Utils {
      * Get the default directory
      * @return string
      */
-    public static function getCurrentFileFile(): string {
+    public static function getCurrentFileDir(): string {
         return @dirname(__FILE__);
     }
 
@@ -2423,7 +2425,7 @@ class Utils {
      * Get the current script file
      * @return string
      */
-    public static function getScriptFile(): string {
+    public static function getScriptFilename(): string {
         return @getenv('SCRIPT_FILENAME');
     }
 
@@ -2439,8 +2441,8 @@ class Utils {
      * Get the current script path
      * @return string
      */
-    public static function getScriptPath(): string {
-        return @dirname(self::getScriptFile());
+    public static function getScriptFilenameDir(): string {
+        return @dirname(self::getScriptFilename());
     }
 
     /**
@@ -2835,14 +2837,7 @@ class Utils {
      * @return array
      */
     public static function convertBytesToHumanReadable(int $bytes): array {
-        $kb = $bytes / 1024;
-        $mb = $bytes / (1024 * 1024);
-        $gb = $bytes / (1024 * 1024 * 1024);
-        return array(
-            'KB' => $kb,
-            'MB' => $mb,
-            'GB' => $gb,
-        );
+        return self::convertBytes($bytes);
     }
 
     /**

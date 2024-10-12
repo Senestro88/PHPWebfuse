@@ -12,7 +12,7 @@ use chillerlan\QRCode\Common\Version as CVersion;
 use \chillerlan\QRCode\Data\QRMatrix as CQRMatrix;
 use \chillerlan\QRCode\Output\QRGdImagePNG as CQRGdImagePNG;
 use \chillerlan\QRCode\Output\QRCodeOutputException as CQRCodeOutputException;
-use chillerlan\QRCode\Output\QRGdImage as CQRGdImage;
+use \chillerlan\QRCode\Output\QRGdImage as CQRGdImage;
 use \chillerlan\QRCode\Output\QROutputInterface as CQROutputInterface;
 use GuzzleHttp\Psr7\Uri;
 
@@ -65,17 +65,7 @@ class QrCode {
             $options->outputType = "png"; // Output type (PNG)
             $options->drawCircularModules = true; // Use circular modules instead of square ones
             $options->circleRadius = 0.45; // Set the radius for circular modules
-            // Keep these parts as square
-            $options->keepAsSquare = array(
-                CQRMatrix::M_FINDER,
-                CQRMatrix::M_FINDER_DARK,
-                CQRMatrix::M_FINDER_DOT,
-                CQRMatrix::M_FINDER_DOT_LIGHT,
-                CQRMatrix::M_ALIGNMENT,
-                CQRMatrix::M_ALIGNMENT_DARK,
-                CQRMatrix::M_FORMAT,
-                CQRMatrix::M_FORMAT_DARK
-            );
+            self::setQrCodeModules($options);
             // Add space for a logo if a valid logo file is provided
             $options->addLogoSpace = is_string($logo);
             $options->logoSpaceWidth = 12; // Width for the logo space
@@ -155,6 +145,21 @@ class QrCode {
         }
         // Return false on error
         return $result;
+    }
+
+    // PRIVATE METHODS
+
+    private static function setQrCodeModules(CQROptions $options): void {
+        // Keep these parts as square
+        $options->keepAsSquare = array(
+            CQRMatrix::M_FINDER,
+            CQRMatrix::M_FINDER_DARK,
+            CQRMatrix::M_FINDER_DOT,
+            CQRMatrix::M_FINDER_DOT_LIGHT,
+            CQRMatrix::M_ALIGNMENT,
+            CQRMatrix::M_ALIGNMENT_DARK
+        );
+        $options->moduleValues = array();
     }
 }
 

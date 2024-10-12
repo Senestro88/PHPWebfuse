@@ -172,6 +172,7 @@ class File {
                 $chunk = substr($content, $offset, self::CHUNK_SIZE);
                 if ((@fwrite($handle, $chunk)) === false) {
                     break;
+                    return false;
                 }
                 $offset += self::CHUNK_SIZE;
             }
@@ -244,7 +245,7 @@ class File {
     /**
      * Touch a file (Sets access and modification time of file)
      * @param string $file The file path
-     * @param int $mtime Modifiied time, defaults to 'null'
+     * @param int $mtime Modified time, defaults to 'null'
      * @param int $atime Access time, defaults to 'null'
      * @return bool
      */

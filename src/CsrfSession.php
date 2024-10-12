@@ -197,8 +197,8 @@ class CsrfSession {
      * @return bool
      */
     private static function sessionIdValid(): bool {
-        $seesionId = session_id();
-        return is_string($seesionId) && !empty($seesionId);
+        $sessionId = session_id();
+        return is_string($sessionId) && !empty($sessionId);
     }
 
     /**
