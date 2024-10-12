@@ -1551,7 +1551,7 @@ class Utils {
         $params[$param] = $value;
         $newParams = http_build_query($params);
         $path = str_replace(array("//", "\\\\", "\\",  "/\\", "\\/"), "/", $path);
-        return $scheme . '://' . $host . '' . $path . '?' . $newParams;
+        return $scheme . '://' . $host . '' . (!empty($path) ? (!Utils::startsWith("/", $path) ? "/" . $path : $path) : "") . '?' . $newParams;
     }
 
     /**
