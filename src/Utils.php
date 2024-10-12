@@ -1542,15 +1542,15 @@ class Utils {
      * @return string
      */
     public static function replaceUrlParamValue(string $param, mixed $value): string {
-        $currentUrl = self::completeCurrentUrl();
+        $currentUrl = \str_replace("\\", "/", self::completeCurrentUrl());
         $parts = parse_url($currentUrl);
         $scheme = $parts['scheme'];
         $host = $parts['host'];
-        $path = $parts['path'];
+        $path =  isset($parts['path']) ? $parts['path'] : "";
         parse_str(isset($parts['query']) ? $parts['query'] : "", $params);
         $params[$param] = $value;
         $newParams = http_build_query($params);
-        $path = str_replace(array("//", "\\\\"), array("/", "\\"), $path);
+        $path = str_replace(array("//", "\\\\", "\\",  "/\\", "\\/"), "/", $path);
         return $scheme . '://' . $host . '' . $path . '?' . $newParams;
     }
 
