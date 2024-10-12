@@ -502,7 +502,7 @@ class Utils {
      * @return string
      */
     public static function completeCurrentUrl(): string {
-        return self::currentUrl() . Path::left_delete_dir_separator(self::requestURI());
+        return self::currentUrl() . \str_replace(array("//", "\\\\"), "/", self::requestURI());
     }
 
     /**
@@ -584,14 +584,8 @@ class Utils {
      * @return string
      */
     public static function requestURI(): string {
-        if (getenv('REQUEST_URI') !== null) {
-            return getenv('REQUEST_URI');
-        } elseif (getenv('SCRIPT_NAME') !== null) {
-            return getenv('SCRIPT_NAME') . (empty(getenv('QUERY_STRING')) ? '' : '?' . getenv('QUERY_STRING'));
-        } elseif (getenv('PHP_SELF') !== null) {
-            return getenv('PHP_SELF') . (empty(getenv('QUERY_STRING')) ? '' : '?' . getenv('QUERY_STRING'));
-        }
-        return '';
+        $requestUrl = getenv('REQUEST_URI');
+        return self::isNotEmptyString($requestUrl) ? $requestUrl : '';
     }
 
     /**
@@ -1544,14 +1538,15 @@ class Utils {
     public static function replaceUrlParamValue(string $param, mixed $value): string {
         $currentUrl = \str_replace("\\", "/", self::completeCurrentUrl());
         $parts = parse_url($currentUrl);
-        $scheme = $parts['scheme'];
-        $host = $parts['host'];
+        $scheme = isset($parts['scheme']) ?  $parts['scheme'] : "";
+        $host = isset($parts['host']) ? $parts['host'] : "";
         $path =  isset($parts['path']) ? $parts['path'] : "";
         parse_str(isset($parts['query']) ? $parts['query'] : "", $params);
         $params[$param] = $value;
         $newParams = http_build_query($params);
         $path = str_replace(array("//", "\\\\", "\\",  "/\\", "\\/"), "/", $path);
-        return $scheme . '://' . $host . '' . (!empty($path) ? (!Utils::startsWith("/", $path) ? "/" . $path : $path) : "") . '?' . $newParams;
+        $path = !empty($path) ? (!Utils::startsWith("/", $path) ? "/" . $path : $path) : "";
+        return (!empty($scheme) && !empty($host) ? $scheme . '://' . $host  : "") . '' . $path . '?' . $newParams;
     }
 
     /**
