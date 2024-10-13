@@ -1805,7 +1805,7 @@ class Utils {
      * @throws \Exception
      */
     public static function loadPlugin(string $plugin): void {
-        $dirname = Path::insert_dir_separator(Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['PLUGINS'], true));
+        $dirname = Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['PLUGINS'], true);
         $plugin = Path::arrange_dir_separators_v2($plugin);
         $extension = File::getExtension($plugin);
         $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $plugin : $plugin . '.php';
@@ -1824,7 +1824,7 @@ class Utils {
      * @throws \Exception
      */
     public static function loadLib(string $lib): void {
-        $dirname = Path::insert_dir_separator(Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['LIBRARIES'], true));
+        $dirname = Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['LIBRARIES'], true);
         $lib = Path::arrange_dir_separators_v2($lib);
         $extension = File::getExtension($lib);
         $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $lib : $lib . '.php';
