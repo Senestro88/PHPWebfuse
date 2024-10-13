@@ -28,6 +28,7 @@ if (!defined("PHPWEBFUSE")) {
             "IMAGES" => $PHPWEBFUSE_ROOT_DIR . "assets" . DIRECTORY_SEPARATOR . "images" . DIRECTORY_SEPARATOR,
             "LIBRARIES" => $PHPWEBFUSE_ROOT_DIR . "assets" . DIRECTORY_SEPARATOR . "libraries" . DIRECTORY_SEPARATOR,
             "PLUGINS" => $PHPWEBFUSE_ROOT_DIR . "assets" . DIRECTORY_SEPARATOR . "plugins" . DIRECTORY_SEPARATOR,
+            "FONTS" => $PHPWEBFUSE_ROOT_DIR . "assets" . DIRECTORY_SEPARATOR . "fonts" . DIRECTORY_SEPARATOR,
         ),
     ));
 }

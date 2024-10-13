@@ -3,27 +3,27 @@
 namespace PHPWebfuse;
 
 use \PHPWebfuse\Utils;
+use \PHPWebfuse\Interface\QrCodeOutput;
 
-use chillerlan\QRCode\QRCode as CQRCode;
-use \chillerlan\QRCode\QROptions as CQROptions;
-use \chillerlan\QRCode\Common\EccLevel as CEccLevel;
-use chillerlan\QRCode\Common\Mode as CMode;
-use chillerlan\QRCode\Common\Version as CVersion;
-use \chillerlan\QRCode\Data\QRMatrix as CQRMatrix;
-use \chillerlan\QRCode\Output\QRGdImagePNG as CQRGdImagePNG;
-use \chillerlan\QRCode\Output\QRCodeOutputException as CQRCodeOutputException;
-use \chillerlan\QRCode\Output\QRGdImage as CQRGdImage;
-use \chillerlan\QRCode\Output\QROutputInterface as CQROutputInterface;
-use GuzzleHttp\Psr7\Uri;
+use \chillerlan\QRCode\QRCode as ChillerlanQRCode;
+use \chillerlan\QRCode\QROptions as ChillerlanQROptions;
+use \chillerlan\QRCode\Common\EccLevel as ChillerlanEccLevel;
+use \chillerlan\QRCode\Common\Mode as ChillerlanMode;
+use \chillerlan\QRCode\Common\Version as ChillerlanVersion;
+use \chillerlan\QRCode\Data\QRMatrix as ChillerlanQRMatrix;
+use \chillerlan\QRCode\Output\QRGdImagePNG as ChillerlanQRGdImagePNG;
+use \chillerlan\QRCode\Output\QRCodeOutputException as ChillerlanQRCodeOutputException;
+use \chillerlan\QRCode\Output\QRGdImage as ChillerlanQRGdImage;
+use \chillerlan\QRCode\Output\QROutputInterface as ChillerlanQROutputInterface;
+use \Zxing\QrReader;
 
 /**
  * @author Senestro
  */
+
 class QrCode {
     // PRIVATE VARIABLE
     // PUBLIC VARIABLES
-
-    public static string $errorMessage = "";
 
     // PUBLIC METHODS
 
@@ -51,28 +51,28 @@ class QrCode {
             // Set the internal character encoding to UTF-8
             Utils::setMBInternalEncoding(false, "UTF-8");
             // Initialize QR code generation options
-            $options = new CQROptions;
-            $options->version = CVersion::AUTO; // QR code version (determines size)
+            $options = new ChillerlanQROptions;
+            $options->version = ChillerlanVersion::AUTO; // QR code version (determines size)
             // Choose the output interface depending on whether a logo is provided
-            $options->outputInterface = QrCodeGDOutputInterfacePNG::class;
+            $options->outputInterface = QrCodeOutput::class;
             $options->scale = $scaling; // Scale factor for the QR code image
             $options->outputBase64 = $asBase64; // Return the image as a base64 string
             $options->drawLightModules = true; // Render the light modules (background spaces)
-            $options->eccLevel = is_string($logo) ? CEccLevel::H : CEccLevel::Q; // Error correction level
+            $options->eccLevel = is_string($logo) ? ChillerlanEccLevel::H : ChillerlanEccLevel::Q; // Error correction level
             $options->quality = $quality; // Set image quality
             $options->bgColor = array(255, 255, 255); // Set background color (white)
             $options->imageTransparent = $transparent; // Enable transparent background
             $options->outputType = "png"; // Output type (PNG)
             $options->drawCircularModules = true; // Use circular modules instead of square ones
             $options->circleRadius = 0.45; // Set the radius for circular modules
-            self::setQrCodeModules($options);
+            self::setCreateFromTextModules($options);
             // Add space for a logo if a valid logo file is provided
             $options->addLogoSpace = is_string($logo);
-            $options->logoSpaceWidth = 12; // Width for the logo space
-            $options->logoSpaceHeight = 12; // Height for the logo space
-            $qrcode = new CQRCode($options);
+            $options->logoSpaceWidth = 6; // Width for the logo space
+            $options->logoSpaceHeight = 6; // Height for the logo space
+            $qrcode = new ChillerlanQRCode($options);
             $qrcode->addByteSegment($data);
-            $outputInterface = new QrCodeGDOutputInterfacePNG($options, $qrcode->getQRMatrix());
+            $outputInterface = new QrCodeOutput($options, $qrcode->getQRMatrix());
             $result = $outputInterface->dump(null, $logo);
             // If a filename is provided, save the result to the specified file
             if (Utils::isNonNull($filename)) {
@@ -86,38 +86,29 @@ class QrCode {
             // Return the generated QR code image or base64 string
             return $result;
         } catch (\Throwable $e) {
-            // Save the error message
-            self::$errorMessage = $e->getMessage();
+            \var_export($e->getMessage());
         }
-        // Return false in case of an error
         return false;
     }
 
     /**
-     * Reads and processes QR code data from a text string.
+     * Reads QR code data from an image file.
      * 
-     * @param string $text The text content representing QR code data.
+     * @param string $filename The path to the QR code image file.
      * 
      * @return bool|string Returns decoded data from QR code or false on failure.
      */
-    public static function readFromText(string $text): bool|string {
-        $result = false;
+    public static function readFile(string $filename): bool | string {
         try {
-            // Set up options for reading the QR code
-            $options = new CQROptions;
-            $options->readerUseImagickIfAvailable = false; // Prefer GD over Imagick
-            $options->readerGrayscale = true; // Read in grayscale for better contrast
-            $options->readerIncreaseContrast = true; // Enhance contrast for better readability
-            // Read the QR code data from the file
-            $qrResult = (new CQRCode($options))->readFromBlob($text);
-            // Extract the data from the QR result
-            $result = $qrResult->data;
+            if (File::isFile($filename)) {
+                $filename = realpath($filename);
+                $reader = new QrReader($filename);
+                $result = $reader->text();
+                return \is_string($result) ? $result : false;
+            }
         } catch (\Throwable $e) {
-            // Save the error message
-            self::$errorMessage = $e->getMessage();
         }
-        // Return false on error
-        return $result;
+        return false;
     }
 
     /**
@@ -131,71 +122,63 @@ class QrCode {
         $result = false;
         try {
             // Set up options for reading the QR code
-            $options = new CQROptions;
+            $options = new ChillerlanQROptions;
             $options->readerUseImagickIfAvailable = false; // Prefer GD over Imagick
             $options->readerGrayscale = true; // Read in grayscale for better contrast
             $options->readerIncreaseContrast = true; // Enhance contrast for better readability
-            // Read the QR code data from the file
-            $qrResult = (new CQRCode($options))->readFromFile($filename);
-            // Extract the data from the QR result
-            $result = $qrResult->data;
+            $result = (new ChillerlanQRCode($options))->readFromFile($filename);
+            $result = $result->data;
         } catch (\Throwable $e) {
-            // Save the error message
-            self::$errorMessage = $e->getMessage();
         }
-        // Return false on error
+        return $result;
+    }
+
+    /**
+     * Reads and processes QR code data from a text string.
+     * 
+     * @param string $text The text content representing QR code data.
+     * 
+     * @return bool|string Returns decoded data from QR code or false on failure.
+     */
+    public static function readFromText(string $text): bool|string {
+        $result = false;
+        try {
+            // Set up options for reading the QR code
+            $options = new ChillerlanQROptions;
+            $options->readerUseImagickIfAvailable = false; // Prefer GD over Imagick
+            $options->readerGrayscale = true; // Read in grayscale for better contrast
+            $options->readerIncreaseContrast = true; // Enhance contrast for better readability
+            $result = (new ChillerlanQRCode($options))->readFromBlob($text);
+            $result = $result->data;
+        } catch (\Throwable $e) {
+        }
         return $result;
     }
 
     // PRIVATE METHODS
 
-    private static function setQrCodeModules(CQROptions $options): void {
+    private static function setCreateFromTextModules(ChillerlanQROptions $options): void {
         // Keep these parts as square
         $options->keepAsSquare = array(
-            CQRMatrix::M_FINDER,
-            CQRMatrix::M_FINDER_DARK,
-            CQRMatrix::M_FINDER_DOT,
-            CQRMatrix::M_FINDER_DOT_LIGHT,
-            CQRMatrix::M_ALIGNMENT,
-            CQRMatrix::M_ALIGNMENT_DARK
+            ChillerlanQRMatrix::M_FINDER,
+            ChillerlanQRMatrix::M_FINDER_DARK,
+            ChillerlanQRMatrix::M_FINDER_DOT,
+            ChillerlanQRMatrix::M_FINDER_DOT_LIGHT,
+            ChillerlanQRMatrix::M_ALIGNMENT,
+            ChillerlanQRMatrix::M_ALIGNMENT_DARK,
+            ChillerlanQRMatrix::M_DARKMODULE,
+            ChillerlanQRMatrix::M_DARKMODULE_LIGHT,
+            ChillerlanQRMatrix::M_DATA,
+            ChillerlanQRMatrix::M_DATA_DARK,
+            ChillerlanQRMatrix::M_FORMAT,
+            ChillerlanQRMatrix::M_FORMAT_DARK,
+            ChillerlanQRMatrix::M_LOGO,
+            ChillerlanQRMatrix::M_LOGO_DARK,
+            ChillerlanQRMatrix::M_NULL,
+            ChillerlanQRMatrix::M_QUIETZONE_DARK,
+            ChillerlanQRMatrix::M_SEPARATOR_DARK,
+            ChillerlanQRMatrix::M_TIMING,
         );
         $options->moduleValues = array();
-    }
-}
-
-
-// FINAL INNER CLASSES
-
-/**
- * @author Senestro
- */
-final class QrCodeGDOutputInterfacePNG extends CQRGdImagePNG {
-    public function dump(string|null $file = null, string|null $logo = null): string {
-        // Set returnResource to true to skip further processing for now
-        $this->options->returnResource = true;
-        parent::dump($file);
-        if ($this->validImage($logo)) {
-            $im = imagecreatefrompng($logo);
-            if (Utils::isNotFalse($im)) {
-                // Get logo image size
-                $w = imagesx($im);
-                $h = imagesy($im);
-                // Set new logo size, leave a border of 1 module (no proportional resize/centering)
-                $lw = (($this->options->logoSpaceWidth - 2) * $this->options->scale);
-                $lh = (($this->options->logoSpaceHeight - 2) * $this->options->scale);
-                // Set the qrcode size
-                $ql = ($this->matrix->getSize() * $this->options->scale);
-                // Scale the logo and copy it over. done!
-                imagecopyresampled($this->image, $im, (($ql - $lw) / 2), (($ql - $lh) / 2), 0, 0, $lw, $lh, $w, $h);
-            }
-        }
-        $data = $this->dumpImage();
-        $this->saveToFile($data, $file);
-        $data = $this->options->outputBase64 ? $this->toBase64DataURI($data) : $data;
-        return $data;
-    }
-
-    private function validImage(?string $filename = null): bool {
-        return \is_string($filename) ? \is_file($filename) && \is_readable($filename)  : false;
     }
 }

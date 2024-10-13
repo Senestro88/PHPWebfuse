@@ -2399,29 +2399,6 @@ class Utils {
     }
 
     /**
-     * Generate a QR code
-     * @param string $content
-     * @param string $filename
-     * @return string|bool
-     */
-    public static function generateQrCode(string $content, string $filename): string|bool {
-        $result = false;
-        if (!defined('QR_MODE_NUL')) {
-            self::loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
-        }
-        if (class_exists("\QRcode")) {
-            $extension = File::getExtension($filename);
-            $filename = self::isNotEmptyString($extension) ? (strtolower($extension) !== "png" ? $filename . ".png" : $filename) : $filename . ".png";
-            \QRcode::png($content, $filename, QR_ECLEVEL_Q, 20, 2);
-            if (File::isFile($filename)) {
-                clearstatcache(false, $filename);
-                $result = self::resolvePath($filename);
-            }
-        }
-        return $result;
-    }
-
-    /**
      * Get the current script file
      * @return string
      */

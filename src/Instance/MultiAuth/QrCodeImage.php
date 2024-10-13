@@ -6,6 +6,7 @@ use \PHPWebfuse\Utils;
 use \PHPWebfuse\File;
 use \PHPWebfuse\Path;
 use \PHPWebfuse\Instance\MultiAuth\QrException;
+use PHPWebfuse\Instance\QrCode;
 
 class QrCodeImage {
     // PRIVATE VARIABLES
@@ -42,26 +43,9 @@ class QrCodeImage {
                     }
                 }
                 $content = htmlspecialchars_decode(sprintf($content, $label, $secret, $issuer));
-                if (!defined('QR_MODE_NUL')) {
-                    Utils::loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
-                }
-                $dataPath = Path::insert_dir_separator(Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['DATA'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
-                if (File::createDir($dataPath) && class_exists('\QRcode')) {
-                    $absolutePath = $dataPath . '' . Utils::randUnique("key") . '.png';
-                    \QRcode::png($content, $absolutePath, QR_ECLEVEL_Q, 20, 2);
-                    if (File::isFile($absolutePath)) {
-                        $image = imagecreatefrompng($absolutePath);
-                        if (Utils::isNotFalse($image)) {
-                            clearstatcache(false, $absolutePath);
-                            $mime = mime_content_type($absolutePath);
-                            $base64 = base64_encode((string) @\file_get_contents($absolutePath));
-                            $data = 'data:' . $mime . ';base64,' . $base64;
-                            File::deleteFile($absolutePath);
-                            return $data;
-                        }
-                    }
-                }
-                return "";
+                $qrcode = new QrCode($content);
+                $result = $qrcode->createResult();
+                return $result->getDataUri();
             }
         }
     }
@@ -74,8 +58,8 @@ class QrCodeImage {
      * @param string|null $issuer Where you log in to
      * @throws \PHPWebfuse\Instance\MultiAuth\QrException
      */
-    public function createOuputImage(string $accountName, string $secret, ?string $issuer = null): void {
-        if (Utils::isEmptyString($accountName) || Utils::containText(":", $accountName))  {
+    public function createOutputImage(string $accountName, string $secret, ?string $issuer = null): void {
+        if (Utils::isEmptyString($accountName) || Utils::containText(":", $accountName)) {
             throw QrException::InvalidAccountName($accountName);
         } else {
             if (Utils::isEmptyString($secret)) {
@@ -93,13 +77,12 @@ class QrCodeImage {
                     }
                 }
                 $content = htmlspecialchars_decode(sprintf($content, $label, $secret, $issuer));
-                if (!defined('QR_MODE_NUL')) {
-                    Utils::loadLib("phpqrcode" . DIRECTORY_SEPARATOR . "qrlib");
-                }
+                $qrcode = new QrCode($content);
+                $result = $qrcode->createResult();
                 $dataPath = Path::insert_dir_separator(Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['DATA'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
-                if (File::createDir($dataPath) && class_exists('\QRcode')) {
+                if ((File::createDir($dataPath))) {
                     $absolutePath = $dataPath . '' . Utils::randUnique("key") . '.png';
-                    \QRcode::png($content, $absolutePath, QR_ECLEVEL_Q, 4, 2);
+                    $result->saveToFile($absolutePath);
                     if (File::isFile($absolutePath)) {
                         $image = imagecreatefrompng($absolutePath);
                         if (Utils::isNotFalse($image) && !headers_sent()) {
@@ -113,6 +96,7 @@ class QrCodeImage {
                             imagepng($image, null, 9);
                             imagedestroy($image);
                         }
+                        File::deleteFile($absolutePath);
                     }
                 }
             }
