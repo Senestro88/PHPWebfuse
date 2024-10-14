@@ -2978,6 +2978,33 @@ class Utils {
         return $html;
     }
 
+    /**
+     * Removes duplicate keys from an array, with an option for case sensitivity.
+     *
+     * This function takes an array and returns a new array with duplicate keys removed.
+     * If case sensitivity is enabled, keys will be compared as they are; otherwise,
+     * keys will be treated as case-insensitive (i.e., "key" and "KEY" will be considered the same).
+     *
+     * @param array $inputArray The input array from which to remove duplicate keys.
+     * @param bool $caseSensitive Indicates whether the key comparison should be case-sensitive.
+     * @return array A new array with duplicate keys removed based on the specified case sensitivity.
+     */
+    public static function removeDuplicatesArrayKeys(array $inputArray, bool $caseSensitive = false): array {
+        $filteredArray = [];
+        $normalizedKeys = [];
+        foreach ($inputArray as $key => $value) {
+            // Normalize key based on case sensitivity option
+            $normalizedKey = $caseSensitive ? $key : strtolower($key);
+            // Check if the normalized key has already been added
+            if (!in_array($normalizedKey, $normalizedKeys, true)) {
+                $normalizedKeys[] = $normalizedKey; // Track normalized keys
+                $filteredArray[$key] = $value; // Add the original key-value pair
+            }
+        }
+        return $filteredArray;
+    }
+
+
     // PRIVATE METHOD
 
     private function errorHandler(int $errno, string $errstr, string $errfile, string $errline, array $errcontext) {

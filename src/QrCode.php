@@ -68,8 +68,8 @@ class QrCode {
             self::setCreateFromTextModules($options);
             // Add space for a logo if a valid logo file is provided
             $options->addLogoSpace = is_string($logo);
-            $options->logoSpaceWidth = 6; // Width for the logo space
-            $options->logoSpaceHeight = 6; // Height for the logo space
+            $options->logoSpaceWidth = 12; // Width for the logo space
+            $options->logoSpaceHeight = 12; // Height for the logo space
             $qrcode = new ChillerlanQRCode($options);
             $qrcode->addByteSegment($data);
             $outputInterface = new QrCodeOutput($options, $qrcode->getQRMatrix());
