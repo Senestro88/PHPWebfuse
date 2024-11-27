@@ -12,7 +12,7 @@ class Csrf {
     // PRIVATE VARIABLES
 
     // PUBLIC VARIABLES
-    public static \Throwable $lastThrowable;
+    public static ?\Throwable $lastThrowable = null;
 
     // PUBLIC METHODS
 
@@ -38,7 +38,7 @@ class Csrf {
                 $enc = Aes::enc($json, $csrfKey, "aes-128-cbc");
                 return $enc ?: '';
             } catch (\Throwable $e) {
-                self::setThrowable($e);
+                self::setLastThrowable($e);
             }
         }
         return "";
@@ -61,7 +61,7 @@ class Csrf {
                     return hash_equals($salt, hash_hmac('sha256', $token, $csrfKey)) ? self::isCsrfMinutesInFuture($expires) : false;
                 }
             } catch (\Throwable $e) {
-                self::setThrowable($e);
+                self::setLastThrowable($e);
             }
         }
         return false;
@@ -72,11 +72,11 @@ class Csrf {
      * Retrieves the last throwable instance.
      *
      * This method returns the most recent throwable instance that was stored
-     * using the `setThrowable` method. If no throwable has been set, it returns null.
+     * using the `setLastThrowable` method. If no throwable has been set, it returns null.
      *
      * @return \Throwable|null The last throwable instance or null if none is set.
      */
-    public static function getThrowable(): ?\Throwable {
+    public static function getLastThrowable(): ?\Throwable {
         return self::$lastThrowable;
     }
 
@@ -127,7 +127,7 @@ class Csrf {
      * @param \Throwable $e The throwable instance to be stored.
      * @return void
      */
-    private static function setThrowable(\Throwable $e): void {
+    private static function setLastThrowable(\Throwable $e): void {
         self::$lastThrowable = $e;
     }
 }

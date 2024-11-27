@@ -14,7 +14,7 @@ class Utils {
     // PUBLIC CONSTANT VARIABLES
 
     // PUBLIC VARIABLES
-    public static \Throwable $lastThrowable;
+    public static ?\Throwable $lastThrowable = null;
 
     /**
      * @var array The default character considered invalid
@@ -169,7 +169,7 @@ class Utils {
                 try {
                     unset($_COOKIE['' . $name . '']);
                 } catch (\Throwable $e) {
-                    self::setThrowable($e);
+                    self::setLastThrowable($e);
                 }
                 return true;
             }
@@ -1111,7 +1111,7 @@ class Utils {
                 return true;
             }
         } catch (\Throwable $e) {
-            self::setThrowable($e);
+            self::setLastThrowable($e);
         }
         return false;
     }
@@ -1517,7 +1517,7 @@ class Utils {
             @header("Pragma: no-cache");
             return true;
         } catch (\Throwable $e) {
-            self::setThrowable($e);
+            self::setLastThrowable($e);
         }
         return false;
     }
@@ -2135,7 +2135,7 @@ class Utils {
                     $isValid = $util->isValidNumber($parse);
                     return self::isTrue($isValid) ? trim($util->format($parse, \libphonenumber\PhoneNumberFormat::E164)) : false;
                 } catch (\libphonenumber\NumberParseException $e) {
-                    self::setThrowable($e);
+                    self::setLastThrowable($e);
                 }
             }
         }
@@ -2183,7 +2183,7 @@ class Utils {
                     $duration = gmdate("H:i:s", (int) $info->duration);
                 }
             } catch (\Throwable $e) {
-                self::setThrowable($e);
+                self::setLastThrowable($e);
             }
         }
         return $duration;
@@ -2357,7 +2357,7 @@ class Utils {
         try {
             $socket = @fsockopen("www.google.com", 443, $errno, $errstr, 30);
         } catch (\Throwable $e) {
-            self::setThrowable($e);
+            self::setLastThrowable($e);
         }
         if ($socket !== false) {
             @fclose($socket);
@@ -2402,7 +2402,7 @@ class Utils {
                     return self::jsonToArray($serverresponse);
                 }
             } catch (\Throwable $e) {
-                self::setThrowable($e);
+                self::setLastThrowable($e);
             }
         }
         return false;
@@ -3018,11 +3018,11 @@ class Utils {
      * Retrieves the last throwable instance.
      *
      * This method returns the most recent throwable instance that was stored
-     * using the `setThrowable` method. If no throwable has been set, it returns null.
+     * using the `setLastThrowable` method. If no throwable has been set, it returns null.
      *
      * @return \Throwable|null The last throwable instance or null if none is set.
      */
-    public static function getThrowable(): ?\Throwable {
+    public static function getLastThrowable(): ?\Throwable {
         return self::$lastThrowable;
     }
 
@@ -3086,7 +3086,7 @@ class Utils {
      * @param \Throwable $e The throwable instance to be stored.
      * @return void
      */
-    private static function setThrowable(\Throwable $e): void {
+    private static function setLastThrowable(\Throwable $e): void {
         self::$lastThrowable = $e;
     }
 }

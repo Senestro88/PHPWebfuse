@@ -12,7 +12,7 @@ use \PHPWebfuse\Path;
 class Database {
     // PRIVATE VARIABLES
     // PUBLIC VARIABLES
-    public static \Throwable $lastThrowable;
+    public static ?\Throwable $lastThrowable = null;
 
     /**
      * @var \mysqli The database connection instance
@@ -477,7 +477,7 @@ class Database {
                                     $columnsData[] = $ft;
                                 }
                             } catch (\Exception $e) {
-                                self::setThrowable($e);
+                                self::setLastThrowable($e);
                             }
                             foreach ($columnsData as $index => $data) {
                                 $field = $data['Field'];
@@ -533,7 +533,7 @@ class Database {
                         $result[] = $ft;
                     }
                 } catch (\Exception $e) {
-                    self::setThrowable($e);
+                    self::setLastThrowable($e);
                 }
             }
         }
@@ -748,11 +748,11 @@ class Database {
      * Retrieves the last throwable instance.
      *
      * This method returns the most recent throwable instance that was stored
-     * using the `setThrowable` method. If no throwable has been set, it returns null.
+     * using the `setLastThrowable` method. If no throwable has been set, it returns null.
      *
      * @return \Throwable|null The last throwable instance or null if none is set.
      */
-    public static function getThrowable(): ?\Throwable {
+    public static function getLastThrowable(): ?\Throwable {
         return self::$lastThrowable;
     }
 
@@ -768,7 +768,7 @@ class Database {
      * @param \Throwable $e The throwable instance to be stored.
      * @return void
      */
-    private static function setThrowable(\Throwable $e): void {
+    private static function setLastThrowable(\Throwable $e): void {
         self::$lastThrowable = $e;
     }
 
@@ -796,7 +796,7 @@ class Database {
                     return true;
                 }
             } catch (\Exception $e) {
-                self::setThrowable($e);
+                self::setLastThrowable($e);
                 $this->message = "Database connection was not established. " . $e->getMessage();
             }
         }

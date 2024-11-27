@@ -10,7 +10,7 @@ use PHPWebfuse\Path;
  */
 class File {
     // PUBLIC VARIABLES
-    public static \Throwable $lastThrowable;
+    public static ?\Throwable $lastThrowable = null;
 
     // PRIVATE VARIABLES
 
@@ -633,7 +633,7 @@ class File {
             try {
                 return @mkdir($dir, Utils::DIRECTORY_PERMISSION, true);
             } catch (\Throwable $e) {
-                self::setThrowable($e);
+                self::setLastThrowable($e);
             }
         }
         return false;
@@ -794,7 +794,7 @@ class File {
                     }
                 }
             } catch (\Throwable $e) {
-                self::setThrowable($e);
+                self::setLastThrowable($e);
             }
         }
         return false;
@@ -833,11 +833,11 @@ class File {
      * Retrieves the last throwable instance.
      *
      * This method returns the most recent throwable instance that was stored
-     * using the `setThrowable` method. If no throwable has been set, it returns null.
+     * using the `setLastThrowable` method. If no throwable has been set, it returns null.
      *
      * @return \Throwable|null The last throwable instance or null if none is set.
      */
-    public static function getThrowable(): ?\Throwable {
+    public static function getLastThrowable(): ?\Throwable {
         return self::$lastThrowable;
     }
 
@@ -853,7 +853,7 @@ class File {
      * @param \Throwable $e The throwable instance to be stored.
      * @return void
      */
-    private static function setThrowable(\Throwable $e): void {
+    private static function setLastThrowable(\Throwable $e): void {
         self::$lastThrowable = $e;
     }
 }
