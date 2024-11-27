@@ -4,7 +4,7 @@
   "type": "library",
   "license": "MIT",
   "minimum-stability": "stable",
-  "version": "6.8.0",
+  "version": "6.8.1",
   "keywords": [
     "phpwebfuse",
     "webfuse",
