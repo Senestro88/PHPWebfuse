@@ -67,7 +67,7 @@ class Utils {
     /**
      * @var array Common localhost addresses
      */
-    public const LOCALHOST_DEFAULT_ADDRESSES = array('localhost', '127.0.0.1', '::1', '');
+    public static array $LOCALHOST_DEFAULT_ADDRESSES = array('localhost', '127.0.0.1', '::1', '');
 
     /**
      * @var array Excluded private IP address ranges
@@ -715,27 +715,41 @@ class Utils {
     }
 
     /**
-     * Set file or directory permission
-     * @param string $path
-     * @param bool $recursive
-     * @return bool
+     * Sets the permissions of a file or directory, optionally recursively.
+     *
+     * This method sets the file or directory permissions to predefined constants
+     * (`FILE_PERMISSION` for files and `DIRECTORY_PERMISSION` for directories). 
+     * If the `$recursive` flag is set to true, it recursively sets the permissions
+     * for all files and subdirectories within the specified directory.
+     *
+     * @param string $path The file or directory path to apply the permissions to.
+     * @param bool $recursive Whether to apply the permissions recursively to subdirectories.
+     *
+     * @return bool Returns true on success or false on failure.
      */
     public static function setPermissions(string $path, bool $recursive = false): bool {
+        // Check if it's a file and set permissions
         if (File::isFile($path)) {
             $path = self::resolvePath($path);
-            return @chmod($path, self::FILE_PERMISSION);
-        } elseif (File::isFile($path)) {
+            return @chmod($path, self::FILE_PERMISSION); // @ to suppress errors, consider handling errors explicitly
+        }
+        // Check if it's a directory and set permissions
+        if (File::isDir($path)) {
             if (self::isTrue($recursive)) {
-                $i = new \RecursiveIteratorIterator(new \RecursiveFileectoryIterator($path, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
+                // Use RecursiveDirectoryIterator to iterate through all files and subdirectories
+                $i = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
                 foreach ($i as $list) {
                     $list = self::resolvePath($list->getRealPath());
+                    // Set permissions for files
                     if (File::isFile($list)) {
                         @chmod($list, self::FILE_PERMISSION);
-                    } elseif (File::isFile($list)) {
+                    } elseif (File::isDir($list)) {
+                        // Set permissions for directories
                         @chmod($list, self::DIRECTORY_PERMISSION);
                     }
                 }
             }
+            // Set the permissions for the directory itself
             return @chmod($path, self::DIRECTORY_PERMISSION);
         }
         return false;
@@ -750,7 +764,7 @@ class Utils {
         if (\is_file($path)) {
             return File::deleteFile($path);
         } elseif (\is_dir($path)) {
-            return File::deleteFile($path);
+            return File::deleteDir($path);
         }
         return false;
     }
@@ -796,10 +810,7 @@ class Utils {
      * @return string
      */
     public static function randUnique(string $which = "key"): string {
-        if (strtolower($which) == 'key') {
-            return hash_hmac('sha256', bin2hex(random_bytes(16)), '');
-        }
-        return str_shuffle(mt_rand(100000, 999999) . self::unixTimestamp());
+        return strtolower($which) == 'key' ? hash_hmac('sha256', bin2hex(random_bytes(16)), '') : str_shuffle(mt_rand(100000, 999999) . self::unixTimestamp());
     }
 
     /**
@@ -1804,43 +1815,6 @@ class Utils {
         return self::getCwd() === $dirname;
     }
 
-    /**
-     * Load a plugin
-     * @param string $plugin
-     * @return void
-     * @throws \Exception
-     */
-    public static function loadPlugin(string $plugin): void {
-        $dirname = Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['PLUGINS'], true);
-        $plugin = Path::arrange_dir_separators_v2($plugin);
-        $extension = File::getExtension($plugin);
-        $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $plugin : $plugin . '.php';
-        $plugin = $dirname . '' . $name;
-        if (File::isFile($plugin)) {
-            require_once $plugin;
-        } else {
-            throw new \Exception("The plugin \"" . $plugin . "\" doesn't exist.");
-        }
-    }
-
-    /**
-     * Loaf a library
-     * @param string $lib
-     * @return void
-     * @throws \Exception
-     */
-    public static function loadLib(string $lib): void {
-        $dirname = Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['LIBRARIES'], true);
-        $lib = Path::arrange_dir_separators_v2($lib);
-        $extension = File::getExtension($lib);
-        $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $lib : $lib . '.php';
-        $lib = $dirname . '' . $name;
-        if (File::isFile($lib)) {
-            require_once $lib;
-        } else {
-            throw new \Exception("The lib \"" . $lib . "\" doesn't exist.");
-        }
-    }
 
     /**
      * Header direct
@@ -1901,8 +1875,27 @@ class Utils {
      * @return bool
      */
     public static function isLocalhost(): bool {
-        return self::inArray(self::getIPAddress(), (array) self::LOCALHOST_DEFAULT_ADDRESSES);
+        return self::inArray(self::getIPAddress(), (array) self::$LOCALHOST_DEFAULT_ADDRESSES);
     }
+
+    /**
+     * Adds one or more IP addresses to the list of localhost default addresses.
+     *
+     * This method accepts an array of IP addresses and appends them to the 
+     * `LOCALHOST_DEFAULT_ADDRESSES` static property. Each value in the input 
+     * array is cast to a string before being added to ensure type consistency.
+     *
+     * @param array $lists An array of IP addresses to be added to the default list.
+     *                     These can be in string or other types convertible to string.
+     *
+     * @return void
+     */
+    public static function addToLocalhostDefaultIPAddresses(array $lists): void {
+        foreach ($lists as $key => $value) {
+            self::$LOCALHOST_DEFAULT_ADDRESSES[] = (string) $value;
+        }
+    }
+
 
     /**
      * Validate IPv4 IP address and check if IP address is not in private IP address range @see CHECK_IP_ADDRESS_IN_RANGE
@@ -2878,7 +2871,7 @@ class Utils {
                             return "Unable to create the extraction directory or check if it exists.";
                         }
                     } catch (\Throwable $e) {
-                        return "".$e->getMessage();
+                        return "" . $e->getMessage();
                     }
                 } else {
                     return "The filename must be a valid phar archive.";
@@ -3088,5 +3081,43 @@ class Utils {
      */
     private static function setLastThrowable(\Throwable $e): void {
         self::$lastThrowable = $e;
+    }
+
+    /**
+     * Load a plugin
+     * @param string $plugin
+     * @return void
+     * @throws \Exception
+     */
+    private static function loadPlugin(string $plugin): void {
+        $dirname = Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['PLUGINS'], true);
+        $plugin = Path::arrange_dir_separators_v2($plugin);
+        $extension = File::getExtension($plugin);
+        $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $plugin : $plugin . '.php';
+        $plugin = $dirname . '' . $name;
+        if (File::isFile($plugin)) {
+            require_once $plugin;
+        } else {
+            throw new \Exception("The plugin \"" . $plugin . "\" doesn't exist.");
+        }
+    }
+
+    /**
+     * Loaf a library
+     * @param string $lib
+     * @return void
+     * @throws \Exception
+     */
+    private static function loadLib(string $lib): void {
+        $dirname = Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['LIBRARIES'], true);
+        $lib = Path::arrange_dir_separators_v2($lib);
+        $extension = File::getExtension($lib);
+        $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $lib : $lib . '.php';
+        $lib = $dirname . '' . $name;
+        if (File::isFile($lib)) {
+            require_once $lib;
+        } else {
+            throw new \Exception("The lib \"" . $lib . "\" doesn't exist.");
+        }
     }
 }
