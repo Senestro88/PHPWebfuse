@@ -12,6 +12,7 @@ class Csrf {
     // PRIVATE VARIABLES
 
     // PUBLIC VARIABLES
+    public static \Throwable $lastThrowable;
 
     // PUBLIC METHODS
 
@@ -37,6 +38,7 @@ class Csrf {
                 $enc = Aes::enc($json, $csrfKey, "aes-128-cbc");
                 return $enc ?: '';
             } catch (\Throwable $e) {
+                self::setThrowable($e);
             }
         }
         return "";
@@ -59,10 +61,25 @@ class Csrf {
                     return hash_equals($salt, hash_hmac('sha256', $token, $csrfKey)) ? self::isCsrfMinutesInFuture($expires) : false;
                 }
             } catch (\Throwable $e) {
+                self::setThrowable($e);
             }
         }
         return false;
     }
+
+
+    /**
+     * Retrieves the last throwable instance.
+     *
+     * This method returns the most recent throwable instance that was stored
+     * using the `setThrowable` method. If no throwable has been set, it returns null.
+     *
+     * @return \Throwable|null The last throwable instance or null if none is set.
+     */
+    public static function getThrowable(): ?\Throwable {
+        return self::$lastThrowable;
+    }
+
 
     // PRIVATE METHODS
 
@@ -98,5 +115,19 @@ class Csrf {
      */
     private static function isCsrfMinutesInFuture(int $minutes): bool {
         return $minutes > self::getMinutesFromTime();
+    }
+
+    /**
+     * Sets the last throwable instance.
+     *
+     * This method allows storing the most recent exception or error object 
+     * that implements the Throwable interface. It is useful for tracking
+     * or logging errors globally.
+     *
+     * @param \Throwable $e The throwable instance to be stored.
+     * @return void
+     */
+    private static function setThrowable(\Throwable $e): void {
+        self::$lastThrowable = $e;
     }
 }

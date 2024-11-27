@@ -13,6 +13,9 @@ class Utils {
     // PRIVATE CONSTANTS
     // PUBLIC CONSTANT VARIABLES
 
+    // PUBLIC VARIABLES
+    public static \Throwable $lastThrowable;
+
     /**
      * @var array The default character considered invalid
      */
@@ -166,6 +169,7 @@ class Utils {
                 try {
                     unset($_COOKIE['' . $name . '']);
                 } catch (\Throwable $e) {
+                    self::setThrowable($e);
                 }
                 return true;
             }
@@ -1107,6 +1111,7 @@ class Utils {
                 return true;
             }
         } catch (\Throwable $e) {
+            self::setThrowable($e);
         }
         return false;
     }
@@ -1512,6 +1517,7 @@ class Utils {
             @header("Pragma: no-cache");
             return true;
         } catch (\Throwable $e) {
+            self::setThrowable($e);
         }
         return false;
     }
@@ -2129,6 +2135,7 @@ class Utils {
                     $isValid = $util->isValidNumber($parse);
                     return self::isTrue($isValid) ? trim($util->format($parse, \libphonenumber\PhoneNumberFormat::E164)) : false;
                 } catch (\libphonenumber\NumberParseException $e) {
+                    self::setThrowable($e);
                 }
             }
         }
@@ -2176,6 +2183,7 @@ class Utils {
                     $duration = gmdate("H:i:s", (int) $info->duration);
                 }
             } catch (\Throwable $e) {
+                self::setThrowable($e);
             }
         }
         return $duration;
@@ -2349,6 +2357,7 @@ class Utils {
         try {
             $socket = @fsockopen("www.google.com", 443, $errno, $errstr, 30);
         } catch (\Throwable $e) {
+            self::setThrowable($e);
         }
         if ($socket !== false) {
             @fclose($socket);
@@ -2393,6 +2402,7 @@ class Utils {
                     return self::jsonToArray($serverresponse);
                 }
             } catch (\Throwable $e) {
+                self::setThrowable($e);
             }
         }
         return false;
@@ -2868,7 +2878,7 @@ class Utils {
                             return "Unable to create the extraction directory or check if it exists.";
                         }
                     } catch (\Throwable $e) {
-                        return $e->getMessage();
+                        return "".$e->getMessage();
                     }
                 } else {
                     return "The filename must be a valid phar archive.";
@@ -3004,10 +3014,38 @@ class Utils {
         return $filteredArray;
     }
 
+    /**
+     * Retrieves the last throwable instance.
+     *
+     * This method returns the most recent throwable instance that was stored
+     * using the `setThrowable` method. If no throwable has been set, it returns null.
+     *
+     * @return \Throwable|null The last throwable instance or null if none is set.
+     */
+    public static function getThrowable(): ?\Throwable {
+        return self::$lastThrowable;
+    }
+
 
     // PRIVATE METHOD
 
-    private function errorHandler(int $errno, string $errstr, string $errfile, string $errline, array $errcontext) {
+    /**
+     * Custom error handler.
+     *
+     * This method handles PHP errors, including user-defined errors, warnings, 
+     * and notices. It determines if the error is within the current error reporting level, 
+     * formats the error message, and optionally terminates execution for fatal errors.
+     *
+     * @param int    $errno      The level of the error raised (e.g., E_USER_ERROR, E_USER_WARNING).
+     * @param string $errstr     The error message.
+     * @param string $errfile    The filename where the error occurred.
+     * @param string $errline    The line number where the error occurred.
+     * @param array  $errcontext The active symbol table at the time the error occurred (deprecated in PHP 7.2+).
+     *
+     * @return bool False if the error is not handled by this method, allowing it to fall 
+     *              through to the standard PHP error handler; true otherwise.
+     */
+    private function errorHandler(int $errno, string $errstr, string $errfile, string $errline, array $errcontext): bool {
         $level = error_reporting();
         if (!(error_reporting() & $errno)) {
             // This error code is not included in error_reporting, so let it fall
@@ -3035,5 +3073,20 @@ class Utils {
             }
             return true;
         }
+    }
+
+
+    /**
+     * Sets the last throwable instance.
+     *
+     * This method allows storing the most recent exception or error object 
+     * that implements the Throwable interface. It is useful for tracking
+     * or logging errors globally.
+     *
+     * @param \Throwable $e The throwable instance to be stored.
+     * @return void
+     */
+    private static function setThrowable(\Throwable $e): void {
+        self::$lastThrowable = $e;
     }
 }

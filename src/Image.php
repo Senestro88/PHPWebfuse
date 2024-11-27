@@ -21,6 +21,7 @@ class Image {
     // PRIVATE VARIABLE
 
     // PUBLIC VARIABLES
+    public static \Throwable $lastThrowable;
 
     // PUBLIC METHODS
 
@@ -527,6 +528,27 @@ class Image {
 
     //  PRIVATE METHODS
 
+    /**
+     * Retrieves the last throwable instance.
+     *
+     * This method returns the most recent throwable instance that was stored
+     * using the `setThrowable` method. If no throwable has been set, it returns null.
+     *
+     * @return \Throwable|null The last throwable instance or null if none is set.
+     */
+    public static function getThrowable(): ?\Throwable {
+        return self::$lastThrowable;
+    }
+
+    /**
+     * Retrieves an instance of the EThumbnail class.
+     *
+     * This method ensures the EThumbnail class is loaded before creating
+     * and returning a new instance. If the class is not already declared,
+     * it dynamically loads the required plugin using the `Utils::loadPlugin` method.
+     *
+     * @return \EThumbnail A new instance of the EThumbnail class.
+     */
     private static function getThumb(): \EThumbnail {
         // Check if the EThumbnail class is already loaded
         if (!\in_array("\EThumbnail", \get_declared_classes())) {
@@ -536,6 +558,7 @@ class Image {
         // Return a new instance of EThumbnail
         return new \EThumbnail;
     }
+
 
     /**
      * Set the output path for the processed image file.
@@ -582,6 +605,7 @@ class Image {
             $loader->loadFile($image);
         } catch (\Throwable $e) {
             // Catch any errors during the loading process and return false.
+            self::setThrowable($e);
         }
         return $loader;
     }
@@ -774,5 +798,19 @@ class Image {
             return File::isFile($output);
         }
         return false;
+    }
+
+    /**
+     * Sets the last throwable instance.
+     *
+     * This method allows storing the most recent exception or error object 
+     * that implements the Throwable interface. It is useful for tracking
+     * or logging errors globally.
+     *
+     * @param \Throwable $e The throwable instance to be stored.
+     * @return void
+     */
+    private static function setThrowable(\Throwable $e): void {
+        self::$lastThrowable = $e;
     }
 }

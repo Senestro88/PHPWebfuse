@@ -20,6 +20,7 @@ class Http {
     private static $REQUEST_METHODS = array('GET', 'POST');
 
     // PUBLIC VARIABLES
+    public static \Throwable $lastThrowable;
 
     /**
      * @var string Any request last error are stored here
@@ -135,7 +136,7 @@ class Http {
             // Catch any exceptions or errors during the request
             catch (\Throwable $e) {
                 // Store the error message
-                self::$errorMessage = $e->getMessage();
+                self::setThrowable($e);
             }
         }
         // Return false if the request fails
@@ -143,9 +144,30 @@ class Http {
     }
 
 
-    public static function getErrorMessage(): string {
-        return self::$errorMessage;
+    /**
+     * Retrieves the last throwable instance.
+     *
+     * This method returns the most recent throwable instance that was stored
+     * using the `setThrowable` method. If no throwable has been set, it returns null.
+     *
+     * @return \Throwable|null The last throwable instance or null if none is set.
+     */
+    public static function getThrowable(): ?\Throwable {
+        return self::$lastThrowable;
     }
 
     // PRIVATE METHODS
+    /**
+     * Sets the last throwable instance.
+     *
+     * This method allows storing the most recent exception or error object 
+     * that implements the Throwable interface. It is useful for tracking
+     * or logging errors globally.
+     *
+     * @param \Throwable $e The throwable instance to be stored.
+     * @return void
+     */
+    private static function setThrowable(\Throwable $e): void {
+        self::$lastThrowable = $e;
+    }
 }

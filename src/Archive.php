@@ -79,6 +79,7 @@ class Archive {
      * @param array $items The items can be a combination of files and directories
      * @param string $dirname The directory to save the archive
      * @return array|string Return string on failure which contains error message else file info
+     * @throws \PHPWebfuse\Exceptions\Exception
      */
     public static function createGz(string $name, array $items, string $dirname): array|string {
         return self::createTarArchive($name, $items, $dirname, true);
@@ -90,6 +91,7 @@ class Archive {
      * @param array $items The items can be a combination of files and directories
      * @param string $dirname The directory to save the archive
      * @return array|string Return string on failure which contains error message else file info
+     * @throws \PHPWebfuse\Exceptions\Exception
      */
     public static function createTar(string $name, array $items, string $dirname): array|string {
         return self::createTarArchive($name, $items, $dirname, false);

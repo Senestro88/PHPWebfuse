@@ -24,6 +24,7 @@ use \Zxing\QrReader;
 class QrCode {
     // PRIVATE VARIABLE
     // PUBLIC VARIABLES
+    public static \Throwable $lastThrowable;
 
     // PUBLIC METHODS
 
@@ -86,7 +87,7 @@ class QrCode {
             // Return the generated QR code image or base64 string
             return $result;
         } catch (\Throwable $e) {
-            \var_export($e->getMessage());
+            self::setThrowable($e);
         }
         return false;
     }
@@ -107,6 +108,7 @@ class QrCode {
                 return \is_string($result) ? $result : false;
             }
         } catch (\Throwable $e) {
+            self::setThrowable($e);
         }
         return false;
     }
@@ -129,6 +131,7 @@ class QrCode {
             $result = (new ChillerlanQRCode($options))->readFromFile($filename);
             $result = $result->data;
         } catch (\Throwable $e) {
+            self::setThrowable($e);
         }
         return $result;
     }
@@ -151,8 +154,21 @@ class QrCode {
             $result = (new ChillerlanQRCode($options))->readFromBlob($text);
             $result = $result->data;
         } catch (\Throwable $e) {
+            self::setThrowable($e);
         }
         return $result;
+    }
+
+    /**
+     * Retrieves the last throwable instance.
+     *
+     * This method returns the most recent throwable instance that was stored
+     * using the `setThrowable` method. If no throwable has been set, it returns null.
+     *
+     * @return \Throwable|null The last throwable instance or null if none is set.
+     */
+    public static function getThrowable(): ?\Throwable {
+        return self::$lastThrowable;
     }
 
     // PRIVATE METHODS
@@ -180,5 +196,19 @@ class QrCode {
             ChillerlanQRMatrix::M_TIMING,
         );
         $options->moduleValues = array();
+    }
+
+    /**
+     * Sets the last throwable instance.
+     *
+     * This method allows storing the most recent exception or error object 
+     * that implements the Throwable interface. It is useful for tracking
+     * or logging errors globally.
+     *
+     * @param \Throwable $e The throwable instance to be stored.
+     * @return void
+     */
+    private static function setThrowable(\Throwable $e): void {
+        self::$lastThrowable = $e;
     }
 }
