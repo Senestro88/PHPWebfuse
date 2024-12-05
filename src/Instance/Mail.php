@@ -43,17 +43,22 @@ class Mail {
      */
     private int $wordwrap = 100;
 
+
+    private bool $verifyPeer = false;
+    private bool $verifyPeerName = false;
+    private bool $allowSelfSigned = false;
+
     // PUBLIC VARIABLES
     // PUBLIC METHODS
 
     /**
      * Construct a new Mail instance
      * 
-     * @param array $config The mail configuration data which consists of host, username, password, mode (tls or ssl), port (tls: 587 and ssl:465), and wordwrap
+     * @param array $config The mail configuration data which consists of host, username, password, mode (tls or ssl), port (tls: 587 and ssl:465), wordwrap, verifyPeer, verifyPeerName, and allowSelfSigned
      */
     public function __construct(array $config = array()) {
         // Initialize mail configuration
-        $this->config($config);
+        $this->configure($config);
     }
 
     /**
@@ -80,12 +85,11 @@ class Mail {
                 $attachments = $this->validateAttachments($attachments);
                 // Configure mailer settings
                 $mailer->SMTPDebug = $debug ? SMTP::DEBUG_CONNECTION : SMTP::DEBUG_OFF;
-                $mailer->isSMTP();
                 $mailer->WordWrap = $this->wordwrap;
                 $mailer->Host = $this->host;
                 $this->setAuthentication($mailer, $authenticate);
                 $mailer->Port = $this->port;
-                $mailer->SMTPOptions = array('ssl' => array('verify_peer' => $authenticate, 'verify_peer_name' => $authenticate, 'allow_self_signed' => !$authenticate));
+                $mailer->SMTPOptions = array('ssl' => array('verify_peer' => $this->verifyPeer, 'verify_peer_name' => $this->verifyPeerName, 'allow_self_signed' => $this->allowSelfSigned));
                 // Set mail content
                 $mailer->setFrom($emailFrom);
                 $mailer->addAddress($emailTo);
@@ -95,9 +99,8 @@ class Mail {
                 $mailer->Body = "<!DOCTYPE html><html><body style='font-family: monospace, sans-serif;font-size: 16px;font-weight: normal;text-align:left;'>" . $message . "</body></html>";
                 $mailer->AltBody = strip_tags($message);
                 // Send mail
-                $mailer->send();
+                $result = $mailer->send();
                 $mailer->clearAllRecipients();
-                $result = true;
             } catch (\Throwable $e) {
                 $result = "Unable to mail message to " . $emailTo . " [" . $mailer->ErrorInfo . "]";
             }
@@ -114,7 +117,7 @@ class Mail {
      * 
      * @param array $config
      */
-    private function config(array $config = array()) {
+    private function configure(array $config = array()) {
         // Update mail configuration with provided settings
         $this->host = isset($config['host']) && Utils::isNotEmptyString($config['host']) ? (string) $config['host'] : "localhost";
         $this->username = isset($config['username']) && Utils::isNotEmptyString($config['username']) ? (string) $config['username'] : "";
@@ -122,6 +125,9 @@ class Mail {
         $this->mode = isset($config['mode']) && Utils::isNotEmptyString($config['mode']) ? (string) $config['mode'] : "tls";
         $this->port = isset($config['port']) && Utils::isNumeric($config['port']) ? (int) $config['port'] : 587;
         $this->wordwrap = isset($config['wordwrap']) && Utils::isNumeric($config['wordwrap']) ? (int) $config['wordwrap'] : 100;
+        $this->verifyPeer = isset($config['verifyPeer']) && Utils::isBool($config['verifyPeer']) ? (bool) $config['verifyPeer'] : false;
+        $this->verifyPeerName = isset($config['verifyPeerName']) && Utils::isBool($config['verifyPeerName']) ? (bool) $config['verifyPeerName'] : false;
+        $this->allowSelfSigned = isset($config['allowSelfSigned']) && Utils::isBool($config['allowSelfSigned']) ? (bool) $config['allowSelfSigned'] : true;
     }
 
     /**
@@ -161,6 +167,7 @@ class Mail {
      */
     private function setAuthentication(\PHPMailer\PHPMailer\PHPMailer $mailer, bool $authenticate = true): void {
         if ($authenticate) {
+            $mailer->isSMTP();
             $mailer->SMTPAuth = true; // Whether to use SMTP authentication.
             $mailer->SMTPAutoTLS = true; // Whether to enable TLS encryption automatically if a server supports it, even if SMTPSecure is not set to 'tls'.
             $mailer->Username = $this->username; // SMTP username.

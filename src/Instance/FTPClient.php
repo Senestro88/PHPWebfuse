@@ -949,7 +949,7 @@ class FTPClient
      */
     private function arrangeRDS(string $path): string
     {
-        return Path::arrange_dir_separators_v2($path, false, $this->rds);
+        return Path::arrange_dir_separators($path, false, $this->rds);
     }
 
     /**
@@ -959,7 +959,7 @@ class FTPClient
      */
     private function arrangeLDS(string $path): string
     {
-        return Path::arrange_dir_separators_v2($path);
+        return Path::arrange_dir_separators($path);
     }
 
     /**
@@ -1078,7 +1078,7 @@ class FTPClient
                     # To prevent an infinite loop
                     if($file != "." && $file != "..") {
                         $toDownload++;
-                        $localPath = Path::arrange_dir_separators_v2(Path::merge($localdir, basename($file)));
+                        $localPath = Path::arrange_dir_separators(Path::merge($localdir, basename($file)));
                         if($this->isDir($file)) {
                             // Create directory on local filesystem
                             File::createDir($localPath);

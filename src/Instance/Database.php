@@ -9,7 +9,7 @@ use \PHPWebfuse\Path;
 /**
  * @author Senestro
  */
-class Database {
+class Database extends Utils {
     // PRIVATE VARIABLES
     // PUBLIC VARIABLES
     public static ?\Throwable $lastThrowable = null;
@@ -37,9 +37,9 @@ class Database {
     // PUBLIC VARIABLES
 
     /**
-     * @var string Messages are stored here
+     * @var string Last messages are stored here
      */
-    public string $message = "";
+    public string $lastMessage = "";
 
     // PUBLIC METHODS
 
@@ -52,7 +52,7 @@ class Database {
      */
     public function __construct(?string $host = null, ?string $user = null, ?string $password = null, bool $reset = false) {
         if (!in_array('mysqli', get_declared_classes())) {
-            $this->message = "The mysqli class doesn't exist or wasn't found.";
+            $this->lastMessage = "The mysqli class doesn't exist or wasn't found.";
         } else if (Utils::isNotEmptyString($host) && Utils::isNotEmptyString($user) && Utils::isNotEmptyString($password)) {
             if (Utils::isNull($this->connection) || Utils::isTrue($reset)) {
                 $this->init($host, $user, $password, $reset);
@@ -90,6 +90,10 @@ class Database {
         return $this->connection;
     }
 
+    /**
+     * Get the last insert ID
+     * @return int|string
+     */
     public function lastInsertID(): int|string {
         if (Utils::isNonNull($this->connection)) {
             return $this->connection->insert_id;
@@ -143,14 +147,14 @@ class Database {
     }
 
     /**
-     * Get the connection server info
+     * Get the connection server version or -1
      * @return string
      */
     public function serverVersion(): string {
         if (Utils::isNonNull($this->connection)) {
             return $this->connection->server_version;
         }
-        return "";
+        return -1;
     }
 
     /**
@@ -165,14 +169,14 @@ class Database {
     }
 
     /**
-     * Get the connection protocol version
-     * @return int|string
+     * Get the connection protocol version or -1
+     * @return int
      */
-    public function protocolVersion(): int|string {
+    public function protocolVersion(): int {
         if (Utils::isNonNull($this->connection)) {
             return $this->connection->protocol_version;
         }
-        return "";
+        return -1;
     }
 
     /**
@@ -190,7 +194,7 @@ class Database {
     /**
      * Run a query
      * @param string $query The query string
-     * @return mysqli_result|bool
+     * @return \mysqli_result|bool
      */
     public function query(string $query): \mysqli_result|bool {
         if (Utils::isNonNull($this->connection)) {
@@ -214,7 +218,7 @@ class Database {
     /**
      * Multi query
      * @param string $query The query string
-     * @return mixed
+     * @return bool
      */
     public function multiQuery(string $query): bool {
         if (Utils::isNonNull($this->connection)) {
@@ -257,7 +261,7 @@ class Database {
     public function doesDatabaseExist(string $database): bool {
         if (Utils::isNonNull($this->connection)) {
             $result = $this->connection->query("SHOW DATABASES LIKE `" . strtolower($database) . "`");
-            return $result && $result->num_rows > 0;
+            return $result instanceof \mysqli_result && $result->num_rows > 0;
         }
         return false;
     }
@@ -273,7 +277,7 @@ class Database {
             foreach ($databases as $database) {
                 $database = $this->sanitizeIdentifier($database);
                 $status = $this->connection->query("SHOW TABLE STATUS FROM " . $database . ";");
-                if ($status && $status->num_rows >= 1) {
+                if ($status instanceof \mysqli_result && $status->num_rows >= 1) {
                     while ($row = $status->fetch_assoc()) {
                         $dataFree = $row['Data_free'];
                         $table = $row['Name'];
@@ -320,7 +324,7 @@ class Database {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
             $tables = $this->connection->query('SHOW TABLES FROM ' . $database . ';');
-            if ($tables && $tables->num_rows >= 1) {
+            if ($tables instanceof \mysqli_result && $tables->num_rows >= 1) {
                 while ($ft = $tables->fetch_array()) {
                     if ($ft[0] == $table) {
                         return true;
@@ -353,10 +357,10 @@ class Database {
      * @param string $table The database table name
      * @param array $data The database table array data
      * @param bool $prepare If to prepare or directly execute the query
-     * @param array $onDuplicateKeyUpdate The ON DUPLICATE KEY UPDATE clause
+     * @param array $onDuplicate The ON DUPLICATE KEY UPDATE clause
      * @return bool|\mysqli_stmt
      */
-    public function insertToDatabaseTable(string $database, string $table, array $data = [], bool $prepare = true, array $onDuplicateKeyUpdate = []): bool|\mysqli_stmt|\mysqli_result {
+    public function insertToDatabaseTable(string $database, string $table, array $data = [], bool $prepare = true, array $onDuplicate = []): bool|\mysqli_stmt|\mysqli_result {
         // Check if connection is established and table exists
         if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
             // Sanitize database and table names
@@ -385,9 +389,9 @@ class Database {
             }
             $statement .= substr(trim($rows), -1) == "," ? substr(trim($rows), 0, -1) : $rows;
             // Add ON DUPLICATE KEY UPDATE clause if provided
-            if (!empty($onDuplicateKeyUpdate)) {
+            if (!empty($onDuplicate)) {
                 $updateFields = [];
-                foreach ($onDuplicateKeyUpdate as $key => $value) {
+                foreach ($onDuplicate as $key => $value) {
                     $updateFields[] = "" . $key . " = " . $this->escape($value);
                 }
                 $statement .= " ON DUPLICATE KEY UPDATE " . implode(", ", $updateFields);
@@ -396,12 +400,68 @@ class Database {
             $statement .= ");";
             $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
             if (!$result) {
-                $this->message = $this->lastError();
+                $this->lastMessage = $this->lastError();
                 return false;
             }
             return $result;
         }
         // Return false if connection or table is not valid
+        return false;
+    }
+
+
+    /**
+     * Updates rows in a specified database table based on provided data and conditions.
+     *
+     * @param string $database  The name of the database.
+     * @param string $table     The name of the table to update.
+     * @param array $data       An associative array of column-value pairs to set in the update.
+     * @param array $whereKeys  An associative array of column-value pairs for the WHERE clause.
+     * @return bool
+     *
+     */
+    public function updateDatabaseTable(string $database, string $table, array $data = [], array $whereKeys = []): bool {
+        // Check if connection is established and table exists
+        if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
+            // Sanitize database and table names
+            $database = $this->sanitizeIdentifier($database);
+            $table = $this->sanitizeIdentifier($table);
+            // Prepare fields and values for the UPDATE statement
+            $updateFields = [];
+            foreach ($data as $key => $value) {
+                if (!Utils::isEmptyString($key)) {
+                    $escapedValue = $this->escape($value);
+                    $updateFields[] = "`$key` = " . (Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
+                }
+            }
+            if (empty($updateFields)) {
+                $this->lastMessage = "No valid fields provided for update.";
+            } else {
+                // Prepare the WHERE clause
+                $whereClauses = [];
+                foreach ($whereKeys as $key => $value) {
+                    if (!Utils::isEmptyString($key)) {
+                        $escapedValue = $this->escape($value);
+                        $whereClauses[] = "`$key` = " . (Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
+                    }
+                }
+                if (empty($whereClauses)) {
+                    $this->lastMessage = "No valid WHERE keys provided for update.";
+                } else {
+                    // Build the UPDATE statement
+                    $statement = "UPDATE $database.$table SET " . implode(", ", $updateFields) . " WHERE " . implode(" AND ", $whereClauses) . ";";
+                    // Execute the statement
+                    $result = $this->connection->query($statement);
+                    if (!$result) {
+                        $this->lastMessage = $this->lastError();
+                        return false;
+                    }
+                    return $result;
+                }
+            }
+        }
+        // Return false if connection or table is not valid
+        $this->lastMessage = "Invalid connection or table does not exist.";
         return false;
     }
 
@@ -442,12 +502,13 @@ class Database {
             // Execute the statement and check for errors
             $created = $this->connection->query($statement);
             if (Utils::isNotTrue($created)) {
-                $this->message = $this->lastError();
+                $this->lastMessage = $this->lastError();
                 return false;
             }
             // Return true if the table was created successfully
             return true;
         }
+        $this->lastMessage = "Invalid connection or table does exist.";
         // Return false if the table already exists or the connection is invalid
         return false;
     }
@@ -464,14 +525,14 @@ class Database {
                 $database = $this->sanitizeIdentifier($database);
                 $messages[$database] = array();
                 $tables = $this->connection->query('SHOW TABLES FROM ' . $database . ';');
-                if ($tables && $this->connection->select_db($database)) {
+                if ($tables instanceof \mysqli_result && $this->connection->select_db($database)) {
                     while ($ft = $tables->fetch_array()) {
                         $table = $ft[0];
                         $messages[$database][$table] = "";
                         $tableStatements = array();
                         $columnsData = array();
                         $columns = $this->connection->query('SHOW FULL COLUMNS FROM ' . $table . ';');
-                        if ($columns) {
+                        if ($columns instanceof \mysqli_result) {
                             try {
                                 while ($ft = $columns->fetch_assoc()) {
                                     $columnsData[] = $ft;
@@ -527,7 +588,7 @@ class Database {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
             $columns = $this->connection->query('SHOW FULL COLUMNS FROM ' . $database . '.' . $table . ';');
-            if ($columns) {
+            if ($columns instanceof \mysqli_result) {
                 try {
                     while ($ft = $columns->fetch_assoc()) {
                         $result[] = $ft;
@@ -619,15 +680,15 @@ class Database {
         if (Utils::isNonNull($this->connection)) {
             if (Utils::startsWith("SELECT", strtoupper($statement))) {
                 $select = $this->connection->query($statement);
-                if ($select && $select->num_rows > 0) {
+                if ($select instanceof \mysqli_result && $select->num_rows > 0) {
                     while ($row = $select->fetch_assoc()) {
                         $result[] = $row;
                     }
                 } else {
-                    $this->message = "Failed to execute the where clause statement. " . $this->lastError();
+                    $this->lastMessage = "Failed to execute the where clause statement. " . $this->lastError();
                 }
             } else {
-                $this->message = "To execute a where clause and fetch the association, the statement must start with \"SELECT\"";
+                $this->lastMessage = "To execute a where clause and fetch the association, the statement must start with \"SELECT\"";
             }
         }
         return $result;
@@ -643,7 +704,7 @@ class Database {
         if (Utils::isNonNull($this->connection)) {
             $database = $this->sanitizeIdentifier($database);
             $tables = $this->connection->query("SHOW TABLES FROM " . $database . ";");
-            if ($tables) {
+            if ($tables instanceof \mysqli_result) {
                 while ($row = $tables->fetch_array()) {
                     $result[] = $row[0];
                 }
@@ -664,7 +725,7 @@ class Database {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
             $result = $this->connection->query("SHOW CREATE TABLE " . $database . "." . $table . ";");
-            if ($result) {
+            if ($result instanceof \mysqli_result) {
                 $row = $result->fetch_row();
                 $structure .= "\n-- ---------------------------------------------------------\n";
                 $structure .= "-- Table structure for table `$table`\n";
@@ -687,7 +748,7 @@ class Database {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
             $result = $this->connection->query("SELECT * FROM " . $database . "." . $table . ";");
-            if ($result) {
+            if ($result instanceof \mysqli_result) {
                 $fieldCount = $result->field_count;
                 $fields = [];
                 while ($field = $result->fetch_field()) {
@@ -797,7 +858,7 @@ class Database {
                 }
             } catch (\Exception $e) {
                 self::setLastThrowable($e);
-                $this->message = "Database connection was not established. " . $e->getMessage();
+                $this->lastMessage = "Database connection was not established. " . $e->getMessage();
             }
         }
         $this->connection = null;

@@ -226,7 +226,7 @@ class File {
                         // Get the file type (file, directory, link or unknown)
                         $this->type = $this->convertRawPermissionToType($permission);
                         // Get the full path of the item
-                        $this->realpath = Path::arrange_dir_separators_v2(Path::merge($this->dir, $basename, $this->rds), false, $this->rds);
+                        $this->realpath = Path::arrange_dir_separators(Path::merge($this->dir, $basename, $this->rds), false, $this->rds);
                         // Handle filenames with spaces
                         if (isset($parts[9])) {
                             for ($i = 9; $i < count($parts); $i++) {
@@ -327,7 +327,7 @@ class File {
      * @return string
      */
     private function arrange_ds(string $path): string {
-        return Path::arrange_dir_separators_v2($path, false, $this->rds);
+        return Path::arrange_dir_separators($path, false, $this->rds);
     }
 
     /**

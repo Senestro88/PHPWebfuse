@@ -14,52 +14,52 @@ class Utils {
     // PUBLIC CONSTANT VARIABLES
 
     // PUBLIC VARIABLES
-    public static ?\Throwable $lastThrowable = null;
+    private static ?\Throwable $lastThrowable = null;
 
     /**
      * @var array The default character considered invalid
      */
-    public const INVALID_CHARS = array("\\", "/", ":", ";", " ", "*", "?", "\"", "<", ">", "|", ",", "'");
+    private const INVALID_CHARS = array("\\", "/", ":", ";", " ", "*", "?", "\"", "<", ">", "|", ",", "'");
 
     /**
      * @var int Files permission
      */
-    public const FILE_PERMISSION = 0644;
+    private const FILE_PERMISSION = 0644;
 
     /**
      * @var int Directories permission
      */
-    public const DIRECTORY_PERMISSION = 0755;
+    protected const DIRECTORY_PERMISSION = 0755;
 
     /**
      * @var int Default image width for conversion
      */
-    public const IMAGE_WIDTH = 450;
+    private const IMAGE_WIDTH = 450;
 
     /**
      * @var int Default image height for conversion
      */
-    public const IMAGE_HEIGHT = 400;
+    private const IMAGE_HEIGHT = 400;
 
     /**
      * @var string Default user agent
      */
-    public const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36";
+    private const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36";
 
     /**
      * @var string Default timezone
      */
-    public const TIMEZONE = "Africa/Lagos";
+    private const TIMEZONE = "Africa/Lagos";
 
     /**
      * @var string Default GMT
      */
-    public const GMT = "+01:00";
+    protected const GMT = "+01:00";
 
     /**
      * @var array Default errors stylesheet
      */
-    public const ERRORS_CSS = array(
+    private const ERRORS_CSS = array(
         'exception' => "width: 100%; padding: 5px; height: auto; position: relative; display: block; text-align: left; word-break: break-word; overflow-wrap: break-word; color: #d22c3c; background: transparent; font-size: 90%; margin: 5px auto; border: none; border-bottom: 2px dashed red; font-weight: normal;",
         'error' => "width: 100%; padding: 5px; height: auto; position: relative; display: block; text-align: left; word-break: break-word; overflow-wrap: break-word; color: black; background: transparent; font-size: 90%; margin: 5px auto; border: none; border-bottom: 2px dashed #da8d00; font-weight: normal;",
     );
@@ -67,17 +67,17 @@ class Utils {
     /**
      * @var array Common localhost addresses
      */
-    public static array $LOCALHOST_DEFAULT_ADDRESSES = array('localhost', '127.0.0.1', '::1', '');
+    private static array $LOCALHOST_DEFAULT_ADDRESSES = array('localhost', '127.0.0.1', '::1', '');
 
     /**
      * @var array Excluded private IP address ranges
      */
-    public const PRIVATE_IP_ADDRESS_RANGES = array('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '169.254.0.0/16', '127.0.0.0/8');
+    private static array $PRIVATE_IP_ADDRESS_RANGES = array('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '169.254.0.0/16', '127.0.0.0/8');
 
     /**
      * @var bool Wether to check for Ip in private Ip ranges
      */
-    public const CHECK_IP_ADDRESS_IN_RANGE = false;
+    private const CHECK_IP_ADDRESS_IN_RANGE = false;
 
     // PUBLIC METHODS
 
@@ -1613,7 +1613,7 @@ class Utils {
         $parse = parse_url($ccUrl);
         $scheme = isset($parts['scheme']) ?  $parts['scheme'] : "";
         $host = isset($parts['host']) ? $parts['host'] : "";
-        $path = Path::arrange_dir_separators_v2($parse['path'], true);
+        $path = Path::arrange_dir_separators($parse['path'], true);
         $path = str_replace(array("//", "\\\\", "\\",  "/\\", "\\/"), "/", $path);
         $path = !empty($path) ? (!Utils::startsWith("/", $path) ? "/" . $path : $path) : "";
         return (!empty($scheme) && !empty($host) ? $scheme . '://' . $host  : "") . '' . $path;
@@ -1896,6 +1896,24 @@ class Utils {
         }
     }
 
+    /**
+     * Adds one or more IP addresses to the list of private ip addresses.
+     *
+     * This method accepts an array of IP addresses and appends them to the 
+     * `PRIVATE_IP_ADDRESS_RANGES` static property. Each value in the input 
+     * array is cast to a string before being added to ensure type consistency.
+     *
+     * @param array $lists An array of IP addresses to be added to the default list.
+     *                     These can be in string or other types convertible to string.
+     *
+     * @return void
+     */
+    public static function addToPrivateIPAddresses(array $lists): void {
+        foreach ($lists as $key => $value) {
+            self::$PRIVATE_IP_ADDRESS_RANGES[] = (string) $value;
+        }
+    }
+
 
     /**
      * Validate IPv4 IP address and check if IP address is not in private IP address range @see CHECK_IP_ADDRESS_IN_RANGE
@@ -1905,7 +1923,7 @@ class Utils {
     public static function validateIPAddress(string $ip): bool {
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             if (self::isTrue(self::CHECK_IP_ADDRESS_IN_RANGE)) {
-                foreach (self::PRIVATE_IP_ADDRESS_RANGES as $range) {
+                foreach (self::$PRIVATE_IP_ADDRESS_RANGES as $range) {
                     if (self::isIPInPrivateRange($ip, $range)) {
                         return false;
                     }
@@ -2232,7 +2250,7 @@ class Utils {
                 if (isset($options['unique_file_identifier'])) {
                     $data['unique_file_identifier'] = array('ownerid' => "email", 'data' => md5(time()));
                 }
-                $tempPathname = Path::insert_dir_separator(Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['DATA'] . DIRECTORY_SEPARATOR . 'getid3' . DIRECTORY_SEPARATOR . 'temp'));
+                $tempPathname = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['DATA'] . DIRECTORY_SEPARATOR . 'getid3' . DIRECTORY_SEPARATOR . 'temp'));
                 if (File::createFile($tempPathname)) {
                     $random = self::generateRandomFilename("png");
                     $_covername = $tempPathname . '' . $random;
@@ -2904,7 +2922,7 @@ class Utils {
      */
     public static function getFromDocumentRoot(string $name, bool $urlForm = false, bool $endForwardslash = true): string {
         $rootPath = $urlForm ? self::getDocumentRoot(true) : self::getDocumentRoot(false);
-        $name = Path::arrange_dir_separators_v2($name, false);
+        $name = Path::arrange_dir_separators($name, false);
         $name = $urlForm ? str_replace('\\', '/', $name) : $name;
         return $rootPath . $name . ($endForwardslash ? ($urlForm ? '/' : DIRECTORY_SEPARATOR) : '');
     }
@@ -3089,9 +3107,9 @@ class Utils {
      * @return void
      * @throws \Exception
      */
-    private static function loadPlugin(string $plugin): void {
-        $dirname = Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['PLUGINS'], true);
-        $plugin = Path::arrange_dir_separators_v2($plugin);
+    protected static function loadPlugin(string $plugin): void {
+        $dirname = Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['PLUGINS'], true);
+        $plugin = Path::arrange_dir_separators($plugin);
         $extension = File::getExtension($plugin);
         $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $plugin : $plugin . '.php';
         $plugin = $dirname . '' . $name;
@@ -3108,9 +3126,9 @@ class Utils {
      * @return void
      * @throws \Exception
      */
-    private static function loadLib(string $lib): void {
-        $dirname = Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['LIBRARIES'], true);
-        $lib = Path::arrange_dir_separators_v2($lib);
+    protected static function loadLib(string $lib): void {
+        $dirname = Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['LIBRARIES'], true);
+        $lib = Path::arrange_dir_separators($lib);
         $extension = File::getExtension($lib);
         $name = self::isNotEmptyString($extension) && strtolower($extension) == "php" ? $lib : $lib . '.php';
         $lib = $dirname . '' . $name;

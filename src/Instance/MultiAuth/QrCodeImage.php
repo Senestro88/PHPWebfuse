@@ -79,7 +79,7 @@ class QrCodeImage {
                 $content = htmlspecialchars_decode(sprintf($content, $label, $secret, $issuer));
                 $qrcode = new QrCode($content);
                 $result = $qrcode->createResult();
-                $dataPath = Path::insert_dir_separator(Path::arrange_dir_separators_v2(PHPWEBFUSE['DIRECTORIES']['DATA'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
+                $dataPath = Path::insert_dir_separator(Path::arrange_dir_separators(PHPWEBFUSE['DIRECTORIES']['DATA'] . DIRECTORY_SEPARATOR . 'multiauth' . DIRECTORY_SEPARATOR . 'temp'));
                 if ((File::createDir($dataPath))) {
                     $absolutePath = $dataPath . '' . Utils::randUnique("key") . '.png';
                     $result->saveToFile($absolutePath);

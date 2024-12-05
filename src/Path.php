@@ -49,30 +49,6 @@ class Path {
         return ltrim(self::convert_dir_separators($path, $separator), $separator);
     }
 
-
-    /**
-     * Normalizes the directory separators in the given path.
-     *
-     * This function ensures that the directory separators are consistent throughout the given path.
-     * It can optionally add a separator at the start and end of the path, depending on the 
-     * value of the `$closeEdges` parameter.
-     *
-     * @param string $path The directory path to normalize.
-     * @param bool $closeEdges If true, adds directory separators at the start and end of the path.
-     *                         Default is false.
-     * @param string|null $separator The separator to use for the path (defaults to DIRECTORY_SEPARATOR).
-     *                               If null or empty, the system's DIRECTORY_SEPARATOR is used.
-     * @return string The normalized path with consistent directory separators.
-     */
-    public static function arrange_dir_separators(string $path, bool $closeEdges = false, ?string $separator = null): string {
-        // Use the provided separator, or default to the system's DIRECTORY_SEPARATOR if not provided.
-        $separator = \is_string($separator) && !empty($separator) ? $separator : DIRECTORY_SEPARATOR;
-        // Convert the path to use consistent separators and split the path into components.
-        $explodedPath = array_filter(explode($separator, self::convert_dir_separators($path, $separator)));
-        // Return the path, optionally closing the edges with the separator.
-        return ($closeEdges ? $separator : "") . implode($separator, $explodedPath) . ($closeEdges ? $separator : "");
-    }
-
     /**
      * Normalizes the directory separators in the given path, with special handling for Windows paths.
      *
@@ -88,7 +64,7 @@ class Path {
      *                               If null or empty, the system's DIRECTORY_SEPARATOR is used.
      * @return string The normalized path with consistent directory separators.
      */
-    public static function arrange_dir_separators_v2(string $path, bool $closeEdges = false, ?string $separator = null): string {
+    public static function arrange_dir_separators(string $path, bool $closeEdges = false, ?string $separator = null): string {
         // Use the provided separator, or default to the system's DIRECTORY_SEPARATOR if not provided.
         $separator = \is_string($separator) && !empty($separator) ? $separator : DIRECTORY_SEPARATOR;
         // Convert the path to use consistent separators and split the path into components.

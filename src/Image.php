@@ -17,7 +17,7 @@ use Spatie\Image\Enums\FlipDirection as SpatieFlipDirection;
 use Spatie\Image\Enums\Unit as SpatieUnit;
 
 
-class Image {
+class Image extends Utils {
     // PRIVATE VARIABLE
 
     // PUBLIC VARIABLES
@@ -554,6 +554,7 @@ class Image {
         if (!\in_array("\EThumbnail", \get_declared_classes())) {
             // Load the EThumbnail plugin if it's not already declared
             Utils::loadPlugin("EThumbnail");
+            
         }
         // Return a new instance of EThumbnail
         return new \EThumbnail;
@@ -575,7 +576,7 @@ class Image {
             // Resolve the real path of the image
             $image = realpath($image);
             $basename = basename($image);
-            $dirname = Path::arrange_dir_separators_v2(dirname($image), true);
+            $dirname = Path::arrange_dir_separators(dirname($image), true);
             // Generate a new filename if not replacing the original
             $name = $replace ? $basename : File::removeExtension($basename) . "-" . time() . "." . File::getExtension($image);
             // Set the output path for the thumbnail
@@ -625,7 +626,7 @@ class Image {
             // Get the absolute path, filename, and directory of the image.
             $image = realpath($image);
             $basename = basename($image);
-            $dirname = Path::arrange_dir_separators_v2(dirname($image), true);
+            $dirname = Path::arrange_dir_separators(dirname($image), true);
             // Determine the new file name based on whether replacement is enabled.
             $name = $replace ? $basename : File::removeExtension($basename) . "-" . time() . "." . File::getExtension($image);
             // Return the complete path with the new file name.
