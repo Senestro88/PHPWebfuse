@@ -436,34 +436,147 @@ class Database extends Utils {
             }
             if (empty($updateFields)) {
                 $this->lastMessage = "No valid fields provided for update.";
-            } else {
-                // Prepare the WHERE clause
-                $whereClauses = [];
-                foreach ($whereKeys as $key => $value) {
-                    if (!Utils::isEmptyString($key)) {
-                        $escapedValue = $this->escape($value);
-                        $whereClauses[] = "`$key` = " . (Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
-                    }
-                }
-                if (empty($whereClauses)) {
-                    $this->lastMessage = "No valid WHERE keys provided for update.";
-                } else {
-                    // Build the UPDATE statement
-                    $statement = "UPDATE $database.$table SET " . implode(", ", $updateFields) . " WHERE " . implode(" AND ", $whereClauses) . ";";
-                    // Execute the statement
-                    $result = $this->connection->query($statement);
-                    if (!$result) {
-                        $this->lastMessage = $this->lastError();
-                        return false;
-                    }
-                    return $result;
+                return false;
+            }
+            // Prepare the WHERE clause
+            $whereClauses = [];
+            foreach ($whereKeys as $key => $value) {
+                if (!Utils::isEmptyString($key)) {
+                    $escapedValue = $this->escape($value);
+                    $whereClauses[] = "`$key` = " . (Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
                 }
             }
+            if (empty($whereClauses)) {
+                $this->lastMessage = "No valid WHERE keys provided for update.";
+                return false;
+            }
+            // Build the UPDATE statement
+            $statement = "UPDATE $database.$table SET " . implode(", ", $updateFields) . " WHERE " . implode(" AND ", $whereClauses) . ";";
+            // Execute the statement
+            $result = $this->connection->query($statement);
+            if (!$result) {
+                $this->lastMessage = $this->lastError();
+                return false;
+            }
+            return $result;
         }
         // Return false if connection or table is not valid
         $this->lastMessage = "Invalid connection or table does not exist.";
         return false;
     }
+
+    /**
+     * Updates rows in a specified database table based on provided data.
+     *
+     * @param string $database  The name of the database.
+     * @param string $table     The name of the table to update.
+     * @param array $data       An associative array of column-value pairs to set in the update.
+     * @return bool
+     */
+    public function updateDatabaseTableRows(string $database, string $table, array $data = []): bool {
+        // Check if connection is established and table exists
+        if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
+            // Sanitize database and table names
+            $database = $this->sanitizeIdentifier($database);
+            $table = $this->sanitizeIdentifier($table);
+
+            // Prepare fields and values for the UPDATE statement
+            $updateFields = [];
+            foreach ($data as $key => $value) {
+                if (!Utils::isEmptyString($key)) {
+                    $escapedValue = $this->escape($value);
+                    $updateFields[] = "`$key` = " . (Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
+                }
+            }
+            if (empty($updateFields)) {
+                $this->lastMessage = "No valid fields provided for update.";
+                return false;
+            }
+            // Build the UPDATE statement
+            $statement = "UPDATE $database.$table SET " . implode(", ", $updateFields) . ";";
+            // Execute the statement
+            $result = $this->connection->query($statement);
+            if (!$result) {
+                $this->lastMessage = $this->lastError();
+                return false;
+            }
+            return true;
+        }
+        // Return false if connection or table is not valid
+        $this->lastMessage = "Invalid connection or table does not exist.";
+        return false;
+    }
+
+
+    /**
+     * Deletes a specific row from a specified database table based on provided conditions.
+     *
+     * @param string $database  The name of the database.
+     * @param string $table     The name of the table to delete from.
+     * @param array $whereKeys  An associative array of column-value pairs for the WHERE clause.
+     * @return bool
+     */
+    public function deleteDatabaseTableRow(string $database, string $table, array $whereKeys = []): bool {
+        // Check if connection is established and table exists
+        if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
+            // Sanitize database and table names
+            $database = $this->sanitizeIdentifier($database);
+            $table = $this->sanitizeIdentifier($table);
+            // Prepare the WHERE clause
+            $whereClauses = [];
+            foreach ($whereKeys as $key => $value) {
+                if (!Utils::isEmptyString($key)) {
+                    $escapedValue = $this->escape($value);
+                    $whereClauses[] = "`$key` = " . (Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
+                }
+            }
+            if (empty($whereClauses)) {
+                $this->lastMessage = "No valid WHERE keys provided for deletion.";
+                return false;
+            }
+            // Build the DELETE statement
+            $statement = "DELETE FROM $database.$table WHERE " . implode(" AND ", $whereClauses) . ";";
+            // Execute the statement
+            $result = $this->connection->query($statement);
+            if (!$result) {
+                $this->lastMessage = $this->lastError();
+                return false;
+            }
+            return true;
+        }
+        // Return false if connection or table is not valid
+        $this->lastMessage = "Invalid connection or table does not exist.";
+        return false;
+    }
+
+    /**
+     * Deletes all rows from a specified database table.
+     *
+     * @param string $database  The name of the database.
+     * @param string $table     The name of the table to delete from.
+     * @return bool
+     */
+    public function deleteDatabaseTableRows(string $database, string $table): bool {
+        // Check if connection is established and table exists
+        if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
+            // Sanitize database and table names
+            $database = $this->sanitizeIdentifier($database);
+            $table = $this->sanitizeIdentifier($table);
+            // Build the DELETE statement
+            $statement = "DELETE FROM $database.$table;";
+            // Execute the statement
+            $result = $this->connection->query($statement);
+            if (!$result) {
+                $this->lastMessage = $this->lastError();
+                return false;
+            }
+            return true;
+        }
+        // Return false if connection or table is not valid
+        $this->lastMessage = "Invalid connection or table does not exist.";
+        return false;
+    }
+
 
     /**
      * Create a database table
