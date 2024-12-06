@@ -362,9 +362,9 @@ class Database extends Utils {
         // Prepare fields and values
         $fields = [];
         $values = [];
-        foreach ($data as $index => $value) {
-            if (!Utils::isEmptyString($index) && !Utils::isEmptyString($value)) {
-                $fields[] = $index;
+        foreach ($data as $key => $value) {
+            if (!Utils::isEmptyString($key)) {
+                $fields[] = $key;
                 $values[] = Utils::isInt($value) ? $this->escape($value) : '"' . $this->escape((string) $value) . '"';
             }
         }
