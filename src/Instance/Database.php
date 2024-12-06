@@ -297,7 +297,7 @@ class Database extends Utils {
      * @return bool
      */
     public function deleteDatabaseTable(string $database, string $table): bool {
-        if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
+        if (Utils::isNonNull($this->connection)) {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
             return $this->connection->query('DROP TABLE IF EXISTS ' . $database . '.' . $table . ';');
@@ -334,7 +334,7 @@ class Database extends Utils {
      * @return bool
      */
     public function truncateDatabaseTable(string $database, string $table): bool {
-        if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
+        if (Utils::isNonNull($this->connection)) {
             $database = $this->sanitizeIdentifier($database);
             $table = $this->sanitizeIdentifier($table);
             return $this->connection->query('TRUNCATE ' . $database . '.' . $table . ';');
@@ -353,7 +353,8 @@ class Database extends Utils {
      * @return bool|\mysqli_stmt|\mysqli_result
      */
     public function insertToDatabaseTable(string $database, string $table, array $data = [], bool $prepare = true, array $onDuplicate = []): bool|\mysqli_stmt|\mysqli_result {
-        if (!Utils::isNonNull($this->connection) || !$this->doesDatabaseTableExist($database, $table)) {
+        if (Utils::isNull($this->connection)) {
+            $this->lastMessage = "Invalid connection";
             return false;
         }
         // Sanitize identifiers
@@ -399,8 +400,8 @@ class Database extends Utils {
      * @return bool|\mysqli_stmt
      */
     public function updateDatabaseTable(string $database, string $table, array $data = [], array $whereKeys = [], bool $prepare = true): bool|\mysqli_stmt {
-        if (!Utils::isNonNull($this->connection) || !$this->doesDatabaseTableExist($database, $table)) {
-            $this->lastMessage = "Invalid connection or table does not exist.";
+        if (Utils::isNull($this->connection)) {
+            $this->lastMessage = "Invalid connection.";
             return false;
         }
         // Sanitize identifiers
@@ -452,7 +453,7 @@ class Database extends Utils {
      * @return bool|\mysqli_stmt
      */
     public function updateDatabaseTableRows(string $database, string $table, array $data = [], bool $prepare = true): bool|\mysqli_stmt {
-        if (!Utils::isNonNull($this->connection) || !$this->doesDatabaseTableExist($database, $table)) {
+        if (Utils::isNull($this->connection)) {
             $this->lastMessage = "Invalid connection or table does not exist.";
             return false;
         }
@@ -494,8 +495,8 @@ class Database extends Utils {
      * @return bool|\mysqli_stmt
      */
     public function deleteDatabaseTableRow(string $database, string $table, array $whereKeys = [], bool $prepare = true): bool|\mysqli_stmt {
-        if (!Utils::isNonNull($this->connection) || !$this->doesDatabaseTableExist($database, $table)) {
-            $this->lastMessage = "Invalid connection or table does not exist.";
+        if (Utils::isNull($this->connection)) {
+            $this->lastMessage = "Invalid connection.";
             return false;
         }
         // Sanitize database and table names
@@ -533,8 +534,8 @@ class Database extends Utils {
      * @return bool|\mysqli_stmt
      */
     public function deleteDatabaseTableRows(string $database, string $table, bool $prepare = true): bool|\mysqli_stmt {
-        if (!Utils::isNonNull($this->connection) || !$this->doesDatabaseTableExist($database, $table)) {
-            $this->lastMessage = "Invalid connection or table does not exist.";
+        if (Utils::isNull($this->connection)) {
+            $this->lastMessage = "Invalid connection.";
             return false;
         }
         // Sanitize database and table names
@@ -568,8 +569,8 @@ class Database extends Utils {
      * @return bool - true if the table was created successfully, false otherwise
      */
     public function createDatabaseTable(string $database, string $table, array $columns = [], string $comment = '', string $engine = "MyISAM", string $character = "latin1", string $collate = "latin1_general_ci", bool $autoIncrement = true): bool {
-        if (!Utils::isNonNull($this->connection) || $this->doesDatabaseTableExist($database, $table)) {
-            $this->lastMessage = "Invalid connection or table already exists.";
+        if (Utils::isNull($this->connection)) {
+            $this->lastMessage = "Invalid connection.";
             return false;
         }
         // Sanitize the database and table names
