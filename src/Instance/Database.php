@@ -267,36 +267,28 @@ class Database extends Utils {
     }
 
     /**
-     * Optimize database's
-     * @param array $databases The database's
+     * Optimize databases
+     * @param array $databases The databases
      * @return array
      */
     public function optimizeDatabases(array $databases): array {
-        $result = array();
+        $result = [];
         if (Utils::isNonNull($this->connection)) {
             foreach ($databases as $database) {
-                $database = $this->sanitizeIdentifier($database);
-                $status = $this->connection->query("SHOW TABLE STATUS FROM " . $database . ";");
-                if ($status instanceof \mysqli_result && $status->num_rows >= 1) {
+                $sanitizedDatabase = $this->sanitizeIdentifier($database);
+                $status = $this->connection->query("SHOW TABLE STATUS FROM " . $sanitizedDatabase . ";");
+                if ($status instanceof \mysqli_result) {
                     while ($row = $status->fetch_assoc()) {
-                        $dataFree = $row['Data_free'];
                         $table = $row['Name'];
-                        $result[$database][$table] = "";
-                        if ($dataFree > 0) {
-                            if (@$this->connection->query("OPTIMIZE TABLE `" . $database . "." . $table . "`")) {
-                                $result[$database][$table] = true;
-                            } else {
-                                $result[$database][$table] = false;
-                            }
-                        } else {
-                            $result[$database][$table] = true;
-                        }
+                        $dataFree = $row['Data_free'];
+                        $result[$sanitizedDatabase][$table] = $dataFree > 0 ?  Utils::isNotFalse(@$this->connection->query("OPTIMIZE TABLE `" . $sanitizedDatabase . "." . $table . "`")) : true;
                     }
                 }
             }
         }
         return $result;
     }
+
 
     /**
      * Delete a database table
@@ -358,57 +350,43 @@ class Database extends Utils {
      * @param array $data The database table array data
      * @param bool $prepare If to prepare or directly execute the query
      * @param array $onDuplicate The ON DUPLICATE KEY UPDATE clause
-     * @return bool|\mysqli_stmt
+     * @return bool|\mysqli_stmt|\mysqli_result
      */
     public function insertToDatabaseTable(string $database, string $table, array $data = [], bool $prepare = true, array $onDuplicate = []): bool|\mysqli_stmt|\mysqli_result {
-        // Check if connection is established and table exists
-        if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
-            // Sanitize database and table names
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
-            // Prepare fields and values arrays
-            $fields = $values = [];
-            foreach ($data as $index => $value) {
-                if (!Utils::isEmptyString($index) && !Utils::isEmptyString($value)) {
-                    $fields[] = $index;
-                    $values[] = $value;
-                }
-            }
-            // Build the INSERT IGNORE INTO statement
-            $statement = "INSERT IGNORE INTO " . $database . "." . $table . " (`" . implode("`, `", $fields) . "`) VALUES (";
-            $rows = "";
-            foreach ($values as $value) {
-                // Escape values based on their data types
-                if (Utils::isInt($value)) {
-                    $rows .= $this->escape($value) . ', ';
-                } elseif (Utils::isString($value)) {
-                    $rows .= '"' . $this->escape($value) . '", ';
-                } else {
-                    $rows .= '"' . $this->escape((string) $value) . '", ';
-                }
-            }
-            $statement .= substr(trim($rows), -1) == "," ? substr(trim($rows), 0, -1) : $rows;
-            // Add ON DUPLICATE KEY UPDATE clause if provided
-            if (!empty($onDuplicate)) {
-                $updateFields = [];
-                foreach ($onDuplicate as $key => $value) {
-                    $updateFields[] = "" . $key . " = " . $this->escape($value);
-                }
-                $statement .= " ON DUPLICATE KEY UPDATE " . implode(", ", $updateFields);
-            }
-            // Execute the statement
-            $statement .= ");";
-            $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
-            if (!$result) {
-                $this->lastMessage = $this->lastError();
-                return false;
-            }
-            return $result;
+        if (!Utils::isNonNull($this->connection) || !$this->doesDatabaseTableExist($database, $table)) {
+            return false;
         }
-        // Return false if connection or table is not valid
-        return false;
+        // Sanitize identifiers
+        $database = $this->sanitizeIdentifier($database);
+        $table = $this->sanitizeIdentifier($table);
+        // Prepare fields and values
+        $fields = [];
+        $values = [];
+        foreach ($data as $index => $value) {
+            if (!Utils::isEmptyString($index) && !Utils::isEmptyString($value)) {
+                $fields[] = $index;
+                $values[] = Utils::isInt($value) ? $this->escape($value) : '"' . $this->escape((string) $value) . '"';
+            }
+        }
+        // Build the SQL statement
+        $statement = sprintf("INSERT IGNORE INTO %s.%s (`%s`) VALUES (%s)", $database, $table, implode("`, `", $fields), implode(", ", $values));
+        // Add ON DUPLICATE KEY UPDATE clause if provided
+        if (!empty($onDuplicate)) {
+            $updateFields = [];
+            foreach ($onDuplicate as $key => $value) {
+                $updateFields[] = sprintf("%s = %s", $key, $this->escape($value));
+            }
+            $statement .= " ON DUPLICATE KEY UPDATE " . implode(", ", $updateFields);
+        }
+        $statement .= ";";
+        // Execute the statement
+        $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
+        if (!$result) {
+            $this->lastMessage = $this->lastError();
+            return false;
+        }
+        return $result;
     }
-
 
     /**
      * Updates rows in a specified database table based on provided data and conditions.
@@ -417,53 +395,52 @@ class Database extends Utils {
      * @param string $table     The name of the table to update.
      * @param array $data       An associative array of column-value pairs to set in the update.
      * @param array $whereKeys  An associative array of column-value pairs for the WHERE clause.
-     * @return bool
-     *
+     * @param bool $prepare     If to prepare or directly execute the query.
+     * @return bool|\mysqli_stmt
      */
-    public function updateDatabaseTable(string $database, string $table, array $data = [], array $whereKeys = []): bool {
-        // Check if connection is established and table exists
-        if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
-            // Sanitize database and table names
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
-            // Prepare fields and values for the UPDATE statement
-            $updateFields = [];
-            foreach ($data as $key => $value) {
-                if (!Utils::isEmptyString($key)) {
-                    $escapedValue = $this->escape($value);
-                    $updateFields[] = "`$key` = " . (Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
-                }
-            }
-            if (empty($updateFields)) {
-                $this->lastMessage = "No valid fields provided for update.";
-                return false;
-            }
-            // Prepare the WHERE clause
-            $whereClauses = [];
-            foreach ($whereKeys as $key => $value) {
-                if (!Utils::isEmptyString($key)) {
-                    $escapedValue = $this->escape($value);
-                    $whereClauses[] = "`$key` = " . (Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
-                }
-            }
-            if (empty($whereClauses)) {
-                $this->lastMessage = "No valid WHERE keys provided for update.";
-                return false;
-            }
-            // Build the UPDATE statement
-            $statement = "UPDATE $database.$table SET " . implode(", ", $updateFields) . " WHERE " . implode(" AND ", $whereClauses) . ";";
-            // Execute the statement
-            $result = $this->connection->query($statement);
-            if (!$result) {
-                $this->lastMessage = $this->lastError();
-                return false;
-            }
-            return $result;
+    public function updateDatabaseTable(string $database, string $table, array $data = [], array $whereKeys = [], bool $prepare = true): bool|\mysqli_stmt {
+        if (!Utils::isNonNull($this->connection) || !$this->doesDatabaseTableExist($database, $table)) {
+            $this->lastMessage = "Invalid connection or table does not exist.";
+            return false;
         }
-        // Return false if connection or table is not valid
-        $this->lastMessage = "Invalid connection or table does not exist.";
-        return false;
+        // Sanitize identifiers
+        $database = $this->sanitizeIdentifier($database);
+        $table = $this->sanitizeIdentifier($table);
+        // Prepare fields and values for the UPDATE statement
+        $updateFields = [];
+        foreach ($data as $key => $value) {
+            if (!Utils::isEmptyString($key)) {
+                $escapedValue = $this->escape($value);
+                $updateFields[] = sprintf("`%s` = %s", $key, Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
+            }
+        }
+        if (empty($updateFields)) {
+            $this->lastMessage = "No valid fields provided for update.";
+            return false;
+        }
+        // Prepare the WHERE clause
+        $whereClauses = [];
+        foreach ($whereKeys as $key => $value) {
+            if (!Utils::isEmptyString($key)) {
+                $escapedValue = $this->escape($value);
+                $whereClauses[] = sprintf("`%s` = %s", $key, Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
+            }
+        }
+        if (empty($whereClauses)) {
+            $this->lastMessage = "No valid WHERE keys provided for update.";
+            return false;
+        }
+        // Build the UPDATE statement
+        $statement = sprintf("UPDATE %s.%s SET %s WHERE %s;", $database, $table, implode(", ", $updateFields), implode(" AND ", $whereClauses));
+        // Execute the statement
+        $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
+        if (!$result) {
+            $this->lastMessage = $this->lastError();
+            return false;
+        }
+        return $result;
     }
+
 
     /**
      * Updates rows in a specified database table based on provided data.
@@ -471,41 +448,40 @@ class Database extends Utils {
      * @param string $database  The name of the database.
      * @param string $table     The name of the table to update.
      * @param array $data       An associative array of column-value pairs to set in the update.
-     * @return bool
+     * @param bool $prepare     If to prepare or directly execute the query.
+     * @return bool|\mysqli_stmt
      */
-    public function updateDatabaseTableRows(string $database, string $table, array $data = []): bool {
-        // Check if connection is established and table exists
-        if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
-            // Sanitize database and table names
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
-
-            // Prepare fields and values for the UPDATE statement
-            $updateFields = [];
-            foreach ($data as $key => $value) {
-                if (!Utils::isEmptyString($key)) {
-                    $escapedValue = $this->escape($value);
-                    $updateFields[] = "`$key` = " . (Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
-                }
-            }
-            if (empty($updateFields)) {
-                $this->lastMessage = "No valid fields provided for update.";
-                return false;
-            }
-            // Build the UPDATE statement
-            $statement = "UPDATE $database.$table SET " . implode(", ", $updateFields) . ";";
-            // Execute the statement
-            $result = $this->connection->query($statement);
-            if (!$result) {
-                $this->lastMessage = $this->lastError();
-                return false;
-            }
-            return true;
+    public function updateDatabaseTableRows(string $database, string $table, array $data = [], bool $prepare = true): bool|\mysqli_stmt {
+        if (!Utils::isNonNull($this->connection) || !$this->doesDatabaseTableExist($database, $table)) {
+            $this->lastMessage = "Invalid connection or table does not exist.";
+            return false;
         }
-        // Return false if connection or table is not valid
-        $this->lastMessage = "Invalid connection or table does not exist.";
-        return false;
+        // Sanitize database and table names
+        $database = $this->sanitizeIdentifier($database);
+        $table = $this->sanitizeIdentifier($table);
+        // Prepare fields and values for the UPDATE statement
+        $updateFields = [];
+        foreach ($data as $key => $value) {
+            if (!Utils::isEmptyString($key)) {
+                $escapedValue = $this->escape($value);
+                $updateFields[] = sprintf("`%s` = %s", $key, Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
+            }
+        }
+        if (empty($updateFields)) {
+            $this->lastMessage = "No valid fields provided for update.";
+            return false;
+        }
+        // Build the UPDATE statement
+        $statement = sprintf("UPDATE %s.%s SET %s;", $database, $table, implode(", ", $updateFields));
+        // Execute the statement
+        $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
+        if (!$result) {
+            $this->lastMessage = $this->lastError();
+            return false;
+        }
+        return true;
     }
+
 
 
     /**
@@ -514,39 +490,38 @@ class Database extends Utils {
      * @param string $database  The name of the database.
      * @param string $table     The name of the table to delete from.
      * @param array $whereKeys  An associative array of column-value pairs for the WHERE clause.
-     * @return bool
+     * @param bool $prepare     If to prepare or directly execute the query.
+     * @return bool|\mysqli_stmt
      */
-    public function deleteDatabaseTableRow(string $database, string $table, array $whereKeys = []): bool {
-        // Check if connection is established and table exists
-        if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
-            // Sanitize database and table names
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
-            // Prepare the WHERE clause
-            $whereClauses = [];
-            foreach ($whereKeys as $key => $value) {
-                if (!Utils::isEmptyString($key)) {
-                    $escapedValue = $this->escape($value);
-                    $whereClauses[] = "`$key` = " . (Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
-                }
-            }
-            if (empty($whereClauses)) {
-                $this->lastMessage = "No valid WHERE keys provided for deletion.";
-                return false;
-            }
-            // Build the DELETE statement
-            $statement = "DELETE FROM $database.$table WHERE " . implode(" AND ", $whereClauses) . ";";
-            // Execute the statement
-            $result = $this->connection->query($statement);
-            if (!$result) {
-                $this->lastMessage = $this->lastError();
-                return false;
-            }
-            return true;
+    public function deleteDatabaseTableRow(string $database, string $table, array $whereKeys = [], bool $prepare = true): bool|\mysqli_stmt {
+        if (!Utils::isNonNull($this->connection) || !$this->doesDatabaseTableExist($database, $table)) {
+            $this->lastMessage = "Invalid connection or table does not exist.";
+            return false;
         }
-        // Return false if connection or table is not valid
-        $this->lastMessage = "Invalid connection or table does not exist.";
-        return false;
+        // Sanitize database and table names
+        $database = $this->sanitizeIdentifier($database);
+        $table = $this->sanitizeIdentifier($table);
+        // Prepare the WHERE clause
+        $whereClauses = [];
+        foreach ($whereKeys as $key => $value) {
+            if (!Utils::isEmptyString($key)) {
+                $escapedValue = $this->escape($value);
+                $whereClauses[] = sprintf("`%s` = %s", $key, Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
+            }
+        }
+        if (empty($whereClauses)) {
+            $this->lastMessage = "No valid WHERE keys provided for deletion.";
+            return false;
+        }
+        // Build the DELETE statement
+        $statement = sprintf("DELETE FROM %s.%s WHERE %s;", $database, $table, implode(" AND ", $whereClauses));
+        // Execute the statement
+        $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
+        if (!$result) {
+            $this->lastMessage = $this->lastError();
+            return false;
+        }
+        return $result;
     }
 
     /**
@@ -554,28 +529,28 @@ class Database extends Utils {
      *
      * @param string $database  The name of the database.
      * @param string $table     The name of the table to delete from.
-     * @return bool
+     * @param bool $prepare     If to prepare or directly execute the query.
+     * @return bool|\mysqli_stmt
      */
-    public function deleteDatabaseTableRows(string $database, string $table): bool {
-        // Check if connection is established and table exists
-        if (Utils::isNonNull($this->connection) && $this->doesDatabaseTableExist($database, $table)) {
-            // Sanitize database and table names
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
-            // Build the DELETE statement
-            $statement = "DELETE FROM $database.$table;";
-            // Execute the statement
-            $result = $this->connection->query($statement);
-            if (!$result) {
-                $this->lastMessage = $this->lastError();
-                return false;
-            }
-            return true;
+    public function deleteDatabaseTableRows(string $database, string $table, bool $prepare = true): bool|\mysqli_stmt {
+        if (!Utils::isNonNull($this->connection) || !$this->doesDatabaseTableExist($database, $table)) {
+            $this->lastMessage = "Invalid connection or table does not exist.";
+            return false;
         }
-        // Return false if connection or table is not valid
-        $this->lastMessage = "Invalid connection or table does not exist.";
-        return false;
+        // Sanitize database and table names
+        $database = $this->sanitizeIdentifier($database);
+        $table = $this->sanitizeIdentifier($table);
+        // Build the DELETE statement
+        $statement = sprintf("DELETE FROM %s.%s;", $database, $table);
+        // Execute the statement
+        $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
+        if (!$result) {
+            $this->lastMessage = $this->lastError();
+            return false;
+        }
+        return $result;
     }
+
 
 
     /**
@@ -590,70 +565,65 @@ class Database extends Utils {
      * @param string $collate Defaults to 'latin1_general_ci' - the collation to use
      * @param bool $autoIncrement If to set the primary key as auto increment, default to 'true'
      * 
-     * Example: createDatabaseTable("main_db", "users_table", array("id" => "bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT ''", "timestamp" => "bigint(10) UNSIGNED NOT NULL DEFAULT '0' COMMENT ''", "PRIMARY KEY" => "(id)"), "users_table_comment");
      * @return bool - true if the table was created successfully, false otherwise
      */
-    public function createDatabaseTable(string $database, string $table, array $columns = array(), string $comment = '', string $engine = "MyISAM", string $character = "latin1", string $collate = "latin1_general_ci", bool $autoIncrement = true): bool {
-        // Check if the connection is valid and the table does not already exist
-        if (Utils::isNonNull($this->connection) && Utils::isFalse($this->doesDatabaseTableExist($database, $table))) {
-            // Sanitize the database and table names
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
-            // Build the CREATE TABLE statement
-            $statement = "CREATE TABLE IF NOT EXISTS " . $database . "." . $table . " (";
-            // Add the columns to the statement
-            foreach ($columns as $name => $value) {
-                $statement .= "" . $name . " " . $value . ", ";
-            }
-            // Remove the trailing comma and add the closing parenthesis
-            $statement = rtrim($statement, ", ") . ")";
-            // Add the auto increment value if specified
-            $autoIncrementValue = $autoIncrement ? ' AUTO_INCREMENT=1' : '';
-            $statement .= ' ENGINE=' . $engine . ' DEFAULT CHARSET=' . $character . ' COLLATE=' . $collate . '' . $autoIncrementValue . '';
-            // Add the table comment if specified
-            $statement .= strlen($comment) > 0 ? ' COMMENT "' . $this->escape($comment) . '";' : ';';
-            // Execute the statement and check for errors
-            $created = $this->connection->query($statement);
-            if (Utils::isNotTrue($created)) {
-                $this->lastMessage = $this->lastError();
-                return false;
-            }
-            // Return true if the table was created successfully
-            return true;
+    public function createDatabaseTable(string $database, string $table, array $columns = [], string $comment = '', string $engine = "MyISAM", string $character = "latin1", string $collate = "latin1_general_ci", bool $autoIncrement = true): bool {
+        if (!Utils::isNonNull($this->connection) || $this->doesDatabaseTableExist($database, $table)) {
+            $this->lastMessage = "Invalid connection or table already exists.";
+            return false;
         }
-        $this->lastMessage = "Invalid connection or table does exist.";
-        // Return false if the table already exists or the connection is invalid
-        return false;
+        // Sanitize the database and table names
+        $database = $this->sanitizeIdentifier($database);
+        $table = $this->sanitizeIdentifier($table);
+        // Build the CREATE TABLE statement
+        $columnsDefinition = [];
+        foreach ($columns as $name => $definition) {
+            $columnsDefinition[] = "$name $definition";
+        }
+        $statement = sprintf("CREATE TABLE IF NOT EXISTS %s.%s (%s) ENGINE=%s DEFAULT CHARSET=%s COLLATE=%s%s", $database, $table, implode(", ", $columnsDefinition), $engine, $character, $collate, $autoIncrement ? " AUTO_INCREMENT=1" : "");
+        // Add the table comment if specified
+        if (!empty($comment)) {
+            $statement .= " COMMENT \"" . $this->escape($comment) . "\"";
+        }
+        // Execute the statement and check for errors
+        $result = $this->connection->query($statement);
+        if (!$result) {
+            $this->lastMessage = $this->lastError();
+            return false;
+        }
+        return true;
     }
+
 
     /**
      * Arrange database's tables
-     * @param array $databases The database's
+     * 
+     * @param array $databases The databases
      * @return array
      */
     public function arrangeDatabaseTables(array $databases): array {
-        $messages = array();
+        $messages = [];
         if (Utils::isNonNull($this->connection)) {
             foreach ($databases as $database) {
                 $database = $this->sanitizeIdentifier($database);
-                $messages[$database] = array();
+                $messages[$database] = [];
+                // Get list of tables in the database
                 $tables = $this->connection->query('SHOW TABLES FROM ' . $database . ';');
                 if ($tables instanceof \mysqli_result && $this->connection->select_db($database)) {
-                    while ($ft = $tables->fetch_array()) {
-                        $table = $ft[0];
-                        $messages[$database][$table] = "";
-                        $tableStatements = array();
-                        $columnsData = array();
-                        $columns = $this->connection->query('SHOW FULL COLUMNS FROM ' . $table . ';');
+                    // Process each table
+                    while ($table = $tables->fetch_array()) {
+                        $tableName = $table[0];
+                        $messages[$database][$tableName] = "";
+                        $tableStatements = [];
+                        $columnsData = [];
+                        // Get column details for the table
+                        $columns = $this->connection->query('SHOW FULL COLUMNS FROM ' . $tableName . ';');
                         if ($columns instanceof \mysqli_result) {
-                            try {
-                                while ($ft = $columns->fetch_assoc()) {
-                                    $columnsData[] = $ft;
-                                }
-                            } catch (\Exception $e) {
-                                self::setLastThrowable($e);
+                            while ($column = $columns->fetch_assoc()) {
+                                $columnsData[] = $column;
                             }
-                            foreach ($columnsData as $index => $data) {
+                            // Build table alteration statements based on column data
+                            foreach ($columnsData as $data) {
                                 $field = $data['Field'];
                                 $type = $data['Type'];
                                 $collation = $data['Collation'];
@@ -662,32 +632,45 @@ class Database extends Utils {
                                 $default = $data['Default'];
                                 $extra = $data['Extra'];
                                 $comment = $data['Comment'];
+                                // Primary key alteration
                                 if ($field == "id" && $key == "PRI") {
-                                    $tableStatements[$table] = "ALTER TABLE `" . $table . "` CHANGE `" . $field . "` `" . $field . "` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;";
-                                } elseif (substr($type, 0, 3) == 'int' || substr($type, 0, 6) == 'bigint') {
-                                    $tableStatements[$table] = "ALTER TABLE `" . $table . "` CHANGE `" . $field . "` `" . $field . "` bigint(20) UNSIGNED NOT NULL DEFAULT '0' COMMENT '" . $comment . "';";
-                                } elseif ((substr($type, 0, 7) == 'varchar' || substr($type, 0, 4) == 'char') && $collation !== "NULL") {
-                                    $tableStatements[$table] = "ALTER TABLE `" . $table . "` CHANGE `" . $field . "` `" . $field . "` " . strtoupper($type) . " CHARACTER SET latin1 COLLATE " . $collation . " NOT NULL DEFAULT '' COMMENT '" . $comment . "';";
-                                } elseif (substr($type, 0, 4) == 'text' && $collation !== "NULL") {
-                                    $tableStatements[$table] = "ALTER TABLE `" . $table . "` CHANGE `" . $field . "` `" . $field . "` " . strtoupper($type) . " CHARACTER SET latin1 COLLATE " . $collation . " NOT NULL COMMENT '" . $comment . "';";
+                                    $tableStatements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;";
+                                }
+                                // Integer or BigInt columns
+                                elseif (substr($type, 0, 3) == 'int' || substr($type, 0, 6) == 'bigint') {
+                                    $tableStatements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` bigint(20) UNSIGNED NOT NULL DEFAULT '0' COMMENT '" . $comment . "';";
+                                }
+                                // Varchar or Char columns with collation
+                                elseif ((substr(
+                                    $type,
+                                    0,
+                                    7
+                                ) == 'varchar' || substr($type, 0, 4) == 'char') && $collation !== "NULL") {
+                                    $tableStatements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` " . strtoupper($type) . " CHARACTER SET latin1 COLLATE " . $collation . " NOT NULL DEFAULT '' COMMENT '" . $comment . "';";
+                                }
+                                // Text columns with collation
+                                elseif (substr($type, 0, 4) == 'text' && $collation !== "NULL") {
+                                    $tableStatements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` " . strtoupper($type) . " CHARACTER SET latin1 COLLATE " . $collation . " NOT NULL COMMENT '" . $comment . "';";
                                 }
                             }
+                            // Execute each statement and track success
                             foreach ($tableStatements as $statement) {
                                 if ($this->connection->query($statement)) {
-                                    $messages[$database][$table] = true;
+                                    $messages[$database][$tableName] = true;
                                 } else {
-                                    $messages[$database][$table] = "Failed to arrange table [" . $this->lastError() . "]";
+                                    $messages[$database][$tableName] = "Failed to arrange table: " . $this->lastError();
                                 }
                             }
                         }
                     }
-                    // Reset the connection
+                    // Reset the connection for the next database
                     $this->init($this->host, $this->user, $this->password, true);
                 }
             }
         }
         return $messages;
     }
+
 
     /**
      * Get all table columns
