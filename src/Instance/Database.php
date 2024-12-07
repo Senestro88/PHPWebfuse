@@ -210,7 +210,7 @@ class Database extends Utils {
      * @return bool
      */
     public function deleteDatabase(string $name): bool {
-        return Utils::isNonNull($this->connection) ? $this->connection->query("DROP DATABASE IF EXISTS `" . strtolower($name) . "`") : false;
+        return Utils::isNonNull($this->connection) ?  $this->connection->query("DROP DATABASE IF EXISTS `" . strtolower($name) . "`") : false;
     }
 
     /**
@@ -241,7 +241,7 @@ class Database extends Utils {
                     while ($row = $status->fetch_assoc()) {
                         $table = $row['Name'];
                         $dataFree = $row['Data_free'];
-                        $result[$database][$table] = $dataFree > 0 ?  Utils::isNotFalse(@$this->connection->query("OPTIMIZE TABLE `" . $database . "." . $table . "`")) : true;
+                        $result[$database][$table] = $dataFree > 0 ?  Utils::isNotFalse($this->connection->query("OPTIMIZE TABLE `" . $database . "." . $table . "`")) : true;
                     }
                     $status->free();
                 }
@@ -277,7 +277,7 @@ class Database extends Utils {
             $database = $this->escapeReplace($database);
             $table = $this->escapeReplace($table);
             $tables = $this->connection->query('SHOW TABLES FROM ' . $database . ';');
-            if ($tables instanceof \mysqli_result && $tables->num_rows >= 1) {
+            if ($tables instanceof \mysqli_result && $tables->num_rows > 0) {
                 while ($row = $tables->fetch_array()) {
                     // First column contains the table name
                     if ($row[0] == $table) {
@@ -300,7 +300,8 @@ class Database extends Utils {
         if (Utils::isNonNull($this->connection)) {
             $database = $this->escapeReplace($database);
             $table = $this->escapeReplace($table);
-            return $this->connection->query('TRUNCATE ' . $database . '.' . $table . ';');
+            $this->connection->query('TRUNCATE ' . $database . '.' . $table . ';');
+            return  $this->connection->affected_rows > 0;
         }
         return false;
     }
@@ -342,9 +343,10 @@ class Database extends Utils {
             // Execute the statement
             $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
             if ($result instanceof \mysqli_stmt || Utils::isTrue($result)) {
-                return $result;
+                return $result instanceof \mysqli_stmt ? $result : $this->connection->affected_rows > 0;
+            } else {
+                $this->lastMessage = $this->lastError();
             }
-            $this->lastMessage = $this->lastError();
         }
         return false;
     }
@@ -385,9 +387,10 @@ class Database extends Utils {
             // Execute the statement
             $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
             if ($result instanceof \mysqli_stmt || Utils::isTrue($result)) {
-                return $result;
+                return $result instanceof \mysqli_stmt ? $result : $this->connection->affected_rows > 0;
+            } else {
+                $this->lastMessage = $this->lastError();
             }
-            $this->lastMessage = $this->lastError();
         }
         return false;
     }
@@ -420,9 +423,10 @@ class Database extends Utils {
             // Execute the statement
             $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
             if ($result instanceof \mysqli_stmt || Utils::isTrue($result)) {
-                return $result;
+                return $result instanceof \mysqli_stmt ? $result : $this->connection->affected_rows > 0;
+            } else {
+                $this->lastMessage = $this->lastError();
             }
-            $this->lastMessage = $this->lastError();
         }
         return false;
     }
@@ -456,9 +460,10 @@ class Database extends Utils {
             // Execute the statement
             $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
             if ($result instanceof \mysqli_stmt || Utils::isTrue($result)) {
-                return $result;
+                return $result instanceof \mysqli_stmt ? $result : $this->connection->affected_rows > 0;
+            } else {
+                $this->lastMessage = $this->lastError();
             }
-            $this->lastMessage = $this->lastError();
         }
         return false;
     }
@@ -481,9 +486,10 @@ class Database extends Utils {
             // Execute the statement
             $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
             if ($result instanceof \mysqli_stmt || Utils::isTrue($result)) {
-                return $result;
+                return $result instanceof \mysqli_stmt ? $result : $this->connection->affected_rows > 0;
+            } else {
+                $this->lastMessage = $this->lastError();
             }
-            $this->lastMessage = $this->lastError();
         }
         return false;
     }
@@ -517,12 +523,8 @@ class Database extends Utils {
             if (Utils::isNotEmptyString($comment)) {
                 $statement .= " COMMENT \"" . $this->escape($comment) . "\"";
             }
-            // Execute the statement and check for errors
-            $result = $this->connection->query($statement);
-            if (Utils::isTrue($result)) {
-                return $result;
-            }
-            $this->lastMessage = $this->lastError();
+            // Execute the statement
+            return $this->connection->query($statement);
         }
         return false;
     }
@@ -547,16 +549,16 @@ class Database extends Utils {
                     while ($table = $tables->fetch_array()) {
                         $tableName = $table[0];
                         $messages[$database][$tableName] = "";
-                        $tableStatements = [];
-                        $columnsData = [];
+                        $statements = [];
+                        $columns = [];
                         // Get column details for the table
                         $columns = $this->connection->query('SHOW FULL COLUMNS FROM ' . $tableName . ';');
                         if ($columns instanceof \mysqli_result) {
                             while ($column = $columns->fetch_assoc()) {
-                                $columnsData[] = $column;
+                                $columns[] = $column;
                             }
                             // Build table alteration statements based on column data
-                            foreach ($columnsData as $data) {
+                            foreach ($columns as $data) {
                                 $field = $data['Field'];
                                 $type = $data['Type'];
                                 $collation = $data['Collation'];
@@ -567,24 +569,25 @@ class Database extends Utils {
                                 $comment = $data['Comment'];
                                 // Primary key alteration
                                 if ($field == "id" && $key == "PRI") {
-                                    $tableStatements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;";
+                                    $statements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;";
                                 }
                                 // Integer or BigInt columns
                                 elseif (substr($type, 0, 3) == 'int' || substr($type, 0, 6) == 'bigint') {
-                                    $tableStatements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` bigint(20) UNSIGNED NOT NULL DEFAULT '0' COMMENT '" . $comment . "';";
+                                    $statements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` bigint(20) UNSIGNED NOT NULL DEFAULT '0' COMMENT '" . $comment . "';";
                                 }
                                 // Varchar or Char columns with collation
                                 elseif ((substr($type, 0, 7) == 'varchar' || substr($type, 0, 4) == 'char') && $collation !== "NULL") {
-                                    $tableStatements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` " . strtoupper($type) . " CHARACTER SET latin1 COLLATE " . $collation . " NOT NULL DEFAULT '' COMMENT '" . $comment . "';";
+                                    $statements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` " . strtoupper($type) . " CHARACTER SET latin1 COLLATE " . $collation . " NOT NULL DEFAULT '' COMMENT '" . $comment . "';";
                                 }
                                 // Text columns with collation
                                 elseif (substr($type, 0, 4) == 'text' && $collation !== "NULL") {
-                                    $tableStatements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` " . strtoupper($type) . " CHARACTER SET latin1 COLLATE " . $collation . " NOT NULL COMMENT '" . $comment . "';";
+                                    $statements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` " . strtoupper($type) . " CHARACTER SET latin1 COLLATE " . $collation . " NOT NULL COMMENT '" . $comment . "';";
                                 }
                             }
                             // Execute each statement and track success
-                            foreach ($tableStatements as $statement) {
+                            foreach ($statements as $statement) {
                                 if ($this->connection->query($statement)) {
+                                    $this->connection->commit();
                                     $messages[$database][$tableName] = true;
                                 } else {
                                     $messages[$database][$tableName] = "Failed to arrange table: " . $this->lastError();
@@ -875,9 +878,11 @@ class Database extends Utils {
                     $this->user = $user;
                     $this->password = $password;
                     /* Set the desired charset, time_zone, and sql_mode after establishing a connection */
-                    @$this->connection->set_charset('utf8mb4');
-                    @$this->connection->query("SET time_zone='" . Utils::GMT . "'");
-                    @$this->connection->query("SET GLOBAL sql_mode = '';");
+                    $this->connection->autocommit(true);
+                    $this->connection->set_charset('utf8mb4');
+                    $this->connection->query("SET TRANSACTION ISOLATION LEVEL READ COMMITTED");
+                    $this->connection->query("SET time_zone='" . Utils::GMT . "'");
+                    $this->connection->query("SET GLOBAL sql_mode = '';");
                 }
             } catch (\Exception $e) {
                 $this->connection = null;
