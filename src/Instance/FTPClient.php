@@ -168,7 +168,7 @@ class FTPClient
                 $this->bridge->close();
                 $this->bridge = null;
                 $this->connection = null;
-                $this->log("Succesfully disconnected.");
+                $this->log("Successfully disconnected.");
             } catch(\Throwable $e) {
                 $this->log($e->getMessage(), "error");
             }
