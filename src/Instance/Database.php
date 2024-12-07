@@ -54,9 +54,7 @@ class Database extends Utils {
         if (!in_array('mysqli', get_declared_classes())) {
             $this->lastMessage = "The mysqli class doesn't exist or wasn't found.";
         } else if (Utils::isNotEmptyString($host) && Utils::isNotEmptyString($user) && Utils::isNotEmptyString($password)) {
-            if (Utils::isNull($this->connection) || Utils::isTrue($reset)) {
-                $this->init($host, $user, $password, $reset);
-            }
+            $this->init($host, $user, $password, $reset);
         }
     }
 
@@ -79,7 +77,8 @@ class Database extends Utils {
      * @return bool
      */
     public function connect(string $host, string $user, string $password, bool $reset = false): bool {
-        return $this->init($host, $user, $password, $reset);
+        $this->init($host, $user, $password, $reset);
+        return Utils::isNonNull($this->connection);
     }
 
     /**
@@ -95,10 +94,7 @@ class Database extends Utils {
      * @return int|string
      */
     public function lastInsertID(): int|string {
-        if (Utils::isNonNull($this->connection)) {
-            return $this->connection->insert_id;
-        }
-        return "";
+        return Utils::isNonNull($this->connection) ?  $this->connection->insert_id : -1;
     }
 
     /**
@@ -107,10 +103,7 @@ class Database extends Utils {
      * @return bool
      */
     public function selectDb(string $database): bool {
-        if (Utils::isNonNull($this->connection)) {
-            return @$this->connection->select_db($database);
-        }
-        return false;
+        return Utils::isNonNull($this->connection) ? @$this->connection->select_db($database) : false;
     }
 
     /**
@@ -118,10 +111,7 @@ class Database extends Utils {
      * @return string
      */
     public function lastError(): string {
-        if (Utils::isNonNull($this->connection)) {
-            return $this->connection->error;
-        }
-        return "";
+        return Utils::isNonNull($this->connection) ? $this->connection->error : "";
     }
 
     /**
@@ -129,10 +119,7 @@ class Database extends Utils {
      * @return string
      */
     public function hostInfo(): string {
-        if (Utils::isNonNull($this->connection)) {
-            return $this->connection->host_info;
-        }
-        return "";
+        return Utils::isNonNull($this->connection) ?  $this->connection->host_info : "";
     }
 
     /**
@@ -140,21 +127,15 @@ class Database extends Utils {
      * @return string
      */
     public function serverInfo(): string {
-        if (Utils::isNonNull($this->connection)) {
-            return $this->connection->server_info;
-        }
-        return "";
+        return Utils::isNonNull($this->connection) ? $this->connection->server_info : "";
     }
 
     /**
      * Get the connection server version or -1
      * @return string
      */
-    public function serverVersion(): string {
-        if (Utils::isNonNull($this->connection)) {
-            return $this->connection->server_version;
-        }
-        return -1;
+    public function serverVersion(): int {
+        return Utils::isNonNull($this->connection) ? $this->connection->server_version : -1;
     }
 
     /**
@@ -162,10 +143,7 @@ class Database extends Utils {
      * @return ?string
      */
     public function lastQueryInfo(): ?string {
-        if (Utils::isNonNull($this->connection)) {
-            return $this->connection->info;
-        }
-        return null;
+        return Utils::isNonNull($this->connection) ? $this->connection->info : \null;
     }
 
     /**
@@ -173,10 +151,7 @@ class Database extends Utils {
      * @return int
      */
     public function protocolVersion(): int {
-        if (Utils::isNonNull($this->connection)) {
-            return $this->connection->protocol_version;
-        }
-        return -1;
+        return Utils::isNonNull($this->connection) ? $this->connection->protocol_version : -1;
     }
 
     /**
@@ -185,10 +160,7 @@ class Database extends Utils {
      * @return string
      */
     public function escape(string $string): string {
-        if (Utils::isNonNull($this->connection)) {
-            return $this->connection->real_escape_string($string);
-        }
-        return $string;
+        return Utils::isNonNull($this->connection) ? $this->connection->real_escape_string($string) : $string;
     }
 
     /**
@@ -197,22 +169,16 @@ class Database extends Utils {
      * @return \mysqli_result|bool
      */
     public function query(string $query): \mysqli_result|bool {
-        if (Utils::isNonNull($this->connection)) {
-            return $this->connection->query($query);
-        }
-        return \null;
+        return Utils::isNonNull($this->connection) ? $this->connection->query($query) : false;
     }
 
     /**
      * Prepare a query
      * @param string $query The query string
-     * @return \mysqli_stmt|false
+     * @return \mysqli_stmt|bool
      */
     public function prepare(string $query): \mysqli_stmt|false {
-        if (Utils::isNonNull($this->connection)) {
-            return $this->connection->prepare($query);
-        }
-        return false;
+        return Utils::isNonNull($this->connection) ? $this->connection->prepare($query) : false;
     }
 
     /**
@@ -221,10 +187,7 @@ class Database extends Utils {
      * @return bool
      */
     public function multiQuery(string $query): bool {
-        if (Utils::isNonNull($this->connection)) {
-            return $this->connection->multi_query($query);
-        }
-        return false;
+        return Utils::isNonNull($this->connection) ? $this->connection->multi_query($query) : false;
     }
 
     /**
@@ -247,10 +210,7 @@ class Database extends Utils {
      * @return bool
      */
     public function deleteDatabase(string $name): bool {
-        if (Utils::isNonNull($this->connection)) {
-            return $this->connection->query("DROP DATABASE IF EXISTS `" . strtolower($name) . "`");
-        }
-        return false;
+        return Utils::isNonNull($this->connection) ? $this->connection->query("DROP DATABASE IF EXISTS `" . strtolower($name) . "`") : false;
     }
 
     /**
@@ -275,14 +235,15 @@ class Database extends Utils {
         $result = [];
         if (Utils::isNonNull($this->connection)) {
             foreach ($databases as $database) {
-                $sanitizedDatabase = $this->sanitizeIdentifier($database);
-                $status = $this->connection->query("SHOW TABLE STATUS FROM " . $sanitizedDatabase . ";");
+                $database = $this->escapeReplace($database);
+                $status = $this->connection->query("SHOW TABLE STATUS FROM " . $database . ";");
                 if ($status instanceof \mysqli_result) {
                     while ($row = $status->fetch_assoc()) {
                         $table = $row['Name'];
                         $dataFree = $row['Data_free'];
-                        $result[$sanitizedDatabase][$table] = $dataFree > 0 ?  Utils::isNotFalse(@$this->connection->query("OPTIMIZE TABLE `" . $sanitizedDatabase . "." . $table . "`")) : true;
+                        $result[$database][$table] = $dataFree > 0 ?  Utils::isNotFalse(@$this->connection->query("OPTIMIZE TABLE `" . $database . "." . $table . "`")) : true;
                     }
+                    $status->free();
                 }
             }
         }
@@ -298,8 +259,8 @@ class Database extends Utils {
      */
     public function deleteDatabaseTable(string $database, string $table): bool {
         if (Utils::isNonNull($this->connection)) {
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
             return $this->connection->query('DROP TABLE IF EXISTS ' . $database . '.' . $table . ';');
         }
         return false;
@@ -313,15 +274,17 @@ class Database extends Utils {
      */
     public function doesDatabaseTableExist(string $database, string $table): bool {
         if (Utils::isNonNull($this->connection)) {
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
             $tables = $this->connection->query('SHOW TABLES FROM ' . $database . ';');
             if ($tables instanceof \mysqli_result && $tables->num_rows >= 1) {
-                while ($ft = $tables->fetch_array()) {
-                    if ($ft[0] == $table) {
+                while ($row = $tables->fetch_array()) {
+                    // First column contains the table name
+                    if ($row[0] == $table) {
                         return true;
                     }
                 }
+                $tables->free();
             }
         }
         return false;
@@ -335,8 +298,8 @@ class Database extends Utils {
      */
     public function truncateDatabaseTable(string $database, string $table): bool {
         if (Utils::isNonNull($this->connection)) {
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
             return $this->connection->query('TRUNCATE ' . $database . '.' . $table . ';');
         }
         return false;
@@ -350,43 +313,40 @@ class Database extends Utils {
      * @param array $data The database table array data
      * @param bool $prepare If to prepare or directly execute the query
      * @param array $onDuplicate The ON DUPLICATE KEY UPDATE clause
-     * @return bool|\mysqli_stmt|\mysqli_result
+     * @return bool|\mysqli_stmt
      */
-    public function insertToDatabaseTable(string $database, string $table, array $data = [], bool $prepare = true, array $onDuplicate = []): bool|\mysqli_stmt|\mysqli_result {
-        if (Utils::isNull($this->connection)) {
-            $this->lastMessage = "Invalid connection";
-            return false;
-        }
-        // Sanitize identifiers
-        $database = $this->sanitizeIdentifier($database);
-        $table = $this->sanitizeIdentifier($table);
-        // Prepare fields and values
-        $fields = [];
-        $values = [];
-        foreach ($data as $key => $value) {
-            if (!Utils::isEmptyString($key)) {
-                $fields[] = $key;
-                $values[] = Utils::isInt($value) ? $this->escape($value) : '"' . $this->escape((string) $value) . '"';
+    public function insertToDatabaseTable(string $database, string $table, array $data = [], bool $prepare = true, array $onDuplicate = []): bool|\mysqli_stmt {
+        if (Utils::isNonNull($this->connection) && Utils::isNotEmptyArray($data)) {
+            // Sanitize identifiers
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
+            // Prepare fields and values
+            $fields = $values = [];
+            foreach ($data as $key => $value) {
+                if (!Utils::isEmptyString($key)) {
+                    $fields[] = $key;
+                    $values[] = Utils::isInt($value) ? $this->escape($value) : '"' . $this->escape((string) $value) . '"';
+                }
             }
-        }
-        // Build the SQL statement
-        $statement = sprintf("INSERT IGNORE INTO %s.%s (`%s`) VALUES (%s)", $database, $table, implode("`, `", $fields), implode(", ", $values));
-        // Add ON DUPLICATE KEY UPDATE clause if provided
-        if (!empty($onDuplicate)) {
-            $updateFields = [];
-            foreach ($onDuplicate as $key => $value) {
-                $updateFields[] = sprintf("%s = %s", $key, $this->escape($value));
+            // Build the SQL statement
+            $statement = sprintf("INSERT IGNORE INTO %s.%s (`%s`) VALUES (%s)", $database, $table, implode("`, `", $fields), implode(", ", $values));
+            // Add ON DUPLICATE KEY UPDATE clause if provided
+            if (Utils::isNotEmptyArray($onDuplicate)) {
+                $updateFields = [];
+                foreach ($onDuplicate as $key => $value) {
+                    $updateFields[] = sprintf("%s = %s", $key, $this->escape($value));
+                }
+                $statement .= " ON DUPLICATE KEY UPDATE " . implode(", ", $updateFields);
             }
-            $statement .= " ON DUPLICATE KEY UPDATE " . implode(", ", $updateFields);
-        }
-        $statement .= ";";
-        // Execute the statement
-        $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
-        if (!$result) {
+            $statement .= ";";
+            // Execute the statement
+            $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
+            if ($result instanceof \mysqli_stmt || Utils::isTrue($result)) {
+                return $result;
+            }
             $this->lastMessage = $this->lastError();
-            return false;
         }
-        return $result;
+        return false;
     }
 
     /**
@@ -400,46 +360,36 @@ class Database extends Utils {
      * @return bool|\mysqli_stmt
      */
     public function updateDatabaseTable(string $database, string $table, array $data = [], array $whereKeys = [], bool $prepare = true): bool|\mysqli_stmt {
-        if (Utils::isNull($this->connection)) {
-            $this->lastMessage = "Invalid connection.";
-            return false;
-        }
-        // Sanitize identifiers
-        $database = $this->sanitizeIdentifier($database);
-        $table = $this->sanitizeIdentifier($table);
-        // Prepare fields and values for the UPDATE statement
-        $updateFields = [];
-        foreach ($data as $key => $value) {
-            if (!Utils::isEmptyString($key)) {
-                $escapedValue = $this->escape($value);
-                $updateFields[] = sprintf("`%s` = %s", $key, Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
+        if (Utils::isNonNull($this->connection) && Utils::isNotEmptyArray($data) && Utils::isNotEmptyArray($whereKeys)) {
+            // Sanitize identifiers
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
+            // Prepare fields and values for the UPDATE statement
+            $updateFields = [];
+            foreach ($data as $key => $value) {
+                if (!Utils::isEmptyString($key)) {
+                    $escaped = $this->escape($value);
+                    $updateFields[] = sprintf("`%s` = %s", $key, Utils::isString($value) ? "\"$escaped\"" : $escaped);
+                }
             }
-        }
-        if (empty($updateFields)) {
-            $this->lastMessage = "No valid fields provided for update.";
-            return false;
-        }
-        // Prepare the WHERE clause
-        $whereClauses = [];
-        foreach ($whereKeys as $key => $value) {
-            if (!Utils::isEmptyString($key)) {
-                $escapedValue = $this->escape($value);
-                $whereClauses[] = sprintf("`%s` = %s", $key, Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
+            // Prepare the WHERE clause
+            $whereFields = [];
+            foreach ($whereKeys as $key => $value) {
+                if (!Utils::isEmptyString($key)) {
+                    $escaped = $this->escape($value);
+                    $whereFields[] = sprintf("`%s` = %s", $key, Utils::isString($value) ? "\"$escaped\"" : $escaped);
+                }
             }
-        }
-        if (empty($whereClauses)) {
-            $this->lastMessage = "No valid WHERE keys provided for update.";
-            return false;
-        }
-        // Build the UPDATE statement
-        $statement = sprintf("UPDATE %s.%s SET %s WHERE %s;", $database, $table, implode(", ", $updateFields), implode(" AND ", $whereClauses));
-        // Execute the statement
-        $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
-        if (!$result) {
+            // Build the UPDATE statement
+            $statement = sprintf("UPDATE %s.%s SET %s WHERE %s;", $database, $table, implode(", ", $updateFields), implode(" AND ", $whereFields));
+            // Execute the statement
+            $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
+            if ($result instanceof \mysqli_stmt || Utils::isTrue($result)) {
+                return $result;
+            }
             $this->lastMessage = $this->lastError();
-            return false;
         }
-        return $result;
+        return false;
     }
 
 
@@ -453,34 +403,28 @@ class Database extends Utils {
      * @return bool|\mysqli_stmt
      */
     public function updateDatabaseTableRows(string $database, string $table, array $data = [], bool $prepare = true): bool|\mysqli_stmt {
-        if (Utils::isNull($this->connection)) {
-            $this->lastMessage = "Invalid connection or table does not exist.";
-            return false;
-        }
-        // Sanitize database and table names
-        $database = $this->sanitizeIdentifier($database);
-        $table = $this->sanitizeIdentifier($table);
-        // Prepare fields and values for the UPDATE statement
-        $updateFields = [];
-        foreach ($data as $key => $value) {
-            if (!Utils::isEmptyString($key)) {
-                $escapedValue = $this->escape($value);
-                $updateFields[] = sprintf("`%s` = %s", $key, Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
+        if (Utils::isNonNull($this->connection) && Utils::isNotEmptyArray($data)) {
+            // Sanitize database and table names
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
+            // Prepare fields and values for the UPDATE statement
+            $updateFields = [];
+            foreach ($data as $key => $value) {
+                if (!Utils::isEmptyString($key)) {
+                    $escaped = $this->escape($value);
+                    $updateFields[] = sprintf("`%s` = %s", $key, Utils::isString($value) ? "\"$escaped\"" : $escaped);
+                }
             }
-        }
-        if (empty($updateFields)) {
-            $this->lastMessage = "No valid fields provided for update.";
-            return false;
-        }
-        // Build the UPDATE statement
-        $statement = sprintf("UPDATE %s.%s SET %s;", $database, $table, implode(", ", $updateFields));
-        // Execute the statement
-        $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
-        if (!$result) {
+            // Build the UPDATE statement
+            $statement = sprintf("UPDATE %s.%s SET %s;", $database, $table, implode(", ", $updateFields));
+            // Execute the statement
+            $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
+            if ($result instanceof \mysqli_stmt || Utils::isTrue($result)) {
+                return $result;
+            }
             $this->lastMessage = $this->lastError();
-            return false;
         }
-        return true;
+        return false;
     }
 
 
@@ -495,34 +439,28 @@ class Database extends Utils {
      * @return bool|\mysqli_stmt
      */
     public function deleteDatabaseTableRow(string $database, string $table, array $whereKeys = [], bool $prepare = true): bool|\mysqli_stmt {
-        if (Utils::isNull($this->connection)) {
-            $this->lastMessage = "Invalid connection.";
-            return false;
-        }
-        // Sanitize database and table names
-        $database = $this->sanitizeIdentifier($database);
-        $table = $this->sanitizeIdentifier($table);
-        // Prepare the WHERE clause
-        $whereClauses = [];
-        foreach ($whereKeys as $key => $value) {
-            if (!Utils::isEmptyString($key)) {
-                $escapedValue = $this->escape($value);
-                $whereClauses[] = sprintf("`%s` = %s", $key, Utils::isString($value) ? "\"$escapedValue\"" : $escapedValue);
+        if (Utils::isNonNull($this->connection) && Utils::isNotEmptyArray($whereKeys)) {
+            // Sanitize database and table names
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
+            // Prepare the WHERE clause
+            $whereFields = [];
+            foreach ($whereKeys as $key => $value) {
+                if (!Utils::isEmptyString($key)) {
+                    $escaped = $this->escape($value);
+                    $whereFields[] = sprintf("`%s` = %s", $key, Utils::isString($value) ? "\"$escaped\"" : $escaped);
+                }
             }
-        }
-        if (empty($whereClauses)) {
-            $this->lastMessage = "No valid WHERE keys provided for deletion.";
-            return false;
-        }
-        // Build the DELETE statement
-        $statement = sprintf("DELETE FROM %s.%s WHERE %s;", $database, $table, implode(" AND ", $whereClauses));
-        // Execute the statement
-        $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
-        if (!$result) {
+            // Build the DELETE statement
+            $statement = sprintf("DELETE FROM %s.%s WHERE %s;", $database, $table, implode(" AND ", $whereFields));
+            // Execute the statement
+            $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
+            if ($result instanceof \mysqli_stmt || Utils::isTrue($result)) {
+                return $result;
+            }
             $this->lastMessage = $this->lastError();
-            return false;
         }
-        return $result;
+        return false;
     }
 
     /**
@@ -534,25 +472,21 @@ class Database extends Utils {
      * @return bool|\mysqli_stmt
      */
     public function deleteDatabaseTableRows(string $database, string $table, bool $prepare = true): bool|\mysqli_stmt {
-        if (Utils::isNull($this->connection)) {
-            $this->lastMessage = "Invalid connection.";
-            return false;
-        }
-        // Sanitize database and table names
-        $database = $this->sanitizeIdentifier($database);
-        $table = $this->sanitizeIdentifier($table);
-        // Build the DELETE statement
-        $statement = sprintf("DELETE FROM %s.%s;", $database, $table);
-        // Execute the statement
-        $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
-        if (!$result) {
+        if (Utils::isNonNull($this->connection)) {
+            // Sanitize database and table names
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
+            // Build the DELETE statement
+            $statement = sprintf("DELETE FROM %s.%s;", $database, $table);
+            // Execute the statement
+            $result = $prepare ? $this->connection->prepare($statement) : $this->connection->query($statement);
+            if ($result instanceof \mysqli_stmt || Utils::isTrue($result)) {
+                return $result;
+            }
             $this->lastMessage = $this->lastError();
-            return false;
         }
-        return $result;
+        return false;
     }
-
-
 
     /**
      * Create a database table
@@ -569,30 +503,28 @@ class Database extends Utils {
      * @return bool - true if the table was created successfully, false otherwise
      */
     public function createDatabaseTable(string $database, string $table, array $columns = [], string $comment = '', string $engine = "MyISAM", string $character = "latin1", string $collate = "latin1_general_ci", bool $autoIncrement = true): bool {
-        if (Utils::isNull($this->connection)) {
-            $this->lastMessage = "Invalid connection.";
-            return false;
-        }
-        // Sanitize the database and table names
-        $database = $this->sanitizeIdentifier($database);
-        $table = $this->sanitizeIdentifier($table);
-        // Build the CREATE TABLE statement
-        $columnsDefinition = [];
-        foreach ($columns as $name => $definition) {
-            $columnsDefinition[] = "$name $definition";
-        }
-        $statement = sprintf("CREATE TABLE IF NOT EXISTS %s.%s (%s) ENGINE=%s DEFAULT CHARSET=%s COLLATE=%s%s", $database, $table, implode(", ", $columnsDefinition), $engine, $character, $collate, $autoIncrement ? " AUTO_INCREMENT=1" : "");
-        // Add the table comment if specified
-        if (!empty($comment)) {
-            $statement .= " COMMENT \"" . $this->escape($comment) . "\"";
-        }
-        // Execute the statement and check for errors
-        $result = $this->connection->query($statement);
-        if (!$result) {
+        if (Utils::isNonNull($this->connection)) {
+            // Sanitize the database and table names
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
+            // Build the CREATE TABLE statement
+            $columnsDefinition = [];
+            foreach ($columns as $name => $definition) {
+                $columnsDefinition[] = "$name $definition";
+            }
+            $statement = sprintf("CREATE TABLE IF NOT EXISTS %s.%s (%s) ENGINE=%s DEFAULT CHARSET=%s COLLATE=%s%s", $database, $table, implode(", ", $columnsDefinition), $engine, $character, $collate, $autoIncrement ? " AUTO_INCREMENT=1" : "");
+            // Add the table comment if specified
+            if (Utils::isNotEmptyString($comment)) {
+                $statement .= " COMMENT \"" . $this->escape($comment) . "\"";
+            }
+            // Execute the statement and check for errors
+            $result = $this->connection->query($statement);
+            if (Utils::isTrue($result)) {
+                return $result;
+            }
             $this->lastMessage = $this->lastError();
-            return false;
         }
-        return true;
+        return false;
     }
 
 
@@ -606,7 +538,7 @@ class Database extends Utils {
         $messages = [];
         if (Utils::isNonNull($this->connection)) {
             foreach ($databases as $database) {
-                $database = $this->sanitizeIdentifier($database);
+                $database = $this->escapeReplace($database);
                 $messages[$database] = [];
                 // Get list of tables in the database
                 $tables = $this->connection->query('SHOW TABLES FROM ' . $database . ';');
@@ -642,11 +574,7 @@ class Database extends Utils {
                                     $tableStatements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` bigint(20) UNSIGNED NOT NULL DEFAULT '0' COMMENT '" . $comment . "';";
                                 }
                                 // Varchar or Char columns with collation
-                                elseif ((substr(
-                                    $type,
-                                    0,
-                                    7
-                                ) == 'varchar' || substr($type, 0, 4) == 'char') && $collation !== "NULL") {
+                                elseif ((substr($type, 0, 7) == 'varchar' || substr($type, 0, 4) == 'char') && $collation !== "NULL") {
                                     $tableStatements[$tableName] = "ALTER TABLE `" . $tableName . "` CHANGE `" . $field . "` `" . $field . "` " . strtoupper($type) . " CHARACTER SET latin1 COLLATE " . $collation . " NOT NULL DEFAULT '' COMMENT '" . $comment . "';";
                                 }
                                 // Text columns with collation
@@ -682,8 +610,8 @@ class Database extends Utils {
     public function getTableColumns(string $database, string $table): array {
         $result = array();
         if (Utils::isNonNull($this->connection)) {
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
             $columns = $this->connection->query('SHOW FULL COLUMNS FROM ' . $database . '.' . $table . ';');
             if ($columns instanceof \mysqli_result) {
                 try {
@@ -712,8 +640,8 @@ class Database extends Utils {
     public function getTableRowsWhereClause(string $database, string $table, string $column, mixed $columnValue, string $orderBy = "id"): array {
         $result = array();
         if (Utils::isNonNull($this->connection)) {
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
             $columnValue = $this->escape($columnValue);
             $statement = "SELECT * FROM " . $database . "." . $table . " WHERE `" . $column . "`='" . $this->escape($columnValue) . "' ORDER BY " . $orderBy . ";";
             $result = $this->executeAndFetchAssociationFromSelectStatement($statement);
@@ -731,8 +659,8 @@ class Database extends Utils {
     public function getTableRows(string $database, string $table, string $orderBy = "id"): array {
         $result = array();
         if (Utils::isNonNull($this->connection)) {
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
             $statement = "SELECT * FROM " . $database . "." . $table . " ORDER BY " . $orderBy . ";";
             $result = $this->executeAndFetchAssociationFromSelectStatement($statement);
         }
@@ -753,8 +681,8 @@ class Database extends Utils {
     public function getTableRowsIndexValue(string $database, string $table, string $column, mixed $columnValue, mixed $index): string {
         $value = "";
         if (Utils::isNonNull($this->connection)) {
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
             $columnValue = $this->escape($columnValue);
             $assoc = $this->getTableRowsWhereClause($database, $table, $column, $columnValue);
             foreach ($assoc as $i => $data) {
@@ -799,7 +727,7 @@ class Database extends Utils {
     public function getDatabaseTables(string $database): array {
         $result = array();
         if (Utils::isNonNull($this->connection)) {
-            $database = $this->sanitizeIdentifier($database);
+            $database = $this->escapeReplace($database);
             $tables = $this->connection->query("SHOW TABLES FROM " . $database . ";");
             if ($tables instanceof \mysqli_result) {
                 while ($row = $tables->fetch_array()) {
@@ -819,8 +747,8 @@ class Database extends Utils {
     public function getTableExportStructureData(string $database, string $table): string {
         $structure = '';
         if (Utils::isNonNull($this->connection)) {
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
             $result = $this->connection->query("SHOW CREATE TABLE " . $database . "." . $table . ";");
             if ($result instanceof \mysqli_result) {
                 $row = $result->fetch_row();
@@ -842,8 +770,8 @@ class Database extends Utils {
     public function getTableExportInsertData(string $database, string $table): string {
         $data = '';
         if (Utils::isNonNull($this->connection)) {
-            $database = $this->sanitizeIdentifier($database);
-            $table = $this->sanitizeIdentifier($table);
+            $database = $this->escapeReplace($database);
+            $table = $this->escapeReplace($table);
             $result = $this->connection->query("SELECT * FROM " . $database . "." . $table . ";");
             if ($result instanceof \mysqli_result) {
                 $fieldCount = $result->field_count;
@@ -858,7 +786,7 @@ class Database extends Utils {
                 while ($row = $result->fetch_row()) {
                     $dv .= "(" . $this->escapeExportRowData($row, $fieldCount) . "),\n";
                 }
-                if (!empty($dv)) {
+                if (Utils::isNotEmptyString($dv)) {
                     $dd .= $dv;
                     $data = rtrim($dd, ",\n") . ";\n";
                 }
@@ -883,7 +811,7 @@ class Database extends Utils {
         $savePathname = Path::insert_dir_separator($savePathname);
         // Iterate through each database and back it up
         foreach ($databases as $database) {
-            $database = $this->sanitizeIdentifier($database);
+            $database = $this->escapeReplace($database);
             $backupContent = $this->createDatabaseExportContent($database);
             // If backup content is generated, save it to file
             if (Utils::isString($backupContent)) {
@@ -936,9 +864,8 @@ class Database extends Utils {
      * @param string $user
      * @param string $password
      * @param bool $reset If to force reset the connection
-     * @return bool
      */
-    private function init(string $host, string $user, string $password, bool $reset = false): bool {
+    private function init(string $host, string $user, string $password, bool $reset = false) {
         if (Utils::isNull($this->connection) || Utils::isTrue($reset)) {
             try {
                 mysqli_report(MYSQLI_REPORT_STRICT);
@@ -951,24 +878,22 @@ class Database extends Utils {
                     @$this->connection->set_charset('utf8mb4');
                     @$this->connection->query("SET time_zone='" . Utils::GMT . "'");
                     @$this->connection->query("SET GLOBAL sql_mode = '';");
-                    return true;
                 }
             } catch (\Exception $e) {
+                $this->connection = null;
                 self::setLastThrowable($e);
                 $this->lastMessage = "Database connection was not established. " . $e->getMessage();
             }
         }
-        $this->connection = null;
-        return false;
     }
 
     /**
-     * Sanitize identifiers
+     * Sanitize values
      * @param string $identifier
      * @return string
      */
-    private function sanitizeIdentifier(string $identifier): string {
-        return $this->escape(str_replace([' ', '/', '\\', '-'], '', $identifier));
+    private function escapeReplace(string $value): string {
+        return $this->escape(str_replace([' ', '/', '\\', '-'], '', $value));
     }
 
     /**
@@ -992,15 +917,15 @@ class Database extends Utils {
      */
     private function createDatabaseExportContent(string $database): ?string {
         $tables = $this->getDatabaseTables($database);
-        if (empty($tables)) {
-            return null;
+        if (Utils::isNotEmptyArray($tables)) {
+            $backupContent = "\n\n--\n-- Database: `$database`\n--";
+            foreach ($tables as $table) {
+                $backupContent .= $this->getTableExportStructureData($database, $table);
+                $backupContent .= $this->getTableExportInsertData($database, $table);
+            }
+            return $this->wrapDatabaseExportContent($backupContent);
         }
-        $backupContent = "\n\n--\n-- Database: `$database`\n--";
-        foreach ($tables as $table) {
-            $backupContent .= $this->getTableExportStructureData($database, $table);
-            $backupContent .= $this->getTableExportInsertData($database, $table);
-        }
-        return $this->wrapDatabaseExportContent($backupContent);
+        return null;
     }
 
     /**
